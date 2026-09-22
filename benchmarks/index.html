@@ -51,26 +51,51 @@ async function modelApi(){
   throw new Error("main model did not expose a qualified Aramco GP within 30 s");
 }
 
-function solveTau(api,base,target){
+function solveTau(api,base,target,selector){
+  const pick=selector||((r)=>r.fresh_ethane_kg_per_kg);
   const at=tau=>{
     const result=api.evaluate({...base,tau});
-    return {tau,result,d:result.fresh_ethane_kg_per_kg-target,
-      error:Math.abs(result.fresh_ethane_kg_per_kg-target)/target};
+    const value=pick(result);
+    return {tau,result,value,d:value-target,error:Math.abs(value-target)/Math.max(Math.abs(target),1e-12)};
   };
   let lo=at(0.02),hi=at(1.0),best=lo.error<hi.error?lo:hi;
   if(lo.d===0)return lo;
   if(hi.d===0)return hi;
   if(lo.d*hi.d<0){
-    for(let i=0;i<34;i++){
+    for(let i=0;i<36;i++){
       const mid=at(Math.sqrt(lo.tau*hi.tau));
       if(mid.error<best.error)best=mid;
       if(lo.d*mid.d<=0)hi=mid; else lo=mid;
     }
     return best;
   }
-  for(let i=1;i<72;i++){
-    const tau=0.02*Math.pow(50,i/71);
+  for(let i=1;i<80;i++){
+    const tau=0.02*Math.pow(50,i/79);
     const q=at(tau);
+    if(q.error<best.error)best=q;
+  }
+  return best;
+}
+
+function solveRamp(api,base,target,selector){
+  const pick=selector||((r)=>r.conversion);
+  const at=ramp=>{
+    const result=api.evaluate({...base,ramp});
+    const value=pick(result);
+    return {ramp,result,value,d:value-target,error:Math.abs(value-target)/Math.max(Math.abs(target),1e-12)};
+  };
+  let lo=at(0.45),hi=at(4.0),best=lo.error<hi.error?lo:hi;
+  if(lo.d*hi.d<0){
+    for(let i=0;i<36;i++){
+      const mid=at((lo.ramp+hi.ramp)/2);
+      if(mid.error<best.error)best=mid;
+      if(lo.d*mid.d<=0)hi=mid; else lo=mid;
+    }
+    return best;
+  }
+  for(let i=1;i<80;i++){
+    const ramp=0.45+(4.0-0.45)*i/79;
+    const q=at(ramp);
     if(q.error<best.error)best=q;
   }
   return best;
@@ -78,7 +103,8 @@ function solveTau(api,base,target){
 
 function wangTau(e){
   const vol=e.tube_count*Math.PI*e.tube_diameter_m**2/4*e.tube_length_m;
-  const nKmolH=e.reactor_feed_tph*1000*(e.reactor_ethane_wtfrac/MW.C2H6+(1-e.reactor_ethane_wtfrac)/MW.H2O);
+  const hydro=e.reactor_feed_tph-e.steam_tph;
+  const nKmolH=hydro*1000/MW.C2H6+e.steam_tph*1000/MW.H2O;
   const tauAt=(tc,pbar)=>{
     const q=nKmolH*8.314*(tc+273.15)/(pbar*1e5)*1000;
     return vol/(q/3600);
@@ -101,8 +127,31 @@ function dryMoleFractions(g){
     ["C3",g.y_c3_kg_per_kg_ethane,42.08],
     ["C4+",g.y_c4plus_kg_per_kg_ethane,56.11]
   ];
-  const n=species.map(([k,m,mw])=>[k,(m||0)/mw]),tot=n.reduce((a,x)=>a+x[1],0);
+  const n=species.map(([k,m,mw])=>[k,(m||0)/mw]),tot=n.reduce((s,x)=>s+x[1],0);
   return Object.fromEntries(n.map(([k,v])=>[k,v/tot]));
+}
+
+function wetMassFractions(g,dilution){
+  if(!g)return null;
+  const total=1+dilution;
+  return {
+    C2H4:(g.y_c2h4_kg_per_kg_ethane||0)/total,
+    C2H6:(g.y_c2h6_kg_per_kg_ethane||0)/total,
+    CH4:(g.y_ch4_kg_per_kg_ethane||0)/total,
+    H2:(g.y_h2_kg_per_kg_ethane||0)/total,
+    C2H2:(g.y_c2h2_kg_per_kg_ethane||0)/total,
+    C3:(g.y_c3_kg_per_kg_ethane||0)/total,
+    C4plus:(g.y_c4plus_kg_per_kg_ethane||0)/total
+  };
+}
+
+function rangeOf(values){
+  const v=values.filter(Number.isFinite);
+  return [Math.min(...v),Math.max(...v)];
+}
+
+function rangeMetric(name,published,values,unit,role="test",note=""){
+  return {name,published,model_range:rangeOf(values),unit,role,note};
 }
 
 function chenCase(api,c){
@@ -110,37 +159,47 @@ function chenCase(api,c){
   const dilution=(1/e.reactor_ethane_to_steam_vol_ratio)*MW.H2O/MW.C2H6;
   const fresh=e.ethane_tph/e.ethylene_tph;
   const cap=e.ethylene_tph*8000/1000;
-  const base={kinetics:"gp",selMode:"calc",mode:"CH",eff:60,cot:e.temperature_c,pressure:e.pressure_bar,ramp:1,dilution,cap,ethane:e.ethane_price_usd_per_t};
-  const fit=solveTau(api,base,fresh),r=fit.result;
   const heat=e.reactor_heat_gjh/e.ethylene_tph;
   const comp=e.compressor_mw*1000/e.ethylene_tph;
-  const dry=dryMoleFractions(r.gp_mean);
+  const fits=e.pressure_candidates_bar.map(P=>{
+    const base={kinetics:"gp",selMode:"calc",mode:"CH",eff:60,cot:e.temperature_c,pressure:P,ramp:1,dilution,cap,ethane:e.ethane_price_usd_per_t};
+    const fit=solveTau(api,base,e.outlet_c2h6_molfrac,r=>dryMoleFractions(r.gp_mean).C2H6);
+    return {P,fit,r:fit.result,dry:dryMoleFractions(fit.result.gp_mean)};
+  });
+  const rv=k=>fits.map(x=>x.r[k]);
+  const dryv=k=>fits.map(x=>x.dry[k]);
+  const tauRange=rangeOf(fits.map(x=>x.fit.tau));
+  const fitRange=rangeOf(fits.map(x=>x.fit.value));
+  const flags=[...new Set(fits.flatMap(x=>x.r.flags))];
   return {
-    id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,protocol:"one inferred variable",
-    inputs:{...base,tau:fit.tau},inferred:{residence_time_s:fit.tau,fit_error_pct:fit.error*100,dilution_kgkg:dilution},
+    id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,
+    protocol:"composition-constrained pressure envelope",
+    inputs:{temperature_c:e.temperature_c,pressure_bar:e.pressure_candidates_bar,dilution_kgkg:dilution},
+    inferred:{residence_time_s:tauRange,ethane_outlet_fit:fitRange},
     facts:[
-      ["T / P",e.temperature_c+" °C / "+e.pressure_bar+" bar"],
-      ["inferred residence",fmt(fit.tau,4)+" s"],
-      ["capacity",fmt(cap,1)+" kt/y"],
+      ["temperature",e.temperature_c+" °C"],
+      ["source pressure","1 / 4.5 bar"],
+      ["inferred residence",fmt(tauRange[0],3)+"–"+fmt(tauRange[1],3)+" s"],
       ["published MSP","$"+fmt(e.msp_usd_per_t,0)+"/t"]
     ],
     metrics:[
-      metric("fresh ethane",fresh,r.fresh_ethane_kg_per_kg,"kg/kg","fit","residence time inferred from this row"),
-      metric("reactor heat",heat,r.reactor_useful_heat_gj_per_t,"GJ/t","test"),
-      metric("compressor work",comp,r.compressor_kwh_per_t,"kWh/t","test"),
-      metric("dry C2H4 mole fraction",0.377,dry&&dry.C2H4,"mol/mol","test"),
-      metric("dry CH4 mole fraction",0.033,dry&&dry.CH4,"mol/mol","test"),
-      metric("MSP / web cost",e.msp_usd_per_t,r.cost_usd_per_t,"USD/t","context","different cash-flow and utility boundary"),
-      metric("TCM / web annual OPEX",e.tcm_musd_per_y,r.annual_opex_musd,"MUSD/y","context","different manufacturing-cost boundary")
+      rangeMetric("dry C2H6 mole fraction",e.outlet_c2h6_molfrac,fits.map(x=>x.fit.value),"mol/mol","fit","residence time inferred from this row"),
+      rangeMetric("dry C2H4 mole fraction",e.outlet_c2h4_molfrac,dryv("C2H4"),"mol/mol"),
+      rangeMetric("dry H2 mole fraction",e.outlet_h2_molfrac,dryv("H2"),"mol/mol"),
+      rangeMetric("dry CH4 mole fraction",e.outlet_ch4_molfrac,dryv("CH4"),"mol/mol"),
+      rangeMetric("fresh ethane",fresh,rv("fresh_ethane_kg_per_kg"),"kg/kg"),
+      rangeMetric("reactor heat",heat,rv("reactor_useful_heat_gj_per_t"),"GJ/t"),
+      rangeMetric("compressor work",comp,rv("compressor_kwh_per_t"),"kWh/t"),
+      rangeMetric("MSP / web cost",e.msp_usd_per_t,rv("cost_usd_per_t"),"USD/t","context","20-year MSP and screening cost use different financial boundaries"),
+      rangeMetric("TCM / web annual OPEX",e.tcm_musd_per_y,rv("annual_opex_musd"),"MUSD/y","context","manufacturing-cost definitions differ")
     ],
-    notes:c.notes,model_flags:r.flags
+    notes:c.notes,model_flags:flags
   };
 }
 
 function shinCase(api,c){
   const e=c.evidence, fresh=e.ethane_kgh/e.ethylene_kgh;
   const c3=e.c3plus_kgh/e.ethylene_kgh;
-  const heat=e.combustion_energy_mjh/(e.ethylene_kgh/1000);
   const ethaneUp=(e.ethane_upstream_kgco2e_per_t/1000)/fresh;
   const candidates=[];
   for(let T=800;T<=900;T+=5){
@@ -153,28 +212,28 @@ function shinCase(api,c){
   }
   if(!candidates.length)throw new Error("Shin inventory envelope found no point within 0.5% fresh-feed error");
   const vals=k=>candidates.map(x=>x.r[k]).filter(Number.isFinite);
-  const range=k=>{const v=vals(k);return [Math.min(...v),Math.max(...v)]};
+  const nested=(group,key)=>candidates.map(x=>x.r[group][key]).filter(Number.isFinite);
   const central=candidates.reduce((a,b)=>Math.abs(b.T-850)+Math.abs(b.P-3)<Math.abs(a.T-850)+Math.abs(a.P-3)?b:a);
   const rr=central.r, c3range=candidates.map(x=>x.r.c3_kg_per_kg+x.r.c4plus_kg_per_kg);
-  const heatrange=range("purchased_heat_gj_per_t"),costrange=range("cost_usd_per_t"),cirange=range("carbon_kgco2e_per_t");
   return {
     id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,protocol:"inventory-constrained operating envelope",
     inputs:{temperature_c:"800–900",pressure_bar:"1–5",steam_hc:e.steam_hc_kgkg},
-    inferred:{accepted_points:candidates.length,residence_time_s:[Math.min(...candidates.map(x=>x.tau)),Math.max(...candidates.map(x=>x.tau))]},
+    inferred:{accepted_points:candidates.length,residence_time_s:rangeOf(candidates.map(x=>x.tau))},
     facts:[
       ["fresh ethane",fmt(fresh,3)+" kg/kg"],
       ["accepted states",String(candidates.length)],
-      ["published LCOE","$"+fmt(e.lcoe_usd_per_t,0)+"/t"],
-      ["published GHG",fmt(e.ghg_kgco2e_per_t,0)+" kg/t"]
+      ["published heat",fmt(e.combustion_energy_gj_per_t,1)+" GJ/t"],
+      ["published LCOE","$"+fmt(e.lcoe_usd_per_t,0)+"/t"]
     ],
     metrics:[
-      {name:"fresh ethane",published:fresh,model_range:[...range("fresh_ethane_kg_per_kg")],unit:"kg/kg",role:"fit",note:"residence time fitted at each T/P point"},
-      {name:"C3+ coproduct",published:c3,model_range:[Math.min(...c3range),Math.max(...c3range)],unit:"kg/kg",role:"test"},
-      {name:"combustion / purchased heat",published:heat,model_range:heatrange,unit:"GJ/t",role:"test",note:"paper value covers plant combustion; web value covers reactor heat supply"},
-      {name:"LCOE / web cost",published:e.lcoe_usd_per_t,model_range:costrange,unit:"USD/t",role:"context",note:"different power-generation and cash-flow boundary"},
-      {name:"WTG GHG / web carbon",published:e.ghg_kgco2e_per_t,model_range:cirange,unit:"kgCO2e/t",role:"context",note:"ethane upstream factor matched to the paper; remaining LCA boundary differs"}
+      rangeMetric("fresh ethane",fresh,vals("fresh_ethane_kg_per_kg"),"kg/kg","fit","residence time fitted at each T/P point"),
+      rangeMetric("C3+ coproduct",c3,c3range,"kg/kg"),
+      rangeMetric("combustion heat",e.combustion_energy_gj_per_t,vals("heater_input_gj_per_t"),"GJ/t","test","paper validation quantity includes imported natural gas and purge-gas heat"),
+      rangeMetric("on-site GHG",e.onsite_ghg_kgco2e_per_t,nested("carbon_scopes_kgco2e_per_t","scope1"),"kgCO2e/t"),
+      rangeMetric("LCOE / web cost",e.lcoe_usd_per_t,vals("cost_usd_per_t"),"USD/t","context","financial and power-generation boundaries differ"),
+      rangeMetric("WTG GHG / web carbon",e.ghg_kgco2e_per_t,vals("carbon_kgco2e_per_t"),"kgCO2e/t","context","ethane upstream factor matched; electricity and coproduct boundaries follow the web model")
     ],
-    central:{temperature_c:central.T,pressure_bar:central.P,residence_time_s:central.tau,cost_usd_per_t:rr.cost_usd_per_t,carbon_kgco2e_per_t:rr.carbon_kgco2e_per_t},
+    central:{temperature_c:central.T,pressure_bar:central.P,residence_time_s:central.tau},
     notes:c.notes,model_flags:rr.flags
   };
 }
@@ -183,30 +242,38 @@ function wangCase(api,c){
   const e=c.evidence,t=wangTau(e);
   const dilution=e.steam_tph/(e.reactor_feed_tph-e.steam_tph);
   const cap=e.ethylene_tph*8000/1000;
-  const base={kinetics:"gp",selMode:"calc",mode:"CH",eff:60,cot:e.temperature_c,pressure:e.pressure_bar,ramp:1,dilution,tau:t.central,cap,
-    ethane:e.ethane_price_usd_per_t,elec:e.electricity_usd_per_kwh,gas:e.gas_usd_per_gj,steam:0,lpg:850};
-  const r=api.evaluate(base);
   const fresh=e.fresh_ethane_tph/e.ethylene_tph;
   const recEth=e.recycle_stream_tph*e.recycle_ethane_wtfrac/e.ethylene_tph;
   const ethIn=e.reactor_feed_tph*e.reactor_ethane_wtfrac;
   const ethOut=e.reactor_feed_tph*e.outlet_ethane_wtfrac;
   const X=1-ethOut/ethIn;
+  const base={kinetics:"gp",selMode:"calc",mode:"CH",eff:60,cot:e.temperature_c,pressure:e.pressure_bar,dilution,tau:t.central,cap,
+    ethane:e.ethane_price_usd_per_t,elec:e.electricity_usd_per_kwh,gas:e.gas_usd_per_gj,steam:0,lpg:850};
+  const fit=solveRamp(api,base,X);
+  const r=fit.result, wet=wetMassFractions(r.gp_mean,dilution);
   return {
-    id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,protocol:"direct conditions; residence derived from geometry",
-    inputs:{...base,inlet_temperature_c:e.inlet_temperature_c},
-    inferred:{residence_time_s:t.central,residence_time_bracket_s:[t.outlet,t.inlet],reactor_volume_m3:t.volume_m3},
+    id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,
+    protocol:"geometry residence + conversion-constrained heating history",
+    inputs:{...base,ramp:fit.ramp,inlet_temperature_c:e.inlet_temperature_c},
+    inferred:{residence_time_s:t.central,residence_time_bracket_s:rangeOf([t.outlet,t.inlet]),reactor_volume_m3:t.volume_m3,
+      ramp_exponent:fit.ramp,conversion_fit_error_pct:fit.error*100},
     facts:[
       ["T / P",e.temperature_c+" °C / "+e.pressure_bar+" bar"],
       ["derived residence",fmt(t.central,3)+" s"],
-      ["capacity",fmt(cap,1)+" kt/y"],
+      ["fitted ramp n",fmt(fit.ramp,3)],
       ["published CAPEX","$"+fmt(e.capex_musd,2)+" M"]
     ],
     metrics:[
-      metric("single-pass conversion",X,r.conversion,"fraction","test"),
-      metric("fresh ethane",fresh,r.fresh_ethane_kg_per_kg,"kg/kg","test"),
-      metric("recycle ethane",recEth,r.recycle_ethane_kg_per_kg,"kg/kg","test"),
+      metric("single-pass conversion",X,r.conversion,"fraction","fit","heating-ramp exponent inferred from this row"),
+      metric("fresh ethane",fresh,r.fresh_ethane_kg_per_kg,"kg/kg"),
+      metric("recycle ethane",recEth,r.recycle_ethane_kg_per_kg,"kg/kg"),
+      metric("outlet C2H4 mass fraction",e.outlet_ethylene_wtfrac,wet.C2H4,"kg/kg"),
+      metric("outlet CH4 mass fraction",e.outlet_ch4_wtfrac,wet.CH4,"kg/kg"),
+      metric("outlet H2 mass fraction",e.outlet_h2_wtfrac,wet.H2,"kg/kg"),
+      metric("outlet C3 mass fraction",e.outlet_c3_wtfrac,wet.C3,"kg/kg"),
+      metric("outlet C4+ mass fraction",e.outlet_c4plus_wtfrac,wet.C4plus,"kg/kg"),
       metric("CAPEX / web TOC",e.capex_musd,r.toc_musd,"MUSD","context","paper CAPEX and web TOC use different estimating structures"),
-      metric("OPEX / web annual OPEX",e.opex_musd_per_y,r.annual_opex_musd,"MUSD/y","context","paper OPEX includes its own utility and overhead definitions")
+      metric("OPEX / web annual OPEX",e.opex_musd_per_y,r.annual_opex_musd,"MUSD/y","context","utility and overhead definitions differ")
     ],
     notes:c.notes,model_flags:r.flags
   };
