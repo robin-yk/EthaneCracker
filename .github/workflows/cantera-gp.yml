@@ -1,0 +1,67 @@
+name: Cantera GP v1
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - cantera-gp-v1
+    paths:
+      - "multiscale/cantera_sweep.py"
+      - "multiscale/train_gp.py"
+      - "multiscale/test_gp.py"
+      - "multiscale/requirements.txt"
+      - ".github/workflows/cantera-gp.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-surrogate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cantera-gp-v1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Cantera and numerical dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "cantera==3.2.0" "numpy>=1.26"
+
+      - name: GP algebra smoke test
+        run: python multiscale/test_gp.py
+
+      - name: Generate stock-Cantera smoke-test sweep
+        run: |
+          python multiscale/cantera_sweep.py \
+            --mechanism gri30.yaml \
+            --phase gri30 \
+            --points 128 \
+            --segments 40 \
+            --seed 42 \
+            --output multiscale/data/cantera_sweep.csv
+
+      - name: Train browser GP
+        run: |
+          python multiscale/train_gp.py \
+            --input multiscale/data/cantera_sweep.csv \
+            --output multiscale/surrogate.json
+
+      - name: Commit generated smoke-test artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add multiscale/data/cantera_sweep.csv
+          git add multiscale/data/cantera_sweep.meta.json
+          git add multiscale/surrogate.json
+          if git diff --cached --quiet; then
+            echo "No generated changes."
+          else
+            git commit -m "Generate Cantera GP smoke-test surrogate [skip ci]"
+            git push origin HEAD:cantera-gp-v1
+          fi
