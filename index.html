@@ -2252,7 +2252,9 @@ window.ethaneModel={
       annual_opex_musd:annualOpex,
       cost_usd_per_t:r.coo,
       carbon_kgco2e_per_t:lc.ci,
+      carbon_scopes_kgco2e_per_t:{scope1:lc.scope1,scope2:lc.scope2,scope3:lc.scope3},
       annual_product_kt:r.prod/1000,
+      cost_breakdown_usd_per_t:{...r.L},
       gp_mean:r.gp&&r.gp.mean?{...r.gp.mean}:null,
       flags:[...r.flags]
     };
