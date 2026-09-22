@@ -8,7 +8,7 @@
       "journal": "Green Chemistry 26 (2024) 2903–2911",
       "doi": "10.1039/D3GC03858K",
       "url": "https://doi.org/10.1039/D3GC03858K",
-      "protocol": "infer_tau",
+      "protocol": "composition_constrained",
       "evidence": {
         "temperature_c": 950,
         "pressure_bar": 4.5,
@@ -22,12 +22,21 @@
         "tcm_musd_per_y": 496,
         "ethane_price_usd_per_t": 200,
         "equipment_cost_musd": 780,
-        "utility_cost_musd_per_y": 66.1
+        "utility_cost_musd_per_y": 66.1,
+        "pressure_candidates_bar": [
+          1,
+          4.5
+        ],
+        "outlet_c2h4_molfrac": 0.377,
+        "outlet_h2_molfrac": 0.407,
+        "outlet_ch4_molfrac": 0.033,
+        "outlet_c2h6_molfrac": 0.151
       },
       "notes": [
-        "Residence time is not reported in the article text used here. It is inferred from the published fresh-ethane requirement.",
-        "The reactor dilution input uses the reported 3:1 ethane:steam volume ratio, converted to a mass ratio with molecular weights.",
-        "MSP and annual manufacturing cost use a different discounted-cash-flow boundary from the screening cost model and are shown as context."
+        "Residence time is inferred from the reported 15.1 mol% residual ethane at the reactor outlet. Ethylene, hydrogen, methane, fresh ethane, heat, and compressor work remain test quantities.",
+        "The process description calls the reactor pressure ambient while Table 1 lists 4.5 bar. Both pressures are evaluated and the result is reported as a source-defined envelope.",
+        "The reported 3:1 ethane:steam volume ratio gives the reactor dilution input after molecular-weight conversion.",
+        "MSP and annual manufacturing cost are shown as economic context because the paper uses a 20-year discounted cash-flow MSP calculation."
       ]
     },
     {
@@ -54,12 +63,14 @@
         "gas_usd_per_gj": 5,
         "ethane_price_usd_per_t": 200,
         "c3plus_price_usd_per_t": 443,
-        "baseline_tpc_usd_per_kg_day": 233
+        "baseline_tpc_usd_per_kg_day": 233,
+        "combustion_energy_gj_per_t": 17.2,
+        "onsite_ghg_kgco2e_per_t": 442
       },
       "notes": [
-        "The article text reports steam ratio and plant inventory but does not expose one reactor temperature/residence-time/pressure triplet.",
-        "The benchmark therefore fits residence time to fresh-ethane demand across 800–900 °C and 1–5 bar, then reports the resulting prediction envelope.",
-        "C3+ yield, heat, LCOE and GHG remain comparison outputs; they do not enter the residence-time fit."
+        "The paper reports steam ratio and plant inventory but no single reactor temperature/residence-time/pressure triplet in the main article.",
+        "Residence time is fitted to fresh-ethane demand across 800–900 °C and 1–5 bar. C3+ production, total combustion heat, and on-site GHG remain test quantities.",
+        "The 17.2 GJ/t combustion-energy value is the paper's model-validation quantity and includes heat from imported natural gas plus hydrogen/methane purge gas."
       ]
     },
     {
@@ -69,7 +80,7 @@
       "journal": "Frontiers in Energy Research 14 (2026) 1726062",
       "doi": "10.3389/fenrg.2026.1726062",
       "url": "https://doi.org/10.3389/fenrg.2026.1726062",
-      "protocol": "direct_geometry",
+      "protocol": "geometry_plus_conversion_constraint",
       "evidence": {
         "temperature_c": 840,
         "pressure_bar": 3.2,
@@ -95,12 +106,15 @@
         "ethane_price_usd_per_t": 90,
         "electricity_usd_per_kwh": 0.06,
         "gas_usd_per_gj": 3.59,
-        "steam_price_usd_per_t": 0
+        "steam_price_usd_per_t": 0,
+        "inlet_ethylene_wtfrac": 0.0064,
+        "outlet_c3_wtfrac": 0.0476,
+        "outlet_c4plus_wtfrac": 0.0161
       },
       "notes": [
-        "Residence time is derived from the published tube geometry and reactor-feed flow using an ideal-gas volumetric flow at the arithmetic-mean reactor temperature and pressure.",
-        "The same calculation using inlet and outlet states gives a residence-time bracket; the midpoint-density result is used for the central prediction.",
-        "The web surrogate was trained with a fixed 650 °C reactor inlet, while this paper reports 502.77 °C. The benchmark displays that model-form mismatch explicitly."
+        "Residence time is derived from the published tube geometry and reactor-feed flow using ideal-gas volumetric flow at the arithmetic-mean reactor temperature and pressure; inlet and outlet states define a bracket.",
+        "The heating-ramp exponent is inferred from the published single-pass ethane conversion. Fresh ethane, recycle ethane, ethylene, CH4, H2, C3 and C4+ outlet fractions remain test quantities.",
+        "The web surrogate uses a 650 °C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 °C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
       ]
     }
   ]
