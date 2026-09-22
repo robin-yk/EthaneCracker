@@ -802,16 +802,17 @@ function lca(r,p){
      methods instead assign ethylene a share of the burden. Steam is credited in every
      method, which is common practice and is a choice, not a rule. */
   const soldTailMJ = (p.tailFate==='sell'?r.gasSell:0);   // kJ/kg = MJ/t basis
+  const coproduct=r.y.c3+(r.y.c4plus||0);
   let ciFinal, cr_lpg=0, share=1, shareNote='';
   if(p.alloc==='expansion'){
-    cr_lpg=-r.y.c3*EF.lpg*perT;
+    cr_lpg=-coproduct*EF.lpg*perT;
     ciFinal=netBeforeCoproduct+cr_lpg+cr_tail;
-    shareNote='no allocation; avoided production credited';
+    shareNote='avoided C3+ production credited';
   }else{
-    let a=1,b=r.y.c3,c=0;
+    let a=1,b=coproduct,c=0;
     if(p.alloc==='mass'){ c=(p.tailFate==='sell'?r.y.ch4+r.y.h2:0); }
-    else if(p.alloc==='energy'){ a=LHV_MJ.C2H4; b=r.y.c3*LHV_MJ.C3; c=soldTailMJ/1000; }
-    else { a=r.coo; b=r.y.c3*p.lpg; c=(p.tailFate==='sell'?soldTailMJ/1000*p.gas:0); }
+    else if(p.alloc==='energy'){ a=LHV_MJ.C2H4; b=coproduct*LHV_MJ.C3; c=soldTailMJ/1000; }
+    else { a=r.coo; b=coproduct*p.lpg; c=(p.tailFate==='sell'?soldTailMJ/1000*p.gas:0); }
     share=a/(a+b+c);
     ciFinal=netBeforeCoproduct*share;
     shareNote=sig(share*100,3)+'% of the burden assigned to ethylene';
@@ -1479,10 +1480,16 @@ function drawFig4(r){
   const F=FIG;
   let s='<g>';
 
-  /* a. Residuals against the tolerance, on a log scale, floored where the arithmetic runs out. */
+  /* a. Residuals against the tolerance. Mechanism mode reports the largest
+     raw Cantera closure residual in the training sweep; empirical mode reports the
+     algebraic closure of the lumped screening model. */
   const FLOOR=1e-13;
-  const bal=[['Carbon',r.bal.carbon],['Hydrogen',r.bal.hydrogen],['Mass',r.bal.mass],['Energy',r.bal.energy]]
-    .map(([n,v])=>({n,v:Math.max(FLOOR,Math.abs(v)*100)}));
+  const rawClosure=r.useMechanismSpecies&&app.gp&&app.gp.source&&app.gp.source.closure_max_abs;
+  const balanceRows=rawClosure
+    ? [['Carbon',rawClosure.carbon_residual],['Hydrogen',rawClosure.hydrogen_residual],
+       ['Oxygen',rawClosure.oxygen_residual],['Mass',rawClosure.mass_residual]]
+    : [['Carbon',r.bal.carbon],['Hydrogen',r.bal.hydrogen],['Mass',r.bal.mass],['Energy',r.bal.energy]];
+  const bal=balanceRows.map(([n,v])=>({n,v:Math.max(FLOOR,Math.abs(v)*100)}));
   const lg=Math.log10;
   const A=axes({x:132,y:22,w:318,h:64,xlim:[lg(FLOOR),1],
                 xticks:[-12,-10,-8,-6,-4,-2,0],ycat:bal.map(d=>d.n),
@@ -1524,12 +1531,19 @@ function drawFig4(r){
    +'<rect x="140" y="144" width="7" height="3" fill="'+F.orange+'"/>'+ftext('Joule envelope',149,147,{});
 
   /* c. The boundary. Everything the ladder rests on, and everything it does not reach. */
-  const IN=['Kinetics and selectivity','Reactor duty and heat recovery','Tail gas balance',
-            'Compressor shaft work','Cold box temperature and duty','Column stages and reflux',
-            'Coking, run length, on-stream','Capital by section, Lang type','Cost ladder and LCA inventory'];
-  const OUT=['Pressure drop and coil profile','Property data and phase equilibrium',
-             'Joule electrical equipment','Route specific capital','Element replacement',
-             'Uncertainty propagation','Any independent validation'];
+  const IN=r.useMechanismSpecies
+    ? ['AramcoMech 3.0 gas-phase kinetics','Prescribed reactor temperature history',
+       'Cantera species yields and enthalpy','Independent Cantera holdout for the GP',
+       'Recycle and tail-gas balance','Compressor shaft work','Cold-box screening duty',
+       'C2 splitter shortcut','CAPEX, OPEX and LCA inventory']
+    : ['First-order conversion correlation','Empirical selectivity correlation',
+       'Reactor duty and heat recovery','Tail-gas balance','Compressor shaft work',
+       'Cold-box screening duty','C2 splitter shortcut','Coking and on-stream factor',
+       'CAPEX, OPEX and LCA inventory'];
+  const OUT=['Radial reactor temperature gradients','Furnace-side radiation and tube conduction',
+             'Pressure drop','Rigorous multicomponent phase equilibrium','Joule electrical hardware',
+             'Route-specific equipment capital','Coke-deposition kinetics',
+             'Experimental validation of the selected kinetic mechanism'];
   s+=panel('c',2,336);
   const colW=238, cy0=344, rowH=11.4;
   const col=(items,x,title,col2)=>{
@@ -1542,18 +1556,16 @@ function drawFig4(r){
 
   $('fig4').innerHTML=s+'</g>';
   const worst=Math.max(...bal.map(d=>d.v));
-  $('fig4cap').innerHTML='<b>Figure 4 | Model validity.</b> '
-    +'<b>a</b>, Atom, mass and energy residuals against a 0.1% tolerance, log scale. The recycle is closed '
-    +'analytically rather than by iteration, so the residuals sit at machine precision, '
-    +(worst<=1e-12?'below 10<sup>&minus;12</sup>%':'the largest being '+worst.toExponential(1)+'%')
-    +'. The algebra closes. That is a different statement from the model being right. '
-    +'<b>b</b>, Assumed operating envelopes and the cheapest point found inside each. A fired furnace passes heat '
-    +'through the tube wall, so alloy limits cap the coil outlet near '+MODE_LIMITS.CH.cot[1]+'&thinsp;&deg;C and '
-    +'the achievable radiant flux sets a floor on residence time near '+sig(MODE_LIMITS.CH.tau[0],2)+'&thinsp;s. '
-    +'Joule heating releases heat inside the reacting volume and reaches '+MODE_LIMITS.JH.cot[1]+'&thinsp;&deg;C and '
-    +sig(MODE_LIMITS.JH.tau[0],2)+'&thinsp;s. The envelopes themselves are assumptions, not measurements. '
-    +'<b>c</b>, The boundary. The left column is what the cost ladder rests on; the right column is what it does '
-    +'not reach, and each item there is a reason the answer could be wrong in a way no residual would reveal.';
+  const closureText=rawClosure
+    ? 'Maximum C/H/O/mass residual across the '+app.gp.training_points+'-point Cantera training sweep is '+worst.toExponential(1)+'%.'
+    : 'Maximum algebraic C/H/mass/energy residual is '+(worst<=1e-12?'below 10<sup>&minus;12</sup>%':worst.toExponential(1)+'%')+'.';
+  $('fig4cap').innerHTML='<b>Figure 4 | Numerical checks and model scope.</b> '
+    +'<b>a</b>, Closure residuals against a 0.1% tolerance on a log scale. '+closureText+' '
+    +'<b>b</b>, Operating envelopes used for the fired and Joule screening comparison. Fired heating spans '
+    +MODE_LIMITS.CH.cot[0]+' to '+MODE_LIMITS.CH.cot[1]+'&thinsp;&deg;C and residence times from '
+    +sig(MODE_LIMITS.CH.tau[0],2)+'&thinsp;s; the Joule envelope extends to '+MODE_LIMITS.JH.cot[1]
+    +'&thinsp;&deg;C and '+sig(MODE_LIMITS.JH.tau[0],2)+'&thinsp;s. '
+    +'<b>c</b>, Calculations included in the current model and physical effects reserved for higher-fidelity reactor and separation models.';
 }
 
 /* The inventory rows, shared by the figure and by any table that wants them. */
@@ -1568,7 +1580,7 @@ function ciItems(l){
   if(l.s1_fate>0) items.push({lbl:'Surplus tail gas '+S.tailFate+', Scope 1',v:l.s1_fate});
   items.push({lbl:'HP steam credit',v:l.cr_steam});
   if(S.alloc==='expansion'){
-    items.push({lbl:'LPG credit',v:l.cr_lpg});
+    items.push({lbl:'C3+ coproduct credit',v:l.cr_lpg});
     if(l.cr_tail<0) items.push({lbl:'Tail gas sold credit',v:l.cr_tail});
   }else{
     items.push({lbl:'Allocated away',v:l.ci-(l.scope1+l.scope2+l.scope3+l.cr_steam)});
@@ -1791,9 +1803,438 @@ function renderExplained(r,l){
     +'solves for the reflux needed to reach it. Setting reflux directly would let the column drift off specification '
     +'as the feed composition changes, and the utility differences between cases would then be an artefact of the '
     +'specification rather than of the chemistry.</p>');
-  h+=item('Liquefied petroleum gas credit','$'+sig(-r.L.lpgCr,4)+' per tonne',
-    '<p>Recovered propane, propylene, butanes and butenes are sold, '+sig(r.y.c3,3)+' kilograms per kilogram of ethylene.</p>'
-    +'<div class="def"><b>Liquefied petroleum gas, LPG:</b> a pressurized mixture of mainly three and four carbon hydrocarbons.</div>');
+  h+=item('C3+ coproduct credit','
+
+  h+='<h3>Carbon intensity</h3>';
+  h+=item('Carbon intensity',sig(l.ci,4)+' kg CO2e per tonne',
+    '<p>The same inventory that produced the cost figure, multiplied by emission factors instead of prices. '
+    +'Scope 1 is '+sig(l.scope1,4)+', Scope 2 is '+sig(l.scope2,4)+' and Scope 3 is '+sig(l.scope3,4)+' kilograms.</p>'
+    +'<div class="def"><b>Scope 1:</b> emissions from combustion inside the plant boundary. '
+    +'<b>Scope 2:</b> emissions from generating the electricity the plant buys. '
+    +'<b>Scope 3:</b> emissions from producing the ethane before it arrives.</div>'
+    +'<p>Electrification moves emissions between scopes rather than removing them. Switching the furnace to '
+    +'electricity empties Scope 1 and fills Scope 2, and whether that helps depends on the grid.</p>');
+
+  h+='<h3>Reference values</h3>';
+  h+=item('Stoichiometric floor','$'+sig(r.L.floor,4)+' per tonne',
+    '<p>The lowest ethane purchase cost the molecular weights allow at $'+sig(S.ethane,3)+' per tonne of ethane. '
+    +'Energy, equipment, labour and imperfect selectivity all sit above it.</p>');
+  h+=item('Published benchmark','$'+sig(PUB.coo,4)+' per tonne',
+    '<p>This estimate is '+sig(Math.abs(gap),3)+'% '+(gap<0?'below':'above')+' the published figure. The two '
+    +'calculations do not share a boundary. This model raises high pressure steam from reactor heat and credits it, '
+    +'burns internally produced tail gas before buying natural gas, and credits liquefied petroleum gas sales. The '
+    +'published calculation purchases high pressure steam. A direct comparison would need the same feed and energy '
+    +'prices, the same equipment scope, the same financing assumptions, the same by-product credits and the same capacity.</p>');
+
+  h+='<h3>Units and abbreviations</h3>';
+  h+='<table><tbody>'+[
+    ['AACE','AACE International, formerly the Association for the Advancement of Cost Engineering'],
+    ['TLE','Transfer-line exchanger'],['TEG','Triethylene glycol'],['HP','High pressure'],
+    ['LPG','Liquefied petroleum gas'],['O&amp;M','Operations and maintenance'],
+    ['COT','Coil outlet temperature'],['CCF','Capital charge factor'],
+    ['TBMC','Total bare module cost, the installed cost of the equipment itself'],
+    ['TOC','Total overnight cost, the cost of a complete plant excluding interest during construction'],
+    ['FUG','Fenske, Underwood and Gilliland, the shortcut distillation method used for the splitter'],
+    ['USD/t','United States dollars per tonne of ethylene'],['kt/y','Thousand tonnes per year'],
+    ['kg/kg','Kilograms per kilogram of ethylene'],['mol/kg','Moles per kilogram of ethylene'],
+    ['kWh','Kilowatt-hour'],['GJ','Gigajoule'],['bar','Pressure unit equal to 100 kilopascals'],
+    ['C2H6','Ethane'],['C2H4','Ethylene'],['H2','Hydrogen'],['CH4','Methane'],
+    ['X','Single pass ethane conversion'],['S','Ethylene selectivity'],
+    ['T1 to T4','Labels for the downstream separation sections'],
+    ['C1','Label for the cracked gas compressor train']
+  ].map(([a,b])=>'<tr><td style="width:110px;font-family:var(--mono);font-size:12px">'+a+'</td><td style="color:var(--secondary)">'+b+'</td></tr>').join('')+'</tbody></table>';
+
+  $('explained').innerHTML=h;
+}
+
+/* ---------- tabs ---------- */
+const TABS=[['main','main'],['compare','fired vs Joule'],['carbon','carbon'],
+            ['balance','balances'],['explained','explained'],['cite','cite']];
+$('nav').innerHTML=TABS.map(([id,lab])=>'<button data-tab="'+id+'">'+lab+'</button>').join('');
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render();});
+
+/* ---------- render ---------- */
+/* ---------- baseline and change tracking ---------- */
+/* A pinned baseline is what turns "the numbers moved" into "this is what your change did".
+   It is also the output this model is best at: a difference cancels the errors common to
+   both points, which the absolute level does not. */
+const app={baseline:null,baseRes:null,baseLca:null,unit:0,
+           gp:null,gpValidation:null,gpError:null};
+
+function snapshot(){
+  const r=model(S);
+  return {S:{...S},r,l:lca(r,S)};
+}
+function pinBaseline(){
+  const s=snapshot(); app.baseline=s.S; app.baseRes=s.r; app.baseLca=s.l; render();
+}
+function clearBaseline(){ app.baseline=null; app.baseRes=null; app.baseLca=null; render(); }
+function resetToBaseline(){
+  if(!app.baseline) return;
+  Object.assign(S,app.baseline);
+  $('sCot').value=S.cot; $('sTau').value=logInv(S.tau,0.05,1.5);
+  $('sDil').value=S.dilution; $('sCap').value=S.cap; $('sEff').value=S.eff; $('sSel').value=S.sel;
+  $('sEthane').value=logInv(S.ethane,50,900);
+  $('sElec').value=logInv(S.elec,0.008,0.30);
+  $('sGas').value=logInv(S.gas,1,30);
+  $('sGrid').value=S.grid; $('sEup').value=S.ethaneUp;
+  $('tTle').checked=S.tle;
+  applyModeLimits(); render();
+}
+
+/* Below these a change is rounding, not a result. Printing it would teach a precision the
+   model does not have. */
+const THRESH={flow:0.005,cost:0.10,temp:0.5,energy:0.01,ci:1,frac:0.005};
+
+/* dir tells the reader which way is better. Cost and carbon down is good; a flow is neither.
+   Units are repeated only where they would otherwise be ambiguous. A change in a percentage
+   is in percentage points, which is not the same as a percentage, so it is marked pp. Rows
+   whose value already carries a unit do not repeat it in the change. */
+function dlt(now,was,unit,thresh,dir){
+  if(was===null||was===undefined||!Number.isFinite(was)) return '';
+  const d=now-was;
+  if(Math.abs(d)<thresh) return '';
+  const cls=dir==='cost'?(d<0?'good':'bad'):'neu';
+  const mag=unit==='$'?'$'+sig(Math.abs(d),3)
+           :sig(Math.abs(d),3)+(unit==='pp'?' pp':unit&&unit!=='hide'?' '+unit:'');
+  return '<span class="dlt '+cls+'">'+(d>0?'+':'−')+mag+'</span>';
+}
+
+function render(){
+  const r=model(S);
+  /* A same-point comparison must sit inside both physical envelopes. Without this clamp,
+     selecting a Joule-only temperature or residence time silently compared it with an
+     infeasible fired case. */
+  const {cot:commonCot,tau:commonTau}=commonPoint();
+  const common={...S,cot:commonCot,tau:commonTau};
+  const rCH=model({...common,mode:'CH',eff:60}), rJH=model({...common,mode:'JH',eff:95});
+  const eCost=r.L.heat+r.L.elecProc+r.L.steamCr+r.L.gasCr;
+  const be=breakeven();
+
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===S.tab));
+  TABS.forEach(([id])=>$('t-'+id).classList.toggle('on',id===S.tab));
+  const staticTab=(S.tab==='cite');
+
+  /* Sticky readout. Cost and carbon come from one inventory, so they are shown together,
+     with the prices that produced them and the change against any pinned baseline. */
+  const lNow=lca(r,S), B=app.baseRes, BL=app.baseLca;
+  $('skCoo').textContent=usd(r.coo)+'/t';
+  $('skCi').textContent=sig(lNow.ci,4)+' kg/t';
+  $('skBe').textContent='$'+sig(be,3)+'/kWh';
+  $('skCooD').innerHTML=B?dlt(r.coo,B.coo,'$',THRESH.cost,'cost'):'';
+  $('skCiD').innerHTML=BL?dlt(lNow.ci,BL.ci,'kg/t',THRESH.ci,'cost'):'';
+  $('skPrices').textContent='Ethane $'+sig(S.ethane,3)+'/t · Power $'+sig(S.elec,3)
+    +'/kWh · Gas $'+sig(S.gas,3)+'/GJ · Grid '+sig(S.grid,3)+' kg CO2/kWh';
+  $('baseState').textContent=app.baseline
+    ? 'baseline '+usd(B.coo)+'/t at '+sig(app.baseline.cot,4)+' C, '+sig(app.baseline.tau,3)+' s, '
+      +(app.baseline.mode==='CH'?'fired':'Joule')
+    : '';
+  $('bReset').disabled=!app.baseline; $('bClear').disabled=!app.baseline;
+  $('bPin').textContent=app.baseline?'Re-pin here':'Pin baseline';
+  $('sticky').style.display=staticTab?'none':'';
+  /* The overview leads with one number; the KPI band there would repeat it five ways. */
+  $('kpis').style.display=(staticTab||S.tab==='main')?'none':'';
+  document.querySelector('.strip').style.display=staticTab?'none':'';
+  const gapPub=(r.coo-PUB.coo)/PUB.coo*100;
+  /* The headline number lives in the sticky bar, where it stays visible while the knobs
+     move. Repeating it here in 46 px pushed the flowsheet off the first screen. */
+  $('ovCtx').innerHTML=
+    '<b>'+sig(r.coo/r.L.floor,3)+'x</b> the stoichiometric floor of <b>'+usd(r.L.floor)+'</b> · '
+    +'published benchmark <b>'+usd(PUB.coo)+'</b> ('+(gapPub>0?'+':'−')+sig(Math.abs(gapPub),3)+'%)<br>'
+    +(rJH.coo<rCH.coo?'Joule':'Fired')+' heating is cheaper by <b>'+usd(Math.abs(rJH.coo-rCH.coo))
+    +'</b>/t at this power price · break-even <b>$'+sig(be,3)+'</b>/kWh '
+    +'<button class="golink" data-go="compare">compare →</button>';
+  document.querySelectorAll('.golink').forEach(g=>g.onclick=()=>{S.tab=g.dataset.go;render();scrollTo({top:0});});
+
+  $('kpis').innerHTML=[
+    ['Cost of ethylene',usd(r.coo),sig(r.coo/r.L.floor,3)+'x the floor of '+usd(r.L.floor),
+     'Published benchmark $680/t, CEJ 2025'],
+    ['Feedstock',usd(r.L.floor+r.L.selLoss),'Selectivity loss '+usd(r.L.selLoss),
+     'Ethane '+sig(r.y.ethane,4)+' kg/kg, floor 1.072'],
+    ['Energy, net',usd(eCost),S.mode==='CH'?'Fuel less steam and gas credits':'Power less steam and gas credits',
+     'Net energy '+sig(r.netEnergy,3)+' GJ/t, power '+sig(r.elec_kWh,3)+' kWh/kg'],
+    ['Capital and fixed',usd(r.L.capital+r.L.om),'On-stream '+pctS(r.osf*100),
+     'TOC $'+sig(r.toc,4)+' M, TBMC $'+sig(r.tbmc,4)+' M'],
+    ['Break-even power','$'+sig(be,3),'Below this, Joule wins','Fired at 60%, Joule at 95%']
+  ].map(([l,v,sb,tip])=>'<div class="kpi" title="'+esc(tip)+'"><div class="lab">'+l
+    +'</div><div class="val">'+v+'</div><div class="sub">'+sb+'</div></div>').join('');
+
+  /* What this control is worth. Sweeping each knob across the range the model claims to be
+     valid over and printing the spread puts the ranking where the hand is, instead of leaving
+     it in a chart further down the page. The spread runs from ninety odd dollars to seventy
+     cents, and five identical looking sliders hide that completely. Recomputed every render
+     because the ranking is not a property of the plant: raise the ethane price and capacity
+     matters less against it. */
+  const worth=k=>{
+    const [a,b]=VALID[k]; let lo=Infinity,hi=-Infinity;
+    for(let i=0;i<=10;i++){const c=model({...S,[k]:a+(b-a)*i/10}).coo;
+      if(c<lo)lo=c; if(c>hi)hi=c;}
+    return ' <span class="wor" title="Spread in the cost of ethylene as this control alone is '
+      +'swept across '+sig(a,3)+' to '+sig(b,3)+', everything else held">range '+usd(hi-lo)+'/t</span>';
+  };
+  const ex=(k,v,what)=>(v<VALID[k][0]||v>VALID[k][1])
+    ? ' <span class="badge b-warn" title="Validated between '+sig(VALID[k][0],3)+' and '
+      +sig(VALID[k][1],3)+'">outside '+(what||'range')+'</span>' : '';
+  const flagBadges=r.flags.map(f=>'<span class="badge b-warn" title="'+esc(f)+'">'
+    +esc(f.split(' is ')[0].split(' held ')[0])+'</span>').join(' ');
+  $('vCot').textContent=sig(S.cot,4)+' C';
+  band($('bCot'),760,950,VALID.cot[0],VALID.cot[1],S.cot);
+  $('nCot').innerHTML='Conversion <b>'+pctS(r.X*100)+'</b>, selectivity <b>'+pctS(r.Smass*100)+'</b>'
+    +ex('cot',S.cot,'820 to 880 C')+(flagBadges?' '+flagBadges:'')+worth('cot');
+  $('vTau').textContent=sig(S.tau,3)+' s';
+  band($('bTau'),0.05,1.5,VALID.tau[0],VALID.tau[1],S.tau);
+  $('nTau').innerHTML='Run length <b>'+sig(r.runDays,3)+'</b> d, on-stream <b>'+pctS(r.osf*100)+'</b>'+ex('tau',S.tau,'0.15 to 0.60 s')+worth('tau');
+  $('vDil').textContent=sig(S.dilution,3)+' kg/kg';
+  band($('bDil'),0.15,0.70,VALID.dilution[0],VALID.dilution[1],S.dilution);
+  $('nDil').innerHTML='Steam <b>'+usd(r.L.dilSteam)+'</b>/t, on-stream <b>'+pctS(r.osf*100)+'</b>'
+    +ex('dilution',S.dilution,'0.25 to 0.50 kg/kg')+worth('dilution');
+  $('vCap').textContent=sig(S.cap,4)+' kt/y';
+  band($('bCap'),150,1400,VALID.cap[0],VALID.cap[1],S.cap);
+  $('nCap').innerHTML='Capital and fixed <b>'+usd(r.L.capital+r.L.om)+'</b>/t'+ex('cap',S.cap,'300 to 1200 kt/y')+worth('cap');
+  $('vEff').textContent=sig(S.eff,3)+'%';
+  band($('bEff'),40,98,VALID.eff[0],VALID.eff[1],S.eff);
+  $('nEff').innerHTML='Heating <b>'+usd(r.L.heat)+'</b>/t'+ex('eff',S.eff,'55 to 96%')+worth('eff');
+  $('selKnob').style.display=(S.selMode==='direct'?'':'none');
+  $('selCalc').classList.toggle('active',S.selMode==='calc');
+  $('selDirect').classList.toggle('active',S.selMode==='direct');
+  $('kinEmp').classList.toggle('active',S.kinetics==='empirical');
+  $('kinGP').classList.toggle('active',S.kinetics==='gp');
+  $('kinGP').disabled=!app.gp;
+  $('pKnob').style.display=S.kinetics==='gp'?'':'none';
+  $('rampKnob').style.display=S.kinetics==='gp'?'':'none';
+  $('vPress').textContent=sig(S.pressure,3)+' bar';
+  $('vRamp').textContent=sig(S.ramp,3);
+  const vgp=app.gpValidation;
+  $('kinStatus').textContent=app.gp
+    ? 'Aramco '+app.gp.training_points+' train · '+(vgp?vgp.validation_points+' holdout':'validation loading')
+    : (app.gpError?'mechanism unavailable':'loading mechanism surrogate…');
+  $('vSel').textContent=sig(S.sel,3)+'%';
+  band($('bSel'),70,96,VALID.sel[0],VALID.sel[1],S.sel);
+  $('nSel').innerHTML='Feedstock <b>'+usd(r.L.floor+r.L.selLoss)+'</b>/t'+ex('sel',S.sel,'78 to 88%');
+  $('mCH').classList.toggle('active',S.mode==='CH');
+  $('mJH').classList.toggle('active',S.mode==='JH');
+  $('vEthane').textContent='$'+sig(S.ethane,3)+'/t';
+  $('nEthane').innerHTML='Feedstock <b>'+usd(r.L.floor+r.L.selLoss)+'</b>/t';
+  $('vElec').textContent='$'+sig(S.elec,3)+'/kWh';
+  $('nElec').innerHTML='Break-even <b>$'+sig(be,3)+'</b>';
+  $('vGas').textContent='$'+sig(S.gas,3)+'/GJ';
+  $('nGas').innerHTML='Heating <b>'+usd(r.L.heat)+'</b>/t';
+
+  drawFig1(r); costTable(r);
+  const lci=renderCarbon(r); renderExplained(r,lci);
+
+
+  if(S.tab==='compare') drawFig2(rCH,rJH,commonCot,commonTau,be);
+
+  if(S.tab==='balance') drawFig4(r);
+
+  $('specBody').innerHTML=[
+    ['Activation energy',sig(EA/1000,4)+' kJ/mol','Literature, first-order ethane pyrolysis'],
+    ['Pre-exponential',A_PRE.toExponential(2).replace('e+','e')+' /s','Not measured. Computed to force the rate law through '
+      +CAL.cot+' C, '+sig(CAL.tau,2)+' s, '+sig(CAL.X*100,2)+'% conversion'],
+    ['Fired envelope',MODE_LIMITS.CH.cot[0]+' to '+MODE_LIMITS.CH.cot[1]+' C, '
+      +sig(MODE_LIMITS.CH.tau[0],2)+' s and longer','Assumption: tube wall alloy limit and radiant flux'],
+    ['Joule envelope',MODE_LIMITS.JH.cot[0]+' to '+MODE_LIMITS.JH.cot[1]+' C, '
+      +sig(MODE_LIMITS.JH.tau[0],2)+' s and longer','Assumption: heat released inside the reacting volume'],
+    ['Selectivity curve',SEL_ANCHOR.map(([x,s])=>sig(x*100,2)+'%&thinsp;&rarr;&thinsp;'+sig(s*100,2)+'%').join(', '),
+     'No dataset. Quadratic through three points taken as typical of reported ethane cracking. '
+     +'The largest unsourced term in the model'],
+    ['Selectivity curve range',sig(VALID.X[0]*100,2)+' to '+sig(VALID.X[1]*100,2)+'% conversion',
+     'Where the curve runs unflagged. The three points span '+sig(SEL_ANCHOR[0][0]*100,2)+' to '
+     +sig(SEL_ANCHOR[2][0]*100,2)+'%, so the edges of this band are already extrapolation'],
+    ['Dilution and residence corrections',sig(SEL_DIL,1)+' per unit steam ratio, '+sig(SEL_TAU,1)+' per ln s',
+     'Assumption, one significant figure, direction and order of magnitude only'],
+    ['Compressor discharge',sig(P_DISCH,3)+' bar','Design constant'],
+    ['Product purity',pctS(PURITY*100,4)+' mol','Downstream specification, met by FUG'],
+    ['Cold box recovery',pctS(RECOVERY*100,4),'Downstream specification, sets required temperature'],
+    ['Reaction enthalpy',sig(H_RXN,3)+' kJ/mol','Literature, at reaction temperature'],
+    ['Refrigeration second-law efficiency',pctS(ETA2*100,3),'Assumption, multistage cryogenic'],
+    ['Dilution steam latent heat',sig(H_VAP_DSG,4)+' kJ/kg','Steam tables at roughly 5 barg, the usual generator pressure'],
+    ['Low grade heat value',pctS(STEAM_GRADE*100,2)+' of the steam price',
+     'Assumption. The generator draws from the cold end of the recovery train, not from the transfer line exchanger. '
+     +'This factor alone sets where the dilution optimum sits'],
+    ['Quench heat rejection','$'+sig(CW_REJECT,2)+' / GJ','Cooling water, one significant figure'],
+    ['TBMC anchor','$'+sig(REF.tbmc,4)+' M at '+sig(REF.cap,3)+' kt/y','Back-calculated from CEJ 2025 SI, TCI taken as TOC'],
+    ['TOC / TBMC','2.50','CEJ 2025 SI, assumption 11']
+  ].map(([a,b,c])=>'<tr><td>'+a+'</td><td class="r">'+b+'</td><td style="color:var(--secondary)">'+c+'</td></tr>').join('');
+
+  $('foot').innerHTML='Screening estimate, AACE Class 5, &plusmn;40%. Capital is correlation based and does not '
+   +'resolve differences that design based estimation would. The byproduct split moves with severity '
+   +'(CH<sub>4</sub> 45 to 80%, coke 8 to 25%, C<sub>3+</sub> the balance) and is not calibrated against measurement. '
+   +'The dilution steam generation and quench condensation duties are charged against an assumed value for low '
+   +'grade heat, which no market quotes; that one factor decides where the dilution optimum sits.';
+}
+
+/* Slider travel follows the active heating method, so the handle cannot be dragged into
+   a region that method cannot reach. */
+function applyModeLimits(){
+  const W=MODE_LIMITS[S.mode];
+  $('sCot').min=W.cot[0]; $('sCot').max=W.cot[1];
+  S.cot=Math.min(W.cot[1],Math.max(W.cot[0],S.cot)); $('sCot').value=S.cot;
+  $('sTau').min=Math.round(logInv(W.tau[0],0.05,1.5));
+  S.tau=Math.min(W.tau[1],Math.max(W.tau[0],S.tau)); $('sTau').value=logInv(S.tau,0.05,1.5);
+}
+
+/* Cheapest reachable point for a heating method. Grid scan; only run on the compare tab. */
+let _bpKey='', _bpVal={};
+/* ---------- how firm is a reported optimum ---------- */
+/* An optimum located by this model is located by the selectivity curve, and that curve has
+   no data behind it. Re-running the search on the anchor variants shows which part of the
+   answer survives: every variant produces an optimum, so the trade-off is real, while the
+   temperature it sits at and the money it is worth move a great deal. Reported as a range,
+   because a single number here would be the more precise and the less true answer. */
+let _robKey='', _robVal={}, _robTimer=null;
+function robustScan(mode){
+  const eff=mode==='CH'?60:95, W=MODE_LIMITS[mode];
+  const ts=[], saves=[];
+  for(const A of SEL_VARIANTS){
+    let best={coo:Infinity,cot:W.cot[0]};
+    /* Coarse on purpose. The output is a range, so resolving each variant's optimum to the
+       degree would cost time and add nothing the range does not already carry. */
+    for(let t=W.cot[0];t<=W.cot[1];t+=10)
+      for(let i=0;i<=6;i++){
+        const tau=W.tau[0]*Math.pow(W.tau[1]/W.tau[0],i/6);
+        const c=model({...S,mode,eff,cot:t,tau,selAnchor:A}).coo;
+        if(c<best.coo) best={coo:c,cot:t};
+      }
+    ts.push(best.cot); saves.push(model({...S,mode,eff,selAnchor:A}).coo-best.coo);
+  }
+  return {cotLo:Math.min(...ts),cotHi:Math.max(...ts),
+          saveLo:Math.min(...saves),saveHi:Math.max(...saves),n:SEL_VARIANTS.length};
+}
+/* The dilution knob has one honest thing to say and it takes a sweep to say it: the curve is
+   nearly flat, and the assumed value of low grade heat, not the physics, decides where its
+   floor lies. Cheap enough to run inline, since model() is arithmetic only. */
+function dilScan(){
+  const at=d=>model({...S,dilution:d}).coo;
+  let opt=0.15,best=Infinity,lo=Infinity,hi=-Infinity;
+  for(let d=0.15;d<=0.7001;d+=0.01){
+    const c=at(d);
+    if(c<best){best=c;opt=d;}
+    if(d>=0.199&&d<=0.401){lo=Math.min(lo,c);hi=Math.max(hi,c);}
+  }
+  const gOpt=g=>{let b=Infinity,o=0.15;
+    for(let d=0.15;d<=0.7001;d+=0.01){const c=model({...S,dilution:d,grade:g}).coo; if(c<b){b=c;o=d;}}
+    return {d:o,worth:model({...S,grade:g}).coo-b};};
+  const a=gOpt(0.20), z=gOpt(0.80);
+  return {opt,span:hi-lo,gLo:Math.min(a.d,z.d),gHi:Math.max(a.d,z.d),
+          gWorth:Math.max(a.worth,z.worth)};
+}
+
+/* Returns null while the answer is stale. The scan is far too heavy to run on every input
+   event of a price drag, so a changed key schedules it and the caller renders without it
+   until it lands. mode is deliberately not in the key: both modes are stored side by side,
+   so including it would make each call evict the other and recompute both every render. */
+function robustOptimum(mode){
+  if(S.kinetics==='gp') return null;
+  const key=[S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor].join('|');
+  if(key===_robKey) return _robVal[mode]||(_robVal[mode]=robustScan(mode));
+  clearTimeout(_robTimer);
+  _robTimer=setTimeout(()=>{_robKey=key;_robVal={};render();},200);
+  return null;
+}
+
+function bestPoint(mode){
+  const key=[S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor,S.selMode,S.sel].join('|');
+  if(key!==_bpKey){_bpKey=key;_bpVal={};}
+  if(_bpVal[mode]) return _bpVal[mode];
+  const W=MODE_LIMITS[mode], eff=(mode==='CH'?60:95);
+  const evalAt=(c,t)=>{
+    const m=model({...S,mode,eff,cot:c,tau:t});
+    return {coo:m.coo,cot:c,tau:t,X:m.X,Sm:m.Smass,run:m.runDays};
+  };
+  /* Coarse pass over the whole envelope, then a local refinement around the winner.
+     A single fine grid cost about 3900 model calls per render, which was visible while
+     dragging a price. This is roughly 400 for the same answer. */
+  const scan=(c0,c1,cStep,t0,t1,n)=>{
+    let b=null;
+    for(let c=c0;c<=c1+1e-9;c+=cStep){
+      for(let i=0;i<=n;i++){
+        const t=t0*Math.pow(t1/t0,i/n);
+        const v=evalAt(c,t);
+        if(!b||v.coo<b.coo) b=v;
+      }
+    }
+    return b;
+  };
+  const coarse=scan(W.cot[0],W.cot[1],10,W.tau[0],W.tau[1],9);
+  const cLo=Math.max(W.cot[0],coarse.cot-10), cHi=Math.min(W.cot[1],coarse.cot+10);
+  const ratio=Math.pow(W.tau[1]/W.tau[0],1/9);
+  const tLo=Math.max(W.tau[0],coarse.tau/ratio), tHi=Math.min(W.tau[1],coarse.tau*ratio);
+  const fine=scan(cLo,cHi,2.5,tLo,tHi,8);
+  const best=(fine.coo<=coarse.coo?fine:coarse);
+  _bpVal[mode]=best;
+  return best;
+}
+
+/* ---------- wiring ---------- */
+$('bPin').onclick=pinBaseline;
+$('bReset').onclick=resetToBaseline;
+$('bClear').onclick=clearBaseline;
+$('mCH').onclick=()=>{S.mode='CH';S.eff=60;$('sEff').value=60;applyModeLimits();render()};
+$('mJH').onclick=()=>{S.mode='JH';S.eff=95;$('sEff').value=95;applyModeLimits();render()};
+$('selCalc').onclick=()=>{S.selMode='calc';render()};
+$('selDirect').onclick=()=>{S.sel=model(S).Smass*100;$('sSel').value=S.sel;S.selMode='direct';render()};
+$('kinEmp').onclick=()=>{S.kinetics='empirical';render()};
+$('kinGP').onclick=()=>{if(app.gp){S.kinetics='gp';S.selMode='calc';render()}};
+$('tTle').onchange=e=>{S.tle=e.target.checked;render()};
+$('sCot').oninput=e=>{S.cot=+e.target.value;render()};
+$('sTau').oninput=e=>{S.tau=logMap(+e.target.value,0.05,1.5);render()};
+$('sDil').oninput=e=>{S.dilution=+e.target.value;render()};
+$('sPress').oninput=e=>{S.pressure=+e.target.value;render()};
+$('sRamp').oninput=e=>{S.ramp=+e.target.value;render()};
+$('sCap').oninput=e=>{S.cap=+e.target.value;render()};
+$('sEff').oninput=e=>{S.eff=+e.target.value;render()};
+$('sSel').oninput=e=>{S.sel=+e.target.value;render()};
+$('sEthane').oninput=e=>{S.ethane=logMap(+e.target.value,50,900);render()};
+$('sElec').oninput=e=>{S.elec=logMap(+e.target.value,0.008,0.30);render()};
+$('sGas').oninput=e=>{S.gas=logMap(+e.target.value,1,30);render()};
+$('copyBib').onclick=()=>{
+  navigator.clipboard.writeText($('bib').textContent).then(
+    ()=>{$('copyBib').textContent='Copied';setTimeout(()=>$('copyBib').textContent='Copy',1600);},
+    ()=>{$('copyBib').textContent='Select and copy';});
+};
+$('sGrid').oninput=e=>{S.grid=+e.target.value;render()};
+$('sEup').oninput=e=>{S.ethaneUp=+e.target.value;render()};
+[['fBurn','burn'],['fSell','sell'],['fVent','vent']].forEach(([id,v])=>$(id).onclick=()=>{S.tailFate=v;render()});
+[['aExp','expansion'],['aMass','mass'],['aEner','energy'],['aVal','value']].forEach(([id,v])=>$(id).onclick=()=>{S.alloc=v;render()});
+$('sTau').value=logInv(S.tau,0.05,1.5);
+$('sEthane').value=logInv(S.ethane,50,900);
+$('sElec').value=logInv(S.elec,0.008,0.30);
+$('sGas').value=logInv(S.gas,1,30);
+
+async function loadMechanismSurrogate(){
+  try{
+    const [mr,vr]=await Promise.all([
+      fetch('multiscale/surrogate.json',{cache:'no-store'}),
+      fetch('multiscale/validation.json',{cache:'no-store'})
+    ]);
+    if(!mr.ok) throw new Error('surrogate HTTP '+mr.status);
+    const m=await mr.json();
+    const v=vr.ok?await vr.json():null;
+    if(m.schema!=='ethane-cantera-shared-rbf-gp-v3') throw new Error('surrogate schema is '+m.schema);
+    const prov=m.source&&m.source.mechanism_provenance;
+    if(!prov||prov.mechanism_name!=='AramcoMech 3.0') throw new Error('qualified Aramco provenance missing');
+    if(v&&!v.passed) throw new Error('independent GP holdout did not pass');
+    app.gp=m; app.gpValidation=v; app.gpError=null;
+    document.body.dataset.kinetics='aramco-gp';
+    S.kinetics='gp'; S.selMode='calc';
+  }catch(e){
+    app.gp=null; app.gpError=String(e&&e.message||e);
+    document.body.dataset.kinetics='empirical';
+    S.kinetics='empirical';
+  }
+  render();
+}
+
+applyModeLimits();
+render();
+loadMechanismSurrogate();
+</script>
+</body>
+</html>
++sig(-r.L.lpgCr,4)+' per tonne',
+    '<p>The screening model values '+sig(r.y.c3+(r.y.c4plus||0),3)+' kilograms of C3+ coproduct per kilogram of ethylene at the coproduct price input.</p>');
 
   h+='<h3>Carbon intensity</h3>';
   h+=item('Carbon intensity',sig(l.ci,4)+' kg CO2e per tonne',
