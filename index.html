@@ -75,7 +75,7 @@ details summary{cursor:pointer;font-size:11px;font-weight:bold}
 .speciesrow .num{font:10px var(--mono);text-align:right}
 .flowwrap{position:relative;min-height:270px;background-color:#fff;background-image:linear-gradient(#e5e5e5 1px,transparent 1px),linear-gradient(90deg,#e5e5e5 1px,transparent 1px);background-size:12px 12px;overflow:hidden}
 .pfdlines{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
-.flow{position:relative;z-index:3;padding:48px 30px 42px;display:grid;grid-template-columns:repeat(5,1fr);gap:28px;min-height:270px;align-items:center;background:transparent}
+.flow{position:relative;z-index:3;padding:48px 30px 42px;display:grid;grid-template-columns:repeat(6,1fr);gap:28px;min-height:270px;align-items:center;background:transparent}
 .unit{position:relative;min-width:0;text-align:center;cursor:pointer;user-select:none;padding:0 3px}
 .unit.selected .equipbox{outline:2px solid #ff9800;outline-offset:2px}
 .equipbox{width:72px;height:72px;margin:0 auto 5px;background:#fff;display:grid;place-items:center}
@@ -86,7 +86,7 @@ details summary{cursor:pointer;font-size:11px;font-weight:bold}
 .scope{padding:7px 8px;border-top:1px solid #aaa;background:#efefea;font-size:9.5px;line-height:1.45;color:#444}
 .streamtag{position:absolute;background:#fff;border:1px solid #777;padding:1px 4px;font:9px var(--mono);z-index:6;white-space:nowrap;cursor:pointer}
 .streamtag:hover{background:#fff8c5}
-.st-feed{left:4px;top:113px}.st-energy{left:7%;top:8px}.st-tail{left:48%;top:8px}.st-recycle{left:43%;bottom:7px}.st-product{right:4px;top:113px}.st-c3{left:69%;bottom:7px}
+.st-feed{left:4px;top:113px}.st-energy{left:6%;top:8px}.st-h2{left:31%;top:8px}.st-tail{left:48%;top:8px}.st-recycle{left:40%;bottom:7px}.st-product{right:4px;top:113px}.st-c3{left:68%;bottom:7px}
 .slate{border-bottom:1px solid #888;background:#fff}
 .slatehead{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#dedbd0;border-bottom:1px solid #aaa}
 .slatehead b{font-size:10px}.slatehead span{font:9px var(--mono);color:#555}
@@ -144,7 +144,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       <button data-menu="file">File</button><button data-menu="view">View</button><button data-menu="flowsheet">Flowsheet</button><button data-menu="run">Run</button><button data-menu="tools">Tools</button><button data-menu="help">Help</button>
       <div class="menupop" id="menu-file"><button data-action="new">New Case <span class="key">Ctrl+N</span></button><button data-action="literature">Open Literature Case</button><hr><button data-action="copyurl">Copy Scenario URL</button><button data-action="exportjson">Export JSON</button><button data-action="exportcsv">Export CSV</button></div>
       <div class="menupop" id="menu-view"><button data-action="workspace">Simulation</button><button data-action="benchmarks">Literature Cases</button><button data-action="compare">Case Comparison</button><button data-action="model">Model Setup</button><button data-action="cite">Reports</button></div>
-      <div class="menupop" id="menu-flowsheet"><button data-action="openreactor">R-101 Properties</button><button data-action="opencompressor">C-101 Properties</button><button data-action="opencoldbox">T-201 Properties</button><button data-action="opensplitter">T-301 Properties</button><hr><button data-action="streamfeed">FEED Stream</button><button data-action="streamrecycle">RECYCLE Stream</button></div>
+      <div class="menupop" id="menu-flowsheet"><button data-action="openreactor">R-101 Properties</button><button data-action="opencompressor">C-101 Properties</button><button data-action="openconverter">AC-201 Properties</button><button data-action="opencoldbox">T-201 Properties</button><button data-action="opensplitter">T-301 Properties</button><hr><button data-action="streamfeed">FEED Stream</button><button data-action="streamrecycle">RECYCLE Stream</button></div>
       <div class="menupop" id="menu-run"><button data-action="run">Run / Refresh <span class="key">F5</span></button><button data-action="fired">Fired Heating</button><button data-action="joule">Joule Heating</button></div>
       <div class="menupop" id="menu-tools"><button data-action="pin">Pin Baseline</button><button data-action="compare">Compare Cases</button><button data-action="model">Model Validation</button></div>
       <div class="menupop" id="menu-help"><button data-action="model">About Model</button><button data-action="cite">Citation</button><button data-action="benchmarks">Literature Benchmarks</button><hr><button data-action="contact">Contact Yeonsu <span class="key">ask.yeonsu@gmail.com</span></button></div>
@@ -177,6 +177,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
         <div class="item sel" data-tree-view="workspace">Flowsheet</div>
         <div class="item" data-tree-block="reactor">Blocks / R-101 Reactor</div>
         <div class="item" data-tree-block="compressor">Blocks / C-101 Compressor</div>
+        <div class="item" data-tree-block="converter">Blocks / AC-201 Acetylene Converter</div>
         <div class="item" data-tree-block="coldbox">Blocks / T-201 Cold Box</div>
         <div class="item" data-tree-block="splitter">Blocks / T-301 C2 Splitter</div>
         <div class="item" data-tree-stream="feed">Streams / FEED</div>
@@ -219,27 +220,30 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       <div class="resultband">
         <div class="big"><div class="k">C₂H₆ conversion</div><div class="n" id="rX">—</div><div class="s" id="rXsub"></div></div>
         <div class="big"><div class="k">C₂H₄ selectivity</div><div class="n" id="rS">—</div><div class="s">mass basis</div></div>
-        <div class="big"><div class="k">C₂H₄ yield</div><div class="n" id="rY">—</div><div class="s">kg/kg coil ethane</div></div>
+        <div class="big"><div class="k">C₂H₄ yield</div><div class="n" id="rY">—</div><div class="s">reactor C2H4 · kg/kg coil ethane</div></div>
       </div>
       <div class="slatehead"><b>PLANT MATERIAL BASIS</b><span>kg / kg C2H4 product</span></div>
       <div class="species" id="species"></div>
       <div class="flowwrap">
-        <svg class="pfdlines" viewBox="0 0 1000 270" preserveAspectRatio="none" aria-hidden="true">
+        <svg class="pfdlines" viewBox="0 0 1200 270" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#355f86"/></marker>
             <marker id="arrg" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#28733b"/></marker>
             <marker id="arro" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9a6123"/></marker>
+            <marker id="arrh" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8b4e9e"/></marker>
           </defs>
-          <path d="M0 122 H72" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
-          <path d="M128 122 H272 M328 122 H472 M528 122 H672 M728 122 H872 M928 122 H1000" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
-          <path d="M700 154 V235 H120" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrg)"/>
-          <path d="M120 235 V154" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4"/>
-          <path d="M500 90 V30" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
-          <path d="M700 154 V224 H790" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
+          <path d="M0 122 H62" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
+          <path d="M138 122 H228 M305 122 H395 M472 122 H562 M638 122 H728 M805 122 H895 M972 122 H1200" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
+          <path d="M767 154 V235 H105" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrg)"/>
+          <path d="M105 235 V154" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4"/>
+          <path d="M600 90 V30" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
+          <path d="M767 154 V224 H855" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
           <path d="M100 90 V30" fill="none" stroke="#c57718" stroke-width="2.5" marker-end="url(#arro)"/>
+          <path d="M433 90 V42" fill="none" stroke="#8b4e9e" stroke-width="2.5" marker-end="url(#arrh)"/>
         </svg>
         <span class="streamtag st-feed" data-stream="feed">S-101 FEED</span>
         <span class="streamtag st-energy" data-stream="energy">Q-101 FUEL / POWER</span>
+        <span class="streamtag st-h2" data-stream="h2conv">H2 TO AC-201</span>
         <span class="streamtag st-tail" data-stream="tail">S-203 H2 / CH4</span>
         <span class="streamtag st-recycle" data-stream="recycle">S-302 C2H6 RECYCLE</span>
         <span class="streamtag st-product" data-stream="product">S-401 C2H4</span>
@@ -254,6 +258,11 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
             <div class="equipbox"><svg viewBox="0 0 72 72"><circle cx="36" cy="36" r="25" fill="#eef6ff" stroke="#3a6ea5" stroke-width="2"/><path d="M23 24 L52 36 L23 48 Z" fill="#3a6ea5"/><line x1="8" y1="36" x2="20" y2="36" stroke="#3a6ea5" stroke-width="2"/><line x1="52" y1="36" x2="64" y2="36" stroke="#3a6ea5" stroke-width="2"/></svg></div>
             <div class="equipname">C-101<br><span>COMPRESSOR</span></div>
             <div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div>
+          </div>
+          <div class="unit" data-block="converter">
+            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="18" y="8" width="36" height="56" rx="6" fill="#faf1ff" stroke="#8b4e9e" stroke-width="2"/><circle cx="28" cy="22" r="3" fill="#8b4e9e"/><circle cx="43" cy="29" r="3" fill="#8b4e9e"/><circle cx="29" cy="39" r="3" fill="#8b4e9e"/><circle cx="43" cy="49" r="3" fill="#8b4e9e"/><path d="M9 36 H18 M54 36 H63" stroke="#8b4e9e" stroke-width="2"/></svg></div>
+            <div class="equipname">AC-201<br><span>ACETYLENE CONVERTER</span></div>
+            <div class="u" id="uAcet">—</div><div class="u" id="uAcetH2">—</div>
           </div>
           <div class="unit" data-block="coldbox">
             <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="13" y="10" width="46" height="52" fill="#eefbfb" stroke="#008080" stroke-width="2"/><path d="M36 18 V54 M20 36 H52 M24 24 L48 48 M48 24 L24 48" stroke="#008080" stroke-width="1.6"/><circle cx="36" cy="36" r="5" fill="#fff" stroke="#008080"/></svg></div>
@@ -454,11 +463,18 @@ function render(){
   $("uReactor").textContent=fmt(result.reactor_useful_heat_gj_per_t,2)+" GJ/t useful heat";
   $("uFeed").textContent=fmt(result.fresh_ethane_kg_per_kg,3)+" kg fresh + "+fmt(result.recycle_ethane_kg_per_kg,3)+" kg recycle";
   $("uComp").textContent=fmt(result.compressor_kwh_per_t,0)+" kWh/t";
+  const ac=result.acetylene_converter||{};
+  $("uAcet").textContent=ac.enabled
+    ? fmt(ac.rawKg,4)+" → "+fmt(ac.residualKg,6)+" kg C2H2"
+    : "bypassed";
+  $("uAcetH2").textContent=ac.enabled
+    ? fmt(ac.h2ConsumedKg,5)+" kg H2 · "+fmt(ac.residualPpm,2)+" ppm"
+    : "—";
   $("uCold").textContent=fmt(result.refrigeration_kwh_per_t,0)+" kWh/t";
   $("uRef").textContent="light-gas removal";
   $("uSplit").textContent=fmt(result.splitter_kwh_per_t,0)+" kWh/t";
   $("uCap").textContent=fmt(result.annual_product_kt,0)+" kt/y actual";
-  $("scope").textContent="The reactor outlet composition sets the ethane recycle and the amount of gas each downstream unit has to handle. Compression, refrigeration, and C₂-splitter duties are estimated from those flows, and the same inventory is used for cost and carbon calculations. The separation models are screening correlations.";
+  $("scope").textContent="The reactor outlet sets the recycle and cracked-gas load. AC-201 selectively hydrogenates acetylene before the cold box and C₂ splitter; the remaining compression, refrigeration, and fractionation duties are estimated from the resulting flows. The separation models are screening correlations.";
   $("oCost").textContent="$"+fmt(result.cost_usd_per_t,0)+" / t";
   $("oCarbon").textContent=fmt(result.carbon_kgco2e_per_t,0)+" kg/t";
   $("oEnergy").textContent=fmt(result.reactor_useful_heat_gj_per_t,1)+" GJ/t";
@@ -494,8 +510,8 @@ function renderSpecies(){
     ["C₂H₄",1],
     ["C₂H₆ recycle",result.recycle_ethane_kg_per_kg],
     ["CH₄",result.ch4_kg_per_kg],
-    ["H₂",result.h2_kg_per_kg],
-    ["C₂H₂",result.c2h2_kg_per_kg],
+    ["H₂ after AC-201",result.h2_kg_per_kg],
+    ["C₂H₂ after AC-201",result.c2h2_kg_per_kg],
     ["C₃+",result.c3_kg_per_kg+result.c4plus_kg_per_kg]
   ];
   const max=Math.max(...vals.map(x=>x[1]),1e-9);
@@ -604,6 +620,17 @@ const blockProps={
     ["Shaft work",fmt(result.compressor_kwh_per_t,1)+" kWh/t"],["Feed basis",fmt(result.fresh_ethane_kg_per_kg+result.recycle_ethane_kg_per_kg,3)+" kg/kg C2H4"],
     ["Status","CALCULATED"]
   ],
+  converter:()=>[
+    ["Block","AC-201 · ACETYLENE CONVERTER"],
+    ["Raw C2H2",fmt((result.acetylene_converter||{}).rawKg,6)+" kg/kg C2H4"],
+    ["Residual C2H2",fmt((result.acetylene_converter||{}).residualKg,7)+" kg/kg C2H4"],
+    ["Residual specification",fmt((result.acetylene_converter||{}).residualPpm,2)+" ppm"],
+    ["C2H4 recovered",fmt((result.acetylene_converter||{}).ethyleneRecoveredKg,6)+" kg/kg C2H4"],
+    ["C2H6 formed",fmt((result.acetylene_converter||{}).ethaneMadeKg,6)+" kg/kg C2H4"],
+    ["H2 consumed",fmt((result.acetylene_converter||{}).h2ConsumedKg,6)+" kg/kg C2H4"],
+    ["Selectivity",fmt(100*((result.acetylene_converter||{}).selectivity||0),1)+"% to C2H4"],
+    ["Status","CALCULATED"]
+  ],
   coldbox:()=>[
     ["Block","T-201 · COLD BOX"],["Refrigeration",fmt(result.refrigeration_kwh_per_t,1)+" kWh/t"],
     ["Purpose","H2 / CH4 light-gas removal"],["Status","CALCULATED"]
@@ -620,13 +647,15 @@ const blockProps={
 const blockInputs={
   reactor:()=>[["Outlet temperature",fmt(state.cot,1)+" °C"],["Pressure",fmt(state.pressure,2)+" bar"],["Residence time",fmt(state.tau,4)+" s"],["Steam / HC",fmt(state.dilution,3)+" kg/kg"],["Heating exponent",fmt(state.ramp,2)],["Heating route",state.mode==="JH"?"Joule":"Fired"]],
   compressor:()=>[["Inlet basis","cracked gas"],["Stages","4"],["Discharge pressure","32 bar"],["Intercooling","enabled in shortcut"]],
-  coldbox:()=>[["Feed","compressed dry gas"],["Recovery target","99.5%"],["Duty model","temperature / light-fraction screening"]],
+  converter:()=>[["Feed","compressed cracked gas"],["Target acetylene","5 ppm"],["Selective hydrogenation","C2H2 + H2 → C2H4"],["Over-hydrogenation","C2H4 + H2 → C2H6"],["H2 source","cracker hydrogen first; external only if deficient"]],
+  coldbox:()=>[["Feed","converter effluent"],["Recovery target","99.5%"],["Duty model","temperature / light-fraction screening"]],
   splitter:()=>[["Feed","C2 fraction"],["Ethylene purity","99.9 mol%"],["Method","Fenske-Underwood-Gilliland shortcut"]],
   product:()=>[["Product","polymer-grade ethylene"],["Basis","1.000 kg"]]
 };
 const blockSetup={
   reactor:()=>[["Chemistry","AramcoMech 3.0"],["Solver","Cantera offline → GP browser surrogate"],["GP training","256 points"],["Holdout","64 points"],["Reactor model","prescribed-temperature Lagrangian PFR"]],
   compressor:()=>[["Thermodynamics","ideal-gas shortcut"],["Gamma","1.32"],["Efficiency","75%"],["Pressure ratio","distributed over 4 stages"]],
+  converter:()=>[["Configuration","front-end screening block"],["Selectivity","90% to ethylene"],["Residual target","5 ppm"],["Capital","included in recovery-section anchor"],["Cooling / green oil","not separately costed in v1"]],
   coldbox:()=>[["Model","Carnot-based refrigeration screening"],["Second-law efficiency","35%"],["Recovery","99.5%"]],
   splitter:()=>[["Relative volatility","pressure-dependent shortcut"],["Stage estimate","FUG"],["Purity","99.9 mol%"]],
   product:()=>[["Recovery","99.5%"],["Cost basis","USD/t ethylene"],["LCA basis","kg CO2e/t ethylene"]]
@@ -668,6 +697,7 @@ function streamProps(id){
     recycle:[["Stream","RECYCLE C2H6"],["Ethane recycle",fmt(result.recycle_ethane_kg_per_kg,4)+" kg/kg C2H4"],["Single-pass conversion",pct(result.conversion)]],
     product:[["Stream","C2H4 PRODUCT"],["Basis","1.000 kg C2H4"],["Purity","99.9 mol%"],["Plant output",fmt(result.annual_product_kt,1)+" kt/y"],["Cost","$"+fmt(result.cost_usd_per_t,1)+"/t"]],
     c3:[["Stream","C3+ COPRODUCT"],["C3",fmt(result.c3_kg_per_kg,5)+" kg/kg C2H4"],["C4+",fmt(result.c4plus_kg_per_kg,5)+" kg/kg C2H4"],["Cantera C3 yield",fmt(g.y_c3_kg_per_kg_ethane||0,5)+" kg/kg coil C2H6"]],
+    h2conv:[["Stream","H2 TO AC-201"],["H2 consumed",fmt((result.acetylene_converter||{}).h2ConsumedKg,6)+" kg/kg C2H4"],["From cracker H2",fmt((result.acetylene_converter||{}).h2FromPlantKg,6)+" kg/kg C2H4"],["External H2",fmt((result.acetylene_converter||{}).h2ExternalKg,6)+" kg/kg C2H4"]],
     tail:[["Stream","H2 / CH4 TAIL GAS"],["CH4",fmt(result.ch4_kg_per_kg,5)+" kg/kg C2H4"],["H2",fmt(result.h2_kg_per_kg,5)+" kg/kg C2H4"],["Disposition",state.mode==="CH"?"burned before purchased gas":"available as coproduct / fuel"]]
   };
   return map[id]||[];
@@ -704,6 +734,7 @@ function runAction(a){
   if(a==="joule"){state.mode="JH";state.eff=95;render();return}
   if(a==="openreactor")return openBlock("reactor");
   if(a==="opencompressor")return openBlock("compressor");
+  if(a==="openconverter")return openBlock("converter");
   if(a==="opencoldbox")return openBlock("coldbox");
   if(a==="opensplitter")return openBlock("splitter");
   if(a==="streamfeed")return openStream("feed");
@@ -750,6 +781,7 @@ async function runUIAudit(){
     currentPropTab="input";renderBlockTab();ok("reactor input tab",$("propTable").textContent.includes("Outlet temperature"));
     currentPropTab="setup";renderBlockTab();ok("reactor setup tab",$("propTable").textContent.includes("AramcoMech 3.0"));
     $("propClose").click();
+    openBlock("converter");ok("acetylene converter properties",$("propTable").textContent.includes("Raw C2H2"));$("propClose").click();
 
     openStream("feed");ok("feed properties",$("streamwin").classList.contains("open")&&$("streamTable").textContent.includes("Fresh C2H6"));
     $("streamClose").click();
