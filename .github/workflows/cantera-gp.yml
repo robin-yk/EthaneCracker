@@ -14,9 +14,11 @@ on:
   push:
     branches:
       - cantera-gp-v1
+      - acetylene-converter-v1
       - main
     paths:
       - "index.html"
+      - "engine.html"
       - "README.md"
       - "multiscale/**"
       - ".github/workflows/cantera-gp.yml"
