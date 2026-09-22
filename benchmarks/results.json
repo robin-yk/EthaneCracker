@@ -344,15 +344,6 @@
           "rel_error_pct": -43.05170232820576
         },
         {
-          "name": "empirical-baseline conversion",
-          "published": 0.6849566815437123,
-          "model": 0.48952320852217124,
-          "unit": "fraction",
-          "role": "context",
-          "note": "same T, residence time and dilution with the original reactor correlation",
-          "rel_error_pct": -28.53223835718857
-        },
-        {
           "name": "fresh ethane",
           "published": 1.3310713819652877,
           "model": 1.1768769660560077,
