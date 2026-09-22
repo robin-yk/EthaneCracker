@@ -95,8 +95,8 @@
           "name": "fresh ethane",
           "published": 1.1083123425692694,
           "model_range": [
-            1.262308811411232,
-            1.2848241575852464
+            1.247649128051078,
+            1.271759483563615
           ],
           "unit": "kg/kg",
           "role": "test",
@@ -106,8 +106,8 @@
           "name": "high-temperature reactor heat",
           "published": 5.248866498740553,
           "model_range": [
-            7.87499932390513,
-            7.901936606306963
+            7.791429612585778,
+            7.828403223613857
           ],
           "unit": "GJ/t",
           "role": "test",
@@ -117,8 +117,8 @@
           "name": "compressor work",
           "published": 370.2770780856423,
           "model_range": [
-            302.6427284516753,
-            312.1491159489533
+            299.29484620340594,
+            309.1248767329787
           ],
           "unit": "kWh/t",
           "role": "test",
@@ -128,8 +128,8 @@
           "name": "MSP / web cost",
           "published": 832,
           "model_range": [
-            421.91585527374394,
-            437.5372969239844
+            418.8629157578613,
+            433.8688601791878
           ],
           "unit": "USD/t",
           "role": "context",
@@ -139,8 +139,8 @@
           "name": "TCM / web annual OPEX",
           "published": 496,
           "model_range": [
-            164.86835082305876,
-            177.2482366250073
+            163.60052189570703,
+            175.6725172310635
           ],
           "unit": "MUSD/y",
           "role": "context",
@@ -172,9 +172,9 @@
         "steam_hc": 0.33
       },
       "inferred": {
-        "accepted_points": 17,
+        "accepted_points": 15,
         "residence_time_s": [
-          0.5651988176483221,
+          0.6008997190165545,
           1
         ]
       },
@@ -185,7 +185,7 @@
         ],
         [
           "accepted states",
-          "17"
+          "15"
         ],
         [
           "published heat",
@@ -201,8 +201,8 @@
           "name": "fresh ethane",
           "published": 1.3222722700835265,
           "model_range": [
-            1.3159554280949926,
-            1.3222722700874585
+            1.3179440459175096,
+            1.322272270087686
           ],
           "unit": "kg/kg",
           "role": "fit",
@@ -212,8 +212,8 @@
           "name": "C3+ coproduct",
           "published": 0.13764813923995278,
           "model_range": [
-            0.11145089185148804,
-            0.1251527943245489
+            0.11450499013078472,
+            0.13034681521082223
           ],
           "unit": "kg/kg",
           "role": "test",
@@ -223,8 +223,8 @@
           "name": "combustion heat",
           "published": 17.2,
           "model_range": [
-            17.48854028040054,
-            18.56458425292369
+            17.49600825583333,
+            18.432339047299713
           ],
           "unit": "GJ/t",
           "role": "test",
@@ -234,8 +234,8 @@
           "name": "on-site GHG",
           "published": 442,
           "model_range": [
-            430.6562455965899,
-            509.2510607724906
+            442.11147096353125,
+            507.02731290394354
           ],
           "unit": "kgCO2e/t",
           "role": "test",
@@ -245,8 +245,8 @@
           "name": "LCOE / web cost",
           "published": 746,
           "model_range": [
-            367.67583994271934,
-            390.8828627963512
+            364.2426351861323,
+            387.0897473294196
           ],
           "unit": "USD/t",
           "role": "context",
@@ -256,8 +256,8 @@
           "name": "WTG GHG / web carbon",
           "published": 869,
           "model_range": [
-            1072.4001872648407,
-            1186.6809134842144
+            1080.5857650206353,
+            1182.33518022725
           ],
           "unit": "kgCO2e/t",
           "role": "context",
@@ -267,7 +267,7 @@
       "central": {
         "temperature_c": 880,
         "pressure_bar": 5,
-        "residence_time_s": 0.9672348646081019
+        "residence_time_s": 1
       },
       "notes": [
         "The paper reports steam ratio and plant inventory but no single reactor temperature/residence-time/pressure triplet in the main article.",
@@ -275,7 +275,7 @@
         "The 17.2 GJ/t combustion-energy value is the paper's model-validation quantity and includes heat from imported natural gas plus hydrogen/methane purge gas."
       ],
       "model_flags": [
-        "selectivity 75.6% is outside the industrial band of 78 to 88%"
+        "selectivity 75.4% is outside the industrial band of 78 to 88%"
       ]
     },
     {
@@ -355,20 +355,20 @@
         {
           "name": "fresh ethane",
           "published": 1.3310713819652877,
-          "model": 1.1794153058275156,
+          "model": 1.1768769660560077,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": -11.393534425919094
+          "rel_error_pct": -11.584233422674638
         },
         {
           "name": "recycle ethane",
           "published": 0.6006476575753621,
-          "model": 1.8441747381230142,
+          "model": 1.8408026170858554,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": 207.03103805772008
+          "rel_error_pct": 206.46962389175613
         },
         {
           "name": "outlet C2H4 mass fraction",
@@ -418,20 +418,20 @@
         {
           "name": "CAPEX / web TOC",
           "published": 357.38,
-          "model": 509.78772463541486,
+          "model": 509.1842582669058,
           "unit": "MUSD",
           "role": "context",
           "note": "paper CAPEX and web TOC use different estimating structures",
-          "rel_error_pct": 42.64584605613489
+          "rel_error_pct": 42.47698759497056
         },
         {
           "name": "OPEX / web annual OPEX",
           "published": 195.65,
-          "model": 171.91974542902415,
+          "model": 171.66032150910448,
           "unit": "MUSD/y",
           "role": "context",
           "note": "utility and overhead definitions differ",
-          "rel_error_pct": -12.128931546627067
+          "rel_error_pct": -12.261527467874025
         }
       ],
       "notes": [
