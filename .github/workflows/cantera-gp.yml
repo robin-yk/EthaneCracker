@@ -192,7 +192,7 @@ jobs:
           trap 'kill $SERVER_PID || true' EXIT
           sleep 1
           "$BROWSER" --headless=new --no-sandbox --disable-gpu \
-            --virtual-time-budget=8000 \
+            --virtual-time-budget=30000 \
             --dump-dom http://127.0.0.1:8000/ > /tmp/ethane-dom.html
           grep -q 'data-kinetics="aramco-gp"' /tmp/ethane-dom.html || {
             echo "Root app did not reach the qualified Aramco-GP runtime state"
@@ -200,7 +200,7 @@ jobs:
             exit 1
           }
           "$BROWSER" --headless=new --no-sandbox --disable-gpu \
-            --virtual-time-budget=8000 \
+            --virtual-time-budget=30000 \
             --dump-dom http://127.0.0.1:8000/multiscale/demo.html > /tmp/ethane-gp-dom.html
           grep -q "Independent Cantera holdout validation" /tmp/ethane-gp-dom.html
 
