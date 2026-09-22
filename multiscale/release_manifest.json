@@ -1,17 +1,17 @@
 {
   "schema": "ethane-multiscale-release-v1",
   "profile": "publication",
-  "git_sha": "030f1d334fdc3b16fd4f997281009e31eb9fef9f",
+  "git_sha": "96a40af9cfaa0183990a26ac0a191efbed6579fa",
   "train_points": 256,
   "holdout_points": 64,
   "segments": 20,
   "artifacts": {
     "multiscale/data/aramco_train.csv": "40705f0b14ac7c0496abd6eb68a816365fa6038c8eb922aa161f67eafc889e91",
-    "multiscale/data/aramco_train.meta.json": "01ad2ad0b0cbf04f0cde944f5685e7c4cec85f9a28f3c2125e6af42763236583",
+    "multiscale/data/aramco_train.meta.json": "5a05c574038a7265a6d027d8b338f7fb2d39eb683d8c99ab1b9b70c72545761b",
     "multiscale/data/aramco_holdout.csv": "d97d82190988a282d34f5b258b4549cbf4fbfbef2b42043f248e928a72842ab0",
-    "multiscale/data/aramco_holdout.meta.json": "c9036ffc35eeff1756aeda2ddad1f4ec1b5f118bc99b24d36426ebd714ea97c9",
-    "multiscale/surrogate.json": "583d771dec29f2277a58209baeaa54ae01058506634779889037a618e70a7632",
-    "multiscale/training_report.json": "26352ec5d125fe2d88382fb346d44cef6f126f79c530dcda7cb510a4fadc0bb3",
+    "multiscale/data/aramco_holdout.meta.json": "e0a158edcdfc315fb24f75c4db73dd932d5f1349ff3c5c3dbd109cdb6a0fdf78",
+    "multiscale/surrogate.json": "e02534b558c1d3386ea4a51ac561fd54856d87dadefa08f1a05b08ae30df2423",
+    "multiscale/training_report.json": "04245714bf8aeddbe801dedf2c7b2a3c9b52029b7b85e5f9cc4665b51b2b0f02",
     "multiscale/validation.json": "e3636a437474224a9acd1eebc41838f1b3a11c499e89b21f7f240db90bde2159",
     "multiscale/segment_convergence.json": "0a151b82d4daeb23397feef7685f028d9660456ae4b2823f8b527dad265b31eb"
   }
