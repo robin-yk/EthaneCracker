@@ -14,7 +14,6 @@ on:
   push:
     branches:
       - cantera-gp-v1
-      - acetylene-converter-v1
       - main
     paths:
       - "index.html"
