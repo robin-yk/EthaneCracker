@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - workspace-redesign-v1
+      - workspace-simplify-v2
       - main
     paths:
       - "index.html"
@@ -52,6 +53,11 @@ jobs:
           grep -q "Model Explorer" /tmp/root.html
           grep -q "READY" /tmp/root.html
           grep -q "Aramco GP" /tmp/root.html
+          grep -q "R-101 · CRACKER + TLE" /tmp/root.html
+          grep -q "C-101 · COMPRESSION" /tmp/root.html
+          grep -q "RECYCLE C2H6" /tmp/root.html
+          grep -q "Block Properties" /tmp/root.html
+          if grep -q ">Empirical<" /tmp/root.html; then echo "Empirical control leaked into simplified UI"; exit 1; fi
           "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8000/benchmarks/ > /tmp/bench.html
           grep -q 'data-benchmark-status="complete"' /tmp/bench.html
           grep -q 'data-benchmark-count="3"' /tmp/bench.html
