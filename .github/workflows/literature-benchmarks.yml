@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - literature-benchmarks-v1
+      - acetylene-converter-v1
       - main
     paths:
       - "index.html"
