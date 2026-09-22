@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           COMMIT_MSG="$(git log -1 --pretty=%B)"
-          if [[ ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
+          if [[ "${{ github.ref_name }}" == "main" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
             echo "TRAIN_POINTS=256" >> "$GITHUB_ENV"
             echo "HOLDOUT_POINTS=64" >> "$GITHUB_ENV"
             echo "SEGMENTS=20" >> "$GITHUB_ENV"
