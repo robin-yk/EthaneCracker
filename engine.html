@@ -416,6 +416,11 @@ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'
 const MW={C2H6:30.07,C2H4:28.05,CH4:16.04,H2:2.016,C2H2:26.038,C3:42.08,C4:56.11,C:12.011};
 const FLOOR_RATIO=MW.C2H6/MW.C2H4;   // 1.0719 kg C2H6 per kg C2H4, analytic floor
 const P_DISCH=32, RECOVERY=0.995, PURITY=0.999;
+/* Back-end acetylene converter screening model. The converter is treated as part
+   of the existing recovery-section capital anchor. It reduces acetylene to a
+   polymer-grade target before the C2 splitter and accounts for H2 use plus the
+   ethylene/ethane split from selective hydrogenation. */
+const ACET={targetPpm:5,selectivity:0.90};
 /* First-order ethane pyrolysis. Ea from Froment. The pre-exponential is not an
    independent measurement: it is whatever value forces the rate law through one
    chosen operating point, so it is computed from that point rather than written
@@ -586,27 +591,68 @@ function model(p){
     &&gp.mean.y_c2h4_kg_per_kg_ethane>1e-8);
   let Smol,Smass,n,y,coil,recycle,dilSteam;
   let nCH4=0,nC3=0,nCoke=0,nH2=0;
+  let acetylene={enabled:false,targetPpm:ACET.targetPpm,selectivity:ACET.selectivity,
+    rawKg:0,convertedKg:0,residualKg:0,residualPpm:0,ethyleneRecoveredKg:0,
+    ethaneMadeKg:0,h2ConsumedKg:0,h2FromPlantKg:0,h2ExternalKg:0};
 
   if(useMechanismSpecies){
-    /* Cantera yields are kg species per kg ethane entering the coil. Scale them
-       directly to one kg ethylene product. Detailed chemistry therefore controls
-       fresh feed, recycle, fuel gas, acetylene, C3/C4+ coproducts and downstream load. */
+    /* Cantera yields are kg species per kg ethane entering the coil. The
+       acetylene converter is applied on that same coil basis before scaling
+       the plant to one kg of final ethylene product. */
     const ye=gp.mean.y_c2h4_kg_per_kg_ethane;
-    coil=1/ye;
-    const fresh=X*coil;
+    const ya=gp.mean.y_c2h2_kg_per_kg_ethane||0;
+    const yeth=gp.mean.y_c2h6_kg_per_kg_ethane||Math.max(0,1-X);
+    const yh2raw=gp.mean.y_h2_kg_per_kg_ethane||0;
+
+    const nA=ya*1000/MW.C2H2;
+    const nE=ye*1000/MW.C2H4;
+    const nEth=yeth*1000/MW.C2H6;
+    const targetNA=ACET.targetPpm*1e-6*Math.max(1e-12,nA+nE+nEth);
+    const nAres=Math.min(nA,targetNA);
+    const nArxn=Math.max(0,nA-nAres);
+    const nErec=nArxn*ACET.selectivity;
+    const nEthMade=nArxn*(1-ACET.selectivity);
+    const h2NeedMol=nArxn*(ACET.selectivity+2*(1-ACET.selectivity));
+
+    const ethyleneRecoveredPerCoil=nErec*MW.C2H4/1000;
+    const ethaneMadePerCoil=nEthMade*MW.C2H6/1000;
+    const h2NeedPerCoil=h2NeedMol*MW.H2/1000;
+    const finalEthyleneYield=ye+ethyleneRecoveredPerCoil;
+
+    coil=1/Math.max(finalEthyleneYield,1e-12);
+    const fresh=Math.max(0,(X-ethaneMadePerCoil)*coil);
     recycle=Math.max(0,coil-fresh);
     dilSteam=coil*p.dilution;
+
+    const h2FromPlantPerCoil=Math.min(yh2raw,h2NeedPerCoil);
+    const h2ExternalPerCoil=Math.max(0,h2NeedPerCoil-yh2raw);
     y={
       ethane:fresh,
       ch4:(gp.mean.y_ch4_kg_per_kg_ethane||0)*coil,
-      h2:(gp.mean.y_h2_kg_per_kg_ethane||0)*coil,
-      c2h2:(gp.mean.y_c2h2_kg_per_kg_ethane||0)*coil,
+      h2:Math.max(0,yh2raw-h2FromPlantPerCoil)*coil,
+      c2h2:(nAres*MW.C2H2/1000)*coil,
       c3:(gp.mean.y_c3_kg_per_kg_ethane||0)*coil,
       c4plus:(gp.mean.y_c4plus_kg_per_kg_ethane||0)*coil,
       coke:0
     };
-    /* Derive selectivity from conversion and ethylene mass yield so the plant model
-       cannot use mutually inconsistent GP predictions for X, S and product yield. */
+    acetylene={
+      enabled:true,targetPpm:ACET.targetPpm,selectivity:ACET.selectivity,
+      rawKg:ya*coil,
+      convertedKg:(nArxn*MW.C2H2/1000)*coil,
+      residualKg:y.c2h2,
+      residualPpm:nAres/Math.max(1e-12,nAres+nE+nErec+nEth+nEthMade)*1e6,
+      ethyleneRecoveredKg:ethyleneRecoveredPerCoil*coil,
+      ethaneMadeKg:ethaneMadePerCoil*coil,
+      h2ConsumedKg:h2NeedPerCoil*coil,
+      h2FromPlantKg:h2FromPlantPerCoil*coil,
+      h2ExternalKg:h2ExternalPerCoil*coil
+    };
+    if(acetylene.h2ExternalKg>1e-9)
+      flags.push('acetylene converter requires '+sig(acetylene.h2ExternalKg,3)
+        +' kg external H2 per kg ethylene; external H2 purchase cost is not included');
+
+    /* Reactor selectivity remains a reactor-level quantity. The converter
+       recovers some acetylene as ethylene downstream and is reported separately. */
     Smol=ye*MW.C2H6/(Math.max(X,1e-12)*MW.C2H4);
     Smass=ye/Math.max(X,1e-12);
     n=fresh*1000/MW.C2H6;
@@ -653,7 +699,7 @@ function model(p){
 
   /* 4. Compressor. Specification fixed. */
   const mol={c2h4:1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
-             h2:y.h2*1000/MW.H2,c2h2:(y.c2h2||0)*1000/MW.C2H2,
+             h2:y.h2*1000/MW.H2,c2h2:(useMechanismSpecies?acetylene.rawKg:(y.c2h2||0))*1000/MW.C2H2,
              c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4};
   const nGas=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c2h2+mol.c3+mol.c4plus;
   const gam=1.32,st=4,rSt=Math.pow(P_DISCH/1.5,1/st);
@@ -663,7 +709,7 @@ function model(p){
   const lightFrac=(mol.ch4+mol.h2)/nGas;
   const tCold=-100-40*Math.log10(0.01/(1-RECOVERY))-160*(lightFrac-0.40);
   const mCold=coil-y.coke;
-  const qCold=mCold*2.2*(30-tCold)+(1+recycle+(y.c2h2||0)+y.c3+(y.c4plus||0))*350;
+  const qCold=mCold*2.2*(30-tCold)+(1+recycle+(useMechanismSpecies?acetylene.rawKg:(y.c2h2||0))+y.c3+(y.c4plus||0))*350;
   const lv=[[-40,.55],[-100,.30],[tCold,.15]];
   let wRef=0; for(const[T,fr]of lv){const Tk=T+273.15;
     wRef+=qCold*fr/Math.max(.05,ETA2*Tk/(T_AMB-Tk));}
@@ -743,7 +789,7 @@ function model(p){
     flags.push('selectivity '+sig(Smass*100,3)+'% is outside the industrial band of '
       +sig(VALID.sel[0],2)+' to '+sig(VALID.sel[1],2)+'%');
 
-  return {flags,selClipped,y,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,
+  return {flags,selClipped,y,acetylene,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,
     elecHeat,wComp,wRef,wSplit,tCold,qCold,lightFrac,nGas,alpha,nMin,nAct,rRatio,
     qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc,
     reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp,useMechanismSpecies,balanceBasis};
@@ -2242,6 +2288,7 @@ window.ethaneModel={
       c2h2_kg_per_kg:r.y.c2h2||0,
       c3_kg_per_kg:r.y.c3||0,
       c4plus_kg_per_kg:r.y.c4plus||0,
+      acetylene_converter:{...r.acetylene},
       reactor_useful_heat_gj_per_t:r.qDemand*kJ2GJ,
       mechanism_zone_heat_gj_per_t:(r.gp&&r.gp.mean&&Number.isFinite(r.gp.mean.heat_MJ_per_kg_ethane))
         ? r.gp.mean.heat_MJ_per_kg_ethane*r.coil : null,
