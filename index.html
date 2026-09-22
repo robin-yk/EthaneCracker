@@ -221,6 +221,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
         <div class="big"><div class="k">C₂H₄ selectivity</div><div class="n" id="rS">—</div><div class="s">mass basis</div></div>
         <div class="big"><div class="k">C₂H₄ yield</div><div class="n" id="rY">—</div><div class="s">kg/kg coil ethane</div></div>
       </div>
+      <div class="slatehead"><b>PLANT MATERIAL BASIS</b><span>kg / kg C2H4 product</span></div>
       <div class="species" id="species"></div>
       <div class="flowwrap">
         <svg class="pfdlines" viewBox="0 0 1000 270" preserveAspectRatio="none" aria-hidden="true">
@@ -231,7 +232,8 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
           </defs>
           <path d="M0 122 H72" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
           <path d="M128 122 H272 M328 122 H472 M528 122 H672 M728 122 H872 M928 122 H1000" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
-          <path d="M700 154 V235 H100 V154" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrg)"/>
+          <path d="M700 154 V235 H120" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrg)"/>
+          <path d="M120 235 V154" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4"/>
           <path d="M500 90 V30" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
           <path d="M700 154 V224 H790" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
           <path d="M100 90 V30" fill="none" stroke="#c57718" stroke-width="2.5" marker-end="url(#arro)"/>
@@ -727,6 +729,50 @@ function bindMenusAndToolbar(){
   $("tbRun").onclick=()=>runAction("run");$("tbPin").onclick=()=>runAction("pin");$("tbExport").onclick=()=>runAction("exportjson");
   document.addEventListener("keydown",e=>{if(e.key==="F5"){e.preventDefault();runAction("run")} if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="n"){e.preventDefault();runAction("new")}});
 }
+async function runUIAudit(){
+  const checks=[];
+  const ok=(name,cond)=>{checks.push([name,!!cond]);if(!cond)throw new Error("UI audit failed: "+name)};
+  try{
+    document.querySelectorAll("nav button").forEach(b=>ok("nav "+b.textContent,typeof b.onclick==="function"));
+    document.querySelectorAll(".quick button").forEach(b=>ok("quick "+b.textContent,typeof b.onclick==="function"));
+    document.querySelectorAll(".toolbar button").forEach(b=>ok("toolbar "+b.title,typeof b.onclick==="function"));
+    document.querySelectorAll(".menupop button").forEach(b=>ok("menu "+b.textContent.trim(),typeof b.onclick==="function"));
+    document.querySelectorAll(".tree .item").forEach(b=>ok("tree "+b.textContent.trim(),typeof b.onclick==="function"));
+    document.querySelectorAll("[data-proptab]").forEach(b=>ok("prop tab "+b.textContent,typeof b.onclick==="function"));
+
+    show("benchmarks");ok("benchmarks view",document.querySelector("#view-benchmarks").classList.contains("active"));
+    show("compare");ok("compare view",document.querySelector("#view-compare").classList.contains("active"));
+    show("workspace");
+
+    loadPreset("chen");ok("Chen load",state.name==="Chen 2024"&&document.querySelector(".windowtitle").textContent.includes("Chen_2024.bkp"));
+    openBlock("reactor");ok("reactor properties",$("propwin").classList.contains("open"));
+    currentPropTab="input";renderBlockTab();ok("reactor input tab",$("propTable").textContent.includes("Outlet temperature"));
+    currentPropTab="setup";renderBlockTab();ok("reactor setup tab",$("propTable").textContent.includes("AramcoMech 3.0"));
+    $("propClose").click();
+
+    openStream("feed");ok("feed properties",$("streamwin").classList.contains("open")&&$("streamTable").textContent.includes("Fresh C2H6"));
+    $("streamClose").click();
+
+    runAction("joule");ok("Joule action",state.mode==="JH");
+    runAction("fired");ok("Fired action",state.mode==="CH");
+    runAction("pin");ok("pin baseline",!!pinned);
+
+    const helpButton=document.querySelector('[data-menu="help"]');helpButton.click();
+    ok("Help menu",$("menu-help").classList.contains("open"));closeMenus();
+
+    const oldOpen=window.open;let contactRendered=false;
+    window.open=()=>({document:{write:()=>{contactRendered=true},close:()=>{}}});
+    runAction("contact");window.open=oldOpen;ok("contact action",contactRendered);
+
+    loadPreset("default");show("workspace");
+    document.body.dataset.controlAudit="pass";
+    document.body.dataset.controlAuditCount=String(checks.length);
+  }catch(e){
+    document.body.dataset.controlAudit="fail";
+    document.body.dataset.controlAuditError=String(e&&e.message||e);
+    throw e;
+  }
+}
 async function init(){
   qState();bind();bindFlowsheet();bindMenusAndToolbar();fillCompare();
   try{
@@ -740,6 +786,7 @@ async function init(){
     document.body.dataset.kinetics="aramco-gp";
     $("live").textContent="Aramco GP ready · 256 train / 64 holdout";$("live").className="live good";
     render();benchmarkSummary();modelMeta();
+    if(new URLSearchParams(location.search).get("uiAudit")==="1")await runUIAudit();
   }catch(e){
     document.body.dataset.appStatus="error";
     document.body.dataset.kinetics="unavailable";
