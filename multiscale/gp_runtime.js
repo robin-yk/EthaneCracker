@@ -10,7 +10,7 @@
 export class EthaneGPSurrogate {
   constructor(model) {
     this.m = model;
-    if (model.schema !== "ethane-cantera-shared-rbf-gp-v2") {
+    if (model.schema !== "ethane-cantera-shared-rbf-gp-v3") {
       throw new Error("Unsupported surrogate schema: " + model.schema);
     }
   }
@@ -91,11 +91,26 @@ export class EthaneGPSurrogate {
       k[i] = Math.exp(-0.5 * q);
     }
 
+    const latent = [];
     const out = {};
+    const deriv = [];
     for (let o = 0; o < this.m.outputs.length; o++) {
-      let z = 0;
-      for (let i = 0; i < n; i++) z += k[i] * this.m.alpha[i][o];
-      out[this.m.outputs[o]] = this.m.y_mean[o] + this.m.y_std[o] * z;
+      let zstd = 0;
+      for (let i = 0; i < n; i++) zstd += k[i] * this.m.alpha[i][o];
+      const z = this.m.y_mean[o] + this.m.y_std[o] * zstd;
+      latent[o] = z;
+      const spec = this.m.output_transforms[o];
+      if (spec.kind === "logit") {
+        const p = z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z));
+        out[this.m.outputs[o]] = p;
+        deriv[o] = p * (1 - p);
+      } else if (spec.kind === "log") {
+        const ez = Math.exp(z);
+        out[this.m.outputs[o]] = Math.max(0, ez - spec.epsilon);
+        deriv[o] = ez;
+      } else {
+        throw new Error("Unsupported output transform " + spec.kind);
+      }
     }
 
     let quad = 0;
@@ -109,7 +124,7 @@ export class EthaneGPSurrogate {
     const sigma = {};
     for (let o = 0; o < this.m.outputs.length; o++) {
       const scale = this.m.sigma_scale ? this.m.sigma_scale[o] : 1;
-      sigma[this.m.outputs[o]] = sigmaStd * this.m.y_std[o] * scale;
+      sigma[this.m.outputs[o]] = sigmaStd * this.m.y_std[o] * deriv[o] * scale;
     }
 
     const domain = this.domain(p);
