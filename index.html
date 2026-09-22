@@ -26,9 +26,13 @@ header{position:sticky;top:0;z-index:30;background:var(--desk);border-bottom:1px
 .windowtitle .caption{display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .appicon{width:15px;height:15px;border:1px solid #fff;background:conic-gradient(from 45deg,#ff0,#0aa,#f80,#08f,#ff0);box-shadow:inset 0 0 0 2px #0a246a}
 .winbuttons{display:flex;gap:2px}.winbuttons i{display:grid;place-items:center;width:20px;height:18px;background:var(--desk);color:#000;border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #555;border-bottom:1px solid #555;font-style:normal;font-size:11px}
-.menubar{height:25px;display:flex;align-items:center;gap:2px;padding:0 4px;background:var(--face);border-bottom:1px solid #aaa}
+.menubar{height:25px;display:flex;align-items:center;gap:2px;padding:0 4px;background:var(--face);border-bottom:1px solid #aaa;position:relative}
 .menubar button{border:1px solid transparent;background:transparent;padding:2px 7px;font-size:11px}
-.menubar button:hover{border-top-color:#fff;border-left-color:#fff;border-right-color:#777;border-bottom-color:#777;background:var(--desk)}
+.menubar button:hover,.menubar button.active{border-top-color:#fff;border-left-color:#fff;border-right-color:#777;border-bottom-color:#777;background:var(--desk)}
+.menupop{display:none;position:absolute;top:23px;left:4px;z-index:100;min-width:175px;background:var(--face);border:2px outset #d4d0c8;padding:2px;box-shadow:2px 2px 0 rgba(0,0,0,.25)}
+.menupop.open{display:block}.menupop button{display:block;width:100%;text-align:left;padding:4px 18px 4px 22px;border:0;background:transparent;font-size:10px;position:relative}
+.menupop button:hover{background:#0a246a;color:#fff;border:0}.menupop hr{border:0;border-top:1px solid #999;border-bottom:1px solid #fff;margin:3px 2px}
+.menupop .key{float:right;color:#555}.menupop button:hover .key{color:#fff}
 .toolbar{height:34px;display:flex;align-items:center;gap:3px;padding:3px 5px;background:var(--face);border-top:1px solid #fff;border-bottom:1px solid #888}
 .tool{width:27px;height:26px;padding:0;background:var(--desk);border-top:1px solid #fff;border-left:1px solid #fff;border-right:1px solid #777;border-bottom:1px solid #777;display:grid;place-items:center;font-size:14px}
 .tool:active{border-top-color:#777;border-left-color:#777;border-right-color:#fff;border-bottom-color:#fff}
@@ -70,23 +74,32 @@ details summary{cursor:pointer;font-size:11px;font-weight:bold}
 .bar{height:10px;background:#fff;border:1px solid #aaa;position:relative}.bar i{display:block;height:100%;background:repeating-linear-gradient(90deg,#008080 0 4px,#0b8f8f 4px 8px)}
 .speciesrow .num{font:10px var(--mono);text-align:right}
 .flow{padding:23px 18px 24px;display:grid;grid-template-columns:repeat(5,1fr);gap:25px;background-color:#fff;background-image:linear-gradient(#e5e5e5 1px,transparent 1px),linear-gradient(90deg,#e5e5e5 1px,transparent 1px);background-size:12px 12px;min-height:220px;align-items:center}
-.unit{border:2px outset #d4d0c8;padding:0;min-height:98px;position:relative;background:#f4f1e7;box-shadow:2px 2px 0 rgba(0,0,0,.14);cursor:move;user-select:none}
-.unit.dragging{opacity:.45}
+.unit{border:2px outset #d4d0c8;padding:0;min-height:98px;position:relative;background:#f4f1e7;box-shadow:2px 2px 0 rgba(0,0,0,.14);cursor:pointer;user-select:none}
 .unit.selected{outline:2px solid #ff9800;outline-offset:1px}
-.unit:after{content:"";position:absolute;right:-27px;top:48px;width:25px;border-top:2px solid #4e6f8e}
-.unit:not(:last-child):before{content:"▶";position:absolute;right:-31px;top:40px;color:#4e6f8e;font-size:11px}
-.unit:last-child:after{display:none}.unit:last-child:before{display:none}
+.unit:after,.unit:before{display:none}
 .unit h4{font-size:10px;margin:0 0 7px;padding:3px 5px;background:#0a246a;color:#fff;font-weight:bold}.unit:nth-child(2) h4{background:#3a6ea5}.unit:nth-child(3) h4{background:#008080}.unit:nth-child(4) h4{background:#8a5b25}.unit:nth-child(5) h4{background:#246c39}
 .unit .u{font:10px var(--mono);color:#333;margin:4px 6px}
 .scope{padding:6px 8px;border-top:1px solid #aaa;background:#efefea;font-size:10px;color:#555}
-.streamtag{position:absolute;background:#fff;border:1px solid #777;padding:1px 4px;font:9px var(--mono);z-index:4;white-space:nowrap}
+.streamtag{position:absolute;background:#fff;border:1px solid #777;padding:1px 4px;font:9px var(--mono);z-index:6;white-space:nowrap;cursor:pointer}
+.streamtag:hover{background:#fff8c5}
 .flowwrap{position:relative;background:#fff}
+.pfdlines{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
+.flow{position:relative;z-index:2}
+.slate{border-bottom:1px solid #888;background:#fff}
+.slatehead{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#dedbd0;border-bottom:1px solid #aaa}
+.slatehead b{font-size:10px}.slatehead span{font:9px var(--mono);color:#555}
+.slatebody{padding:7px 9px 8px}.slatebar{height:23px;border:1px inset #ddd;display:flex;background:#fff;overflow:hidden}
+.slatebar i{display:block;height:100%;min-width:0;cursor:pointer}.slatebar i:hover{filter:brightness(1.18);outline:1px solid #000;outline-offset:-1px}
+.slatelegend{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:3px 10px;margin-top:6px}
+.slateitem{font:9px var(--mono);display:flex;justify-content:space-between;gap:6px;cursor:pointer;padding:1px 2px}.slateitem:hover{background:#fff8c5}.slateitem span:first-child:before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--sw);border:1px solid #777;vertical-align:-1px}
+.streamwin{position:fixed;z-index:81;width:300px;left:24px;bottom:34px;background:var(--desk);border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.25);display:none}
+.streamwin.open{display:block}
 .st-feed{left:6px;top:92px}.st-energy{left:16%;top:18px}.st-recycle{left:49%;bottom:8px}.st-product{right:4px;top:92px}.st-c3{right:14%;bottom:8px}
 .propwin{position:fixed;z-index:80;width:315px;right:24px;bottom:34px;background:var(--desk);border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.25);display:none}
 .propwin.open{display:block}.proptitle{height:22px;background:linear-gradient(90deg,#0a246a,#3a6ea5);color:#fff;font-weight:bold;padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
 .proptitle button{width:18px;height:17px;padding:0;background:var(--desk);border:1px outset #fff;font-size:10px}
 .propbody{padding:7px;background:var(--face)}.proptabs{display:flex;gap:2px;border-bottom:1px solid #888;margin-bottom:6px}
-.proptabs span{padding:3px 8px;border:1px solid #888;border-bottom:0;background:#d8d5cc;font-size:10px}.proptabs span.active{background:#fff;position:relative;top:1px}
+.proptabs button{padding:3px 8px;border:1px solid #888;border-bottom:0;background:#d8d5cc;font-size:10px}.proptabs button.active{background:#fff;position:relative;top:1px}
 .proptable{width:100%;border-collapse:collapse;background:#fff;border:1px inset #ddd}.proptable td{font-size:10px;padding:4px 5px;border-bottom:1px solid #ddd}.proptable td:first-child{color:#555;width:52%}
 .propfoot{display:flex;justify-content:flex-end;gap:4px;margin-top:7px}.propfoot button{font-size:10px;padding:3px 12px;background:var(--desk);border:2px outset #d4d0c8}
 .outputs{position:sticky;top:114px;background:var(--face)}
@@ -124,12 +137,20 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
   <div class="head">
     <div class="windowtitle">
       <div class="caption"><span class="appicon"></span><span>Ethane Cracker Simulator - [Untitled Case]</span></div>
-      <div class="winbuttons"><i>_</i><i>□</i><i>×</i></div>
+      <div style="font:10px var(--mono);opacity:.9">SIMULATION CASE</div>
     </div>
-    <div class="menubar"><button>File</button><button>Edit</button><button>View</button><button>Flowsheet</button><button>Run</button><button>Tools</button><button>Help</button></div>
+    <div class="menubar">
+      <button data-menu="file">File</button><button data-menu="view">View</button><button data-menu="flowsheet">Flowsheet</button><button data-menu="run">Run</button><button data-menu="tools">Tools</button><button data-menu="help">Help</button>
+      <div class="menupop" id="menu-file"><button data-action="new">New Case <span class="key">Ctrl+N</span></button><button data-action="literature">Open Literature Case</button><hr><button data-action="copyurl">Copy Scenario URL</button><button data-action="exportjson">Export JSON</button><button data-action="exportcsv">Export CSV</button></div>
+      <div class="menupop" id="menu-view"><button data-action="workspace">Simulation</button><button data-action="benchmarks">Literature Cases</button><button data-action="compare">Case Comparison</button><button data-action="model">Model Setup</button><button data-action="cite">Reports</button></div>
+      <div class="menupop" id="menu-flowsheet"><button data-action="openreactor">R-101 Properties</button><button data-action="opencompressor">C-101 Properties</button><button data-action="opencoldbox">T-201 Properties</button><button data-action="opensplitter">T-301 Properties</button><hr><button data-action="streamfeed">FEED Stream</button><button data-action="streamrecycle">RECYCLE Stream</button></div>
+      <div class="menupop" id="menu-run"><button data-action="run">Run / Refresh <span class="key">F5</span></button><button data-action="fired">Fired Heating</button><button data-action="joule">Joule Heating</button></div>
+      <div class="menupop" id="menu-tools"><button data-action="pin">Pin Baseline</button><button data-action="compare">Compare Cases</button><button data-action="model">Model Validation</button></div>
+      <div class="menupop" id="menu-help"><button data-action="model">About Model</button><button data-action="cite">Citation</button><button data-action="benchmarks">Literature Benchmarks</button></div>
+    </div>
     <div class="toolbar">
-      <button class="tool" title="New case">▧</button><button class="tool" title="Open literature case">▤</button><button class="tool" title="Save scenario URL">💾</button>
-      <span class="sep"></span><button class="tool" title="Run">▶</button><button class="tool" title="Pin baseline">⚑</button><button class="tool" title="Export">⇩</button>
+      <button class="tool" id="tbNew" title="New case">▧</button><button class="tool" id="tbOpen" title="Open literature cases">▤</button><button class="tool" id="tbSave" title="Copy scenario URL">💾</button>
+      <span class="sep"></span><button class="tool" id="tbRun" title="Run / refresh">▶</button><button class="tool" id="tbPin" title="Pin baseline">⚑</button><button class="tool" id="tbExport" title="Export JSON">⇩</button>
       <span class="sep"></span><div id="live" class="live">loading calculation engine…</div>
     </div>
     <nav id="nav">
@@ -153,8 +174,12 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       <div class="tree">
         <div class="root">▣ Simulation</div>
         <div class="item sel" data-tree-view="workspace">Flowsheet</div>
-        <div class="item" data-tree-focus="reactor">Blocks / R-101 Reactor</div>
-        <div class="item" data-tree-focus="sep">Blocks / Separations</div>
+        <div class="item" data-tree-block="reactor">Blocks / R-101 Reactor</div>
+        <div class="item" data-tree-block="compressor">Blocks / C-101 Compressor</div>
+        <div class="item" data-tree-block="coldbox">Blocks / T-201 Cold Box</div>
+        <div class="item" data-tree-block="splitter">Blocks / T-301 C2 Splitter</div>
+        <div class="item" data-tree-stream="feed">Streams / FEED</div>
+        <div class="item" data-tree-stream="recycle">Streams / RECYCLE</div>
         <div class="item" data-tree-view="benchmarks">Literature Cases</div>
         <div class="item" data-tree-view="compare">Case Comparison</div>
         <div class="item" data-tree-view="model">Model Setup</div>
@@ -186,6 +211,10 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
 
     <section class="panel center">
       <div class="ph"><h3>Flowsheet - Main</h3><span id="qual" class="small"></span></div>
+      <div class="slate">
+        <div class="slatehead"><b>CAN-101 · REACTION PRODUCT SLATE</b><span>Cantera GP · kg species / kg coil C2H6</span></div>
+        <div class="slatebody"><div class="slatebar" id="slateBar"></div><div class="slatelegend" id="slateLegend"></div></div>
+      </div>
       <div class="resultband">
         <div class="big"><div class="k">C₂H₆ conversion</div><div class="n" id="rX">—</div><div class="s" id="rXsub"></div></div>
         <div class="big"><div class="k">C₂H₄ selectivity</div><div class="n" id="rS">—</div><div class="s">mass basis</div></div>
@@ -193,17 +222,26 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       </div>
       <div class="species" id="species"></div>
       <div class="flowwrap">
-        <span class="streamtag st-feed">FEED: C2H6 + STEAM</span>
-        <span class="streamtag st-energy">FUEL / POWER</span>
-        <span class="streamtag st-recycle">RECYCLE C2H6</span>
-        <span class="streamtag st-product">C2H4 PRODUCT</span>
-        <span class="streamtag st-c3">C3+</span>
+        <svg class="pfdlines" viewBox="0 0 1000 280" preserveAspectRatio="none" aria-hidden="true">
+          <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#4e6f8e"/></marker><marker id="arrg" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#246c39"/></marker></defs>
+          <path d="M5 140 H95" fill="none" stroke="#4e6f8e" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M180 140 H285 M370 140 H475 M560 140 H665 M750 140 H945" fill="none" stroke="#4e6f8e" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M715 180 V242 H135 V180" fill="none" stroke="#246c39" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrg)"/>
+          <path d="M520 100 V42 H600" fill="none" stroke="#8a5b25" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M715 180 V222 H820" fill="none" stroke="#8a5b25" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M135 100 V40" fill="none" stroke="#c57718" stroke-width="2" marker-end="url(#arr)"/>
+        </svg>
+        <span class="streamtag st-feed" data-stream="feed">FEED: C2H6 + STEAM</span>
+        <span class="streamtag st-energy" data-stream="energy">FUEL / POWER</span>
+        <span class="streamtag st-recycle" data-stream="recycle">RECYCLE C2H6</span>
+        <span class="streamtag st-product" data-stream="product">C2H4 PRODUCT</span>
+        <span class="streamtag st-c3" data-stream="c3">C3+</span>
         <div class="flow" id="flowsheet">
-          <div class="unit" draggable="true" data-block="reactor"><h4>R-101 · CRACKER + TLE</h4><div class="u" id="uReactor">—</div><div class="u" id="uFeed">—</div></div>
-          <div class="unit" draggable="true" data-block="compressor"><h4>C-101 · COMPRESSION</h4><div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div></div>
-          <div class="unit" draggable="true" data-block="coldbox"><h4>T-201 · COLD BOX</h4><div class="u" id="uCold">—</div><div class="u" id="uRef">—</div></div>
-          <div class="unit" draggable="true" data-block="splitter"><h4>T-301 · C2 SPLITTER</h4><div class="u" id="uSplit">—</div><div class="u">99.9 mol% product</div></div>
-          <div class="unit" draggable="true" data-block="product"><h4>P-401 · ETHYLENE</h4><div class="u">1.000 kg basis</div><div class="u" id="uCap">—</div></div>
+          <div class="unit" data-block="reactor"><h4>R-101 · CRACKER + TLE</h4><div class="u" id="uReactor">—</div><div class="u" id="uFeed">—</div></div>
+          <div class="unit" data-block="compressor"><h4>C-101 · COMPRESSION</h4><div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div></div>
+          <div class="unit" data-block="coldbox"><h4>T-201 · COLD BOX</h4><div class="u" id="uCold">—</div><div class="u" id="uRef">—</div></div>
+          <div class="unit" data-block="splitter"><h4>T-301 · C2 SPLITTER</h4><div class="u" id="uSplit">—</div><div class="u">99.9 mol% product</div></div>
+          <div class="unit" data-block="product"><h4>P-401 · ETHYLENE</h4><div class="u">1.000 kg basis</div><div class="u" id="uCap">—</div></div>
         </div>
       </div>
       <div class="scope" id="scope">—</div>
@@ -214,6 +252,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       <div class="heroout">
         <div class="k">Cost of ethylene</div><div class="cost" id="oCost">—</div>
         <div class="duo"><div><div class="k">Carbon</div><div class="n" id="oCarbon">—</div></div><div><div class="k">Net energy</div><div class="n" id="oEnergy">—</div></div></div>
+        <div id="baselineDelta" class="small" style="margin-top:7px"></div>
       </div>
       <div class="break" id="breakdown"></div>
       <div class="actionbar"><button id="pin">Pin baseline</button><button id="copy">Copy results</button><button id="json">JSON</button><button id="csv">CSV</button></div>
@@ -260,10 +299,14 @@ https://doi.org/10.1016/j.combustflame.2018.08.006</pre>
   </div>
 </section>
 </main>
+<div class="streamwin" id="streamwin">
+  <div class="proptitle"><span id="streamTitle">Stream Properties</span><button id="streamClose">×</button></div>
+  <div class="propbody"><div class="proptabs"><span class="active">Results</span></div><table class="proptable" id="streamTable"></table><div class="propfoot"><button id="streamOK">OK</button></div></div>
+</div>
 <div class="propwin" id="propwin">
   <div class="proptitle"><span id="propTitle">Block Properties</span><button id="propClose">×</button></div>
   <div class="propbody">
-    <div class="proptabs"><span class="active">Results</span><span>Input</span><span>Setup</span></div>
+    <div class="proptabs"><button class="active" data-proptab="results">Results</button><button data-proptab="input">Input</button><button data-proptab="setup">Setup</button></div>
     <table class="proptable" id="propTable"></table>
     <div class="propfoot"><button id="propOK">OK</button></div>
   </div>
@@ -328,12 +371,15 @@ function bind(){
   $("heatFired").onclick=()=>{state.mode="CH";state.eff=60;state.name="Custom";render()};
   $("heatJoule").onclick=()=>{state.mode="JH";state.eff=95;state.name="Custom";render()};
   document.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>loadPreset(b.dataset.load));
-  $("pin").onclick=()=>{pinned={...result};$("pin").textContent="Baseline pinned";render()};
+  $("pin").onclick=()=>{pinned={...result};$("pin").textContent="Re-pin baseline";$("statusRun").textContent="BASELINE PINNED";render()};
   $("copy").onclick=()=>navigator.clipboard.writeText(JSON.stringify(result,null,2));
   $("json").onclick=()=>download("ethane-case.json",JSON.stringify({state,result},null,2),"application/json");
   $("csv").onclick=()=>download("ethane-case.csv",toCSV(result),"text/csv");
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.view));
   document.querySelectorAll("[data-tree-view]").forEach(x=>x.onclick=()=>show(x.dataset.treeView));
+  document.querySelectorAll("[data-tree-block]").forEach(x=>x.onclick=()=>{show("workspace");openBlock(x.dataset.treeBlock)});
+  document.querySelectorAll("[data-tree-stream]").forEach(x=>x.onclick=()=>{show("workspace");openStream(x.dataset.treeStream)});
+  document.querySelectorAll("[data-proptab]").forEach(x=>x.onclick=()=>{currentPropTab=x.dataset.proptab;renderBlockTab()});
 }
 function loadPreset(id){
   state={...presets[id]};render();show("workspace");
@@ -374,6 +420,7 @@ function render(){
   const warn=result.flags&&result.flags.length;
   $("qual").textContent=warn?result.flags[0]:"inside declared calculation domain";
   $("qual").className="small "+(warn?"warn":"good");
+  renderProductSlate();
   renderSpecies();
   $("uReactor").textContent=fmt(result.reactor_useful_heat_gj_per_t,2)+" GJ/t useful heat";
   $("uFeed").textContent=fmt(result.fresh_ethane_kg_per_kg,3)+" kg fresh + "+fmt(result.recycle_ethane_kg_per_kg,3)+" kg recycle";
@@ -386,7 +433,32 @@ function render(){
   $("oCost").textContent="$"+fmt(result.cost_usd_per_t,0)+" / t";
   $("oCarbon").textContent=fmt(result.carbon_kgco2e_per_t,0)+" kg/t";
   $("oEnergy").textContent=fmt(result.reactor_useful_heat_gj_per_t,1)+" GJ/t";
+  if(pinned){
+    const dc=result.cost_usd_per_t-pinned.cost_usd_per_t;
+    const dco2=result.carbon_kgco2e_per_t-pinned.carbon_kgco2e_per_t;
+    const de=result.reactor_useful_heat_gj_per_t-pinned.reactor_useful_heat_gj_per_t;
+    $("baselineDelta").innerHTML='Pinned baseline: '
+      +(dc>=0?'+':'−')+'$'+fmt(Math.abs(dc),1)+'/t · '
+      +(dco2>=0?'+':'−')+fmt(Math.abs(dco2),1)+' kgCO2e/t · '
+      +(de>=0?'+':'−')+fmt(Math.abs(de),2)+' GJ/t';
+  }else $("baselineDelta").textContent='No baseline pinned';
   renderBreakdown();
+}
+function renderProductSlate(){
+  const g=result.gp_mean||{};
+  const rows=[
+    ["C2H4",g.y_c2h4_kg_per_kg_ethane||0,"#1d77a8"],
+    ["C2H6",g.y_c2h6_kg_per_kg_ethane||0,"#9a9a92"],
+    ["CH4",g.y_ch4_kg_per_kg_ethane||0,"#c57718"],
+    ["H2",g.y_h2_kg_per_kg_ethane||0,"#71a7cf"],
+    ["C2H2",g.y_c2h2_kg_per_kg_ethane||0,"#9b4f96"],
+    ["C3",g.y_c3_kg_per_kg_ethane||0,"#5b8d48"],
+    ["C4+",g.y_c4plus_kg_per_kg_ethane||0,"#8a5b25"]
+  ];
+  const total=rows.reduce((s,r)=>s+r[1],0)||1;
+  $("slateBar").innerHTML=rows.filter(r=>r[1]>1e-8).map(([n,v,col])=>'<i data-slate="'+n+'" data-yield="'+v+'" data-total="'+total+'" title="'+n+' '+fmt(v,5)+' kg/kg" style="width:'+(100*v/total)+'%;background:'+col+'"></i>').join("");
+  $("slateLegend").innerHTML=rows.map(([n,v,col])=>'<div class="slateitem" data-slate="'+n+'" data-yield="'+v+'" data-total="'+total+'" style="--sw:'+col+'"><span>'+n+'</span><span>'+fmt(v,5)+'</span></div>').join("");
+  document.querySelectorAll("[data-slate]").forEach(x=>x.onclick=()=>openSlateSpecies(x.dataset.slate,+x.dataset.yield,+x.dataset.total));
 }
 function renderSpecies(){
   const vals=[
@@ -488,6 +560,7 @@ function updateWindowTitle(){
   const el=document.querySelector(".windowtitle .caption span:last-child");
   if(el)el.textContent="Ethane Cracker Simulator - ["+caseFileName()+"]";
 }
+let currentBlock="reactor", currentPropTab="results";
 const blockProps={
   reactor:()=>[
     ["Block","R-101 · CRACKER + TLE"],["Model","AramcoMech 3.0 / Cantera GP"],
@@ -515,31 +588,109 @@ const blockProps={
     ["Cost","$"+fmt(result.cost_usd_per_t,1)+"/t"],["Carbon",fmt(result.carbon_kgco2e_per_t,1)+" kgCO2e/t"]
   ]
 };
+const blockInputs={
+  reactor:()=>[["Outlet temperature",fmt(state.cot,1)+" °C"],["Pressure",fmt(state.pressure,2)+" bar"],["Residence time",fmt(state.tau,4)+" s"],["Steam / HC",fmt(state.dilution,3)+" kg/kg"],["Heating exponent",fmt(state.ramp,2)],["Heating route",state.mode==="JH"?"Joule":"Fired"]],
+  compressor:()=>[["Inlet basis","cracked gas"],["Stages","4"],["Discharge pressure","32 bar"],["Intercooling","enabled in shortcut"]],
+  coldbox:()=>[["Feed","compressed dry gas"],["Recovery target","99.5%"],["Duty model","temperature / light-fraction screening"]],
+  splitter:()=>[["Feed","C2 fraction"],["Ethylene purity","99.9 mol%"],["Method","Fenske-Underwood-Gilliland shortcut"]],
+  product:()=>[["Product","polymer-grade ethylene"],["Basis","1.000 kg"]]
+};
+const blockSetup={
+  reactor:()=>[["Chemistry","AramcoMech 3.0"],["Solver","Cantera offline → GP browser surrogate"],["GP training","256 points"],["Holdout","64 points"],["Reactor model","prescribed-temperature Lagrangian PFR"]],
+  compressor:()=>[["Thermodynamics","ideal-gas shortcut"],["Gamma","1.32"],["Efficiency","75%"],["Pressure ratio","distributed over 4 stages"]],
+  coldbox:()=>[["Model","Carnot-based refrigeration screening"],["Second-law efficiency","35%"],["Recovery","99.5%"]],
+  splitter:()=>[["Relative volatility","pressure-dependent shortcut"],["Stage estimate","FUG"],["Purity","99.9 mol%"]],
+  product:()=>[["Recovery","99.5%"],["Cost basis","USD/t ethylene"],["LCA basis","kg CO2e/t ethylene"]]
+};
+function renderBlockTab(){
+  const base=blockProps[currentBlock]();
+  $("propTitle").textContent=base[0][1];
+  let rows;
+  if(currentPropTab==="input")rows=blockInputs[currentBlock]();
+  else if(currentPropTab==="setup")rows=blockSetup[currentBlock]();
+  else rows=base.slice(1);
+  $("propTable").innerHTML=rows.map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
+  document.querySelectorAll("[data-proptab]").forEach(x=>x.classList.toggle("active",x.dataset.proptab===currentPropTab));
+}
 function openBlock(block){
   if(!result||!blockProps[block])return;
+  currentBlock=block;currentPropTab="results";
   document.querySelectorAll(".unit").forEach(x=>x.classList.toggle("selected",x.dataset.block===block));
-  const rows=blockProps[block]();
-  $("propTitle").textContent=rows[0][1];
-  $("propTable").innerHTML=rows.slice(1).map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
+  renderBlockTab();
   $("propwin").classList.add("open");
 }
+function openSlateSpecies(name,yieldValue,total){
+  const share=total>0?yieldValue/total:0;
+  $("streamTitle").textContent="CAN-101 · "+name;
+  $("streamTable").innerHTML=[
+    ["Species / lump",name],
+    ["Cantera GP yield",fmt(yieldValue,6)+" kg/kg coil C2H6"],
+    ["Slate mass share",pct(share)],
+    ["Basis","reactor outlet before downstream separations"],
+    ["Source","AramcoMech 3.0 → Cantera → GP"]
+  ].map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
+  $("streamwin").classList.add("open");
+}
+function streamProps(id){
+  const g=result.gp_mean||{};
+  const map={
+    feed:[["Stream","FEED"],["Fresh C2H6",fmt(result.fresh_ethane_kg_per_kg,4)+" kg/kg C2H4"],["Recycle C2H6",fmt(result.recycle_ethane_kg_per_kg,4)+" kg/kg C2H4"],["Steam",fmt(result.steam_kg_per_kg,4)+" kg/kg C2H4"],["Pressure",fmt(state.pressure,2)+" bar"]],
+    energy:[["Stream","FUEL / POWER"],["Heating mode",state.mode==="JH"?"Joule":"Fired"],["Heater input",fmt(result.heater_input_gj_per_t,3)+" GJ/t"],["Purchased gas",fmt(result.purchased_natural_gas_gj_per_t,3)+" GJ/t"]],
+    recycle:[["Stream","RECYCLE C2H6"],["Ethane recycle",fmt(result.recycle_ethane_kg_per_kg,4)+" kg/kg C2H4"],["Single-pass conversion",pct(result.conversion)]],
+    product:[["Stream","C2H4 PRODUCT"],["Basis","1.000 kg C2H4"],["Purity","99.9 mol%"],["Plant output",fmt(result.annual_product_kt,1)+" kt/y"],["Cost","$"+fmt(result.cost_usd_per_t,1)+"/t"]],
+    c3:[["Stream","C3+ COPRODUCT"],["C3",fmt(result.c3_kg_per_kg,5)+" kg/kg C2H4"],["C4+",fmt(result.c4plus_kg_per_kg,5)+" kg/kg C2H4"],["Cantera C3 yield",fmt(g.y_c3_kg_per_kg_ethane||0,5)+" kg/kg coil C2H6"]]
+  };
+  return map[id]||[];
+}
+function openStream(id){
+  if(!result)return;
+  const rows=streamProps(id); if(!rows.length)return;
+  $("streamTitle").textContent=rows[0][1];
+  $("streamTable").innerHTML=rows.slice(1).map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
+  $("streamwin").classList.add("open");
+}
 function bindFlowsheet(){
-  document.querySelectorAll(".unit").forEach(u=>{
-    u.onclick=()=>openBlock(u.dataset.block);
-    u.addEventListener("dragstart",e=>{u.classList.add("dragging");e.dataTransfer.setData("text/plain",u.dataset.block)});
-    u.addEventListener("dragend",()=>u.classList.remove("dragging"));
-    u.addEventListener("dragover",e=>e.preventDefault());
-    u.addEventListener("drop",e=>{
-      e.preventDefault();
-      const id=e.dataTransfer.getData("text/plain");
-      const src=document.querySelector('.unit[data-block="'+id+'"]');
-      if(src&&src!==u)$("flowsheet").insertBefore(src,u);
-    });
-  });
+  document.querySelectorAll(".unit").forEach(u=>u.onclick=()=>openBlock(u.dataset.block));
+  document.querySelectorAll("[data-stream]").forEach(s=>s.onclick=()=>openStream(s.dataset.stream));
   $("propClose").onclick=$("propOK").onclick=()=>{$("propwin").classList.remove("open");document.querySelectorAll(".unit").forEach(x=>x.classList.remove("selected"))};
+  $("streamClose").onclick=$("streamOK").onclick=()=>$("streamwin").classList.remove("open");
+}
+
+function closeMenus(){
+  document.querySelectorAll(".menupop").forEach(x=>x.classList.remove("open"));
+  document.querySelectorAll("[data-menu]").forEach(x=>x.classList.remove("active"));
+}
+function runAction(a){
+  closeMenus();
+  if(a==="new")return loadPreset("default");
+  if(a==="literature"||a==="benchmarks")return show("benchmarks");
+  if(["workspace","compare","model","cite"].includes(a))return show(a);
+  if(a==="copyurl"){navigator.clipboard.writeText(location.href);$("statusRun").textContent="SCENARIO URL COPIED";return}
+  if(a==="exportjson"){download("ethane-case.json",JSON.stringify({state,result},null,2),"application/json");$("statusRun").textContent="JSON EXPORTED";return}
+  if(a==="exportcsv"){download("ethane-case.csv",toCSV(result),"text/csv");$("statusRun").textContent="CSV EXPORTED";return}
+  if(a==="run"){render();$("statusRun").textContent="READY · RECALCULATED";return}
+  if(a==="pin"){pinned={...result};$("pin").textContent="Baseline pinned";render();return}
+  if(a==="fired"){state.mode="CH";state.eff=60;render();return}
+  if(a==="joule"){state.mode="JH";state.eff=95;render();return}
+  if(a==="openreactor")return openBlock("reactor");
+  if(a==="opencompressor")return openBlock("compressor");
+  if(a==="opencoldbox")return openBlock("coldbox");
+  if(a==="opensplitter")return openBlock("splitter");
+  if(a==="streamfeed")return openStream("feed");
+  if(a==="streamrecycle")return openStream("recycle");
+}
+function bindMenusAndToolbar(){
+  document.querySelectorAll("[data-menu]").forEach(b=>b.onclick=e=>{
+    e.stopPropagation();const id=b.dataset.menu,p=$("menu-"+id),was=p.classList.contains("open");closeMenus();if(!was){p.style.left=b.offsetLeft+"px";p.classList.add("open");b.classList.add("active")}
+  });
+  document.querySelectorAll("[data-action]").forEach(b=>b.onclick=e=>{e.stopPropagation();runAction(b.dataset.action)});
+  document.addEventListener("click",closeMenus);
+  $("tbNew").onclick=()=>runAction("new");$("tbOpen").onclick=()=>runAction("literature");$("tbSave").onclick=()=>runAction("copyurl");
+  $("tbRun").onclick=()=>runAction("run");$("tbPin").onclick=()=>runAction("pin");$("tbExport").onclick=()=>runAction("exportjson");
+  document.addEventListener("keydown",e=>{if(e.key==="F5"){e.preventDefault();runAction("run")} if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="n"){e.preventDefault();runAction("new")}});
 }
 async function init(){
-  qState();bind();bindFlowsheet();fillCompare();
+  qState();bind();bindFlowsheet();bindMenusAndToolbar();fillCompare();
   try{
     [api,literature,bench]=await Promise.all([
       waitApi(),
