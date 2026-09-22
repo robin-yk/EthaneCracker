@@ -519,7 +519,7 @@ const S={tab:'main',grid:0.36,ethaneUp:0.50,tailFate:'burn',alloc:'expansion',mo
    the posterior mean only. The artifact is loaded asynchronously after the first render. */
 function mechanismGP(p){
   const m=app.gp;
-  if(!m||m.schema!=='ethane-cantera-shared-rbf-gp-v2') return null;
+  if(!m||m.schema!=='ethane-cantera-shared-rbf-gp-v3') return null;
   const raw=[p.cot,Math.log10(p.tau),p.dilution,p.pressure,p.ramp];
   const x=raw.map((v,j)=>(v-m.x_min[j])/(m.x_max[j]-m.x_min[j]));
   const k=new Array(m.x_train.length);
@@ -532,8 +532,13 @@ function mechanismGP(p){
   }
   const mean={};
   for(let o=0;o<m.outputs.length;o++){
-    let z=0; for(let i=0;i<k.length;i++) z+=k[i]*m.alpha[i][o];
-    mean[m.outputs[o]]=m.y_mean[o]+m.y_std[o]*z;
+    let zstd=0; for(let i=0;i<k.length;i++) zstd+=k[i]*m.alpha[i][o];
+    const z=m.y_mean[o]+m.y_std[o]*zstd, spec=m.output_transforms[o];
+    if(spec.kind==='logit'){
+      mean[m.outputs[o]]=z>=0?1/(1+Math.exp(-z)):Math.exp(z)/(1+Math.exp(z));
+    }else if(spec.kind==='log'){
+      mean[m.outputs[o]]=Math.max(0,Math.exp(z)-spec.epsilon);
+    }else return null;
   }
   const lo=m.domain_min||m.x_min, hi=m.domain_max||m.x_max, outside=[];
   raw.forEach((v,j)=>{if(v<lo[j]||v>hi[j])outside.push(m.inputs[j]);});
@@ -2153,7 +2158,7 @@ async function loadMechanismSurrogate(){
     if(!mr.ok) throw new Error('surrogate HTTP '+mr.status);
     const m=await mr.json();
     const v=vr.ok?await vr.json():null;
-    if(m.schema!=='ethane-cantera-shared-rbf-gp-v2') throw new Error('surrogate schema is '+m.schema);
+    if(m.schema!=='ethane-cantera-shared-rbf-gp-v3') throw new Error('surrogate schema is '+m.schema);
     const prov=m.source&&m.source.mechanism_provenance;
     if(!prov||prov.mechanism_name!=='AramcoMech 3.0') throw new Error('qualified Aramco provenance missing');
     if(v&&!v.passed) throw new Error('independent GP holdout did not pass');
