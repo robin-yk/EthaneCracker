@@ -27,7 +27,7 @@ iframe{display:none}
 <div class="status" id="status">loading Aramco GP…</div>
 <div id="cases"></div>
 <h2>Interpretation</h2>
-<p class="note">A fitted row checks whether the published case can be placed inside the model domain. A test row uses a published quantity that did not enter that fit. Economic rows retain each paper's published value and show the web model on its own cost boundary; direct percentage errors are reported only for process quantities with comparable definitions.</p>
+<p class="note">A fit row sets one unreported reactor coordinate from one published reactor or inventory quantity. A test row then compares quantities that did not enter that fit. “Inside” means the published value falls within the source-defined model envelope. Economic context rows keep each paper's reported TEA value beside the web calculation while preserving the two cost boundaries.</p>
 <pre class="machine" id="machine-results"></pre>
 </div>
 <script>
@@ -188,7 +188,7 @@ function chenCase(api,c){
       rangeMetric("dry H2 mole fraction",e.outlet_h2_molfrac,dryv("H2"),"mol/mol"),
       rangeMetric("dry CH4 mole fraction",e.outlet_ch4_molfrac,dryv("CH4"),"mol/mol"),
       rangeMetric("fresh ethane",fresh,rv("fresh_ethane_kg_per_kg"),"kg/kg"),
-      rangeMetric("reactor heat",heat,rv("reactor_useful_heat_gj_per_t"),"GJ/t"),
+      rangeMetric("high-temperature reactor heat",heat,rv("mechanism_zone_heat_gj_per_t"),"GJ/t","test","web value is the Cantera 650 °C-to-outlet enthalpy rise"),
       rangeMetric("compressor work",comp,rv("compressor_kwh_per_t"),"kWh/t"),
       rangeMetric("MSP / web cost",e.msp_usd_per_t,rv("cost_usd_per_t"),"USD/t","context","20-year MSP and screening cost use different financial boundaries"),
       rangeMetric("TCM / web annual OPEX",e.tcm_musd_per_y,rv("annual_opex_musd"),"MUSD/y","context","manufacturing-cost definitions differ")
@@ -251,20 +251,24 @@ function wangCase(api,c){
     ethane:e.ethane_price_usd_per_t,elec:e.electricity_usd_per_kwh,gas:e.gas_usd_per_gj,steam:0,lpg:850};
   const fit=solveRamp(api,base,X);
   const r=fit.result, wet=wetMassFractions(r.gp_mean,dilution);
+  const reached=fit.error<0.01;
+  const empirical=api.evaluate({...base,kinetics:"empirical",ramp:1});
   return {
     id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,
-    protocol:"geometry residence + conversion-constrained heating history",
+    protocol:reached?"geometry residence + conversion-constrained heating history":"geometry residence + heating-history domain limit",
     inputs:{...base,ramp:fit.ramp,inlet_temperature_c:e.inlet_temperature_c},
     inferred:{residence_time_s:t.central,residence_time_bracket_s:rangeOf([t.outlet,t.inlet]),reactor_volume_m3:t.volume_m3,
-      ramp_exponent:fit.ramp,conversion_fit_error_pct:fit.error*100},
+      ramp_exponent:fit.ramp,conversion_fit_error_pct:fit.error*100,conversion_target_reached:reached},
     facts:[
       ["T / P",e.temperature_c+" °C / "+e.pressure_bar+" bar"],
       ["derived residence",fmt(t.central,3)+" s"],
-      ["fitted ramp n",fmt(fit.ramp,3)],
+      [reached?"fitted ramp n":"ramp domain edge",fmt(fit.ramp,3)],
       ["published CAPEX","$"+fmt(e.capex_musd,2)+" M"]
     ],
     metrics:[
-      metric("single-pass conversion",X,r.conversion,"fraction","fit","heating-ramp exponent inferred from this row"),
+      metric("single-pass conversion",X,r.conversion,"fraction",reached?"fit":"test",
+        reached?"heating-ramp exponent inferred from this row":"published conversion remains outside the GP thermal-history domain"),
+      metric("empirical-baseline conversion",X,empirical.conversion,"fraction","context","same T, residence time and dilution with the original reactor correlation"),
       metric("fresh ethane",fresh,r.fresh_ethane_kg_per_kg,"kg/kg"),
       metric("recycle ethane",recEth,r.recycle_ethane_kg_per_kg,"kg/kg"),
       metric("outlet C2H4 mass fraction",e.outlet_ethylene_wtfrac,wet.C2H4,"kg/kg"),
@@ -279,15 +283,27 @@ function wangCase(api,c){
   };
 }
 
-function cellValue(m,key){
+function cellValue(m){
   if(Array.isArray(m.model_range))return fmt(m.model_range[0])+"–"+fmt(m.model_range[1]);
   return fmt(m.model);
 }
+function comparisonText(m){
+  if(m.role!=="test")return "";
+  if(Array.isArray(m.model_range)){
+    const [lo,hi]=m.model_range, p=m.published;
+    if(p>=lo&&p<=hi)return "inside";
+    const near=p<lo?lo:hi;
+    const d=100*(near-p)/p;
+    return "nearest "+(d>=0?"+":"")+fmt(d,1)+"%";
+  }
+  if(m.rel_error_pct==null)return "";
+  return (m.rel_error_pct>=0?"+":"")+fmt(m.rel_error_pct,1)+"%";
+}
 function renderCase(x){
   const rows=x.metrics.map(m=>{
-    const err=m.role==="test"&&m.rel_error_pct!=null?((m.rel_error_pct>=0?"+":"")+fmt(m.rel_error_pct,1)+"%"):"";
+    const err=comparisonText(m);
     const pub=fmt(m.published)+" "+m.unit;
-    const mod=(m.model_range?cellValue(m):fmt(m.model))+" "+m.unit;
+    const mod=cellValue(m)+" "+m.unit;
     return '<tr class="'+m.role+'"><td>'+m.name+'</td><td>'+pub+'</td><td>'+mod+'</td><td>'+err+'</td><td>'+m.role+(m.note?'<br><span class="context">'+m.note+'</span>':'')+'</td></tr>';
   }).join("");
   return '<section class="case"><div class="head"><div><h3>'+x.short+'</h3><div><a href="'+x.url+'" target="_blank" rel="noopener">'+x.doi+'</a> · '+x.journal+'</div></div><div class="proto">'+x.protocol+'</div></div>'
