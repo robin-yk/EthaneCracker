@@ -2216,6 +2216,49 @@ $('sEthane').value=logInv(S.ethane,50,900);
 $('sElec').value=logInv(S.elec,0.008,0.30);
 $('sGas').value=logInv(S.gas,1,30);
 
+/* ---------- stable read-only API for literature benchmarks ---------- */
+window.ethaneModel={
+  version:'ethane-web-model-v1',
+  ready:()=>!!app.gp,
+  defaults:()=>({...S}),
+  evaluate:(overrides={})=>{
+    const p={...S,...overrides};
+    if(p.kinetics==='gp'&&!app.gp) throw new Error('Aramco GP is still loading');
+    const r=model(p), lc=lca(r,p);
+    const annualOpex=(r.coo-r.L.capital)*r.prod/1e6;
+    return {
+      inputs:{...p},
+      reactor_model:r.reactorModel,
+      conversion:r.X,
+      selectivity_mass:r.Smass,
+      selectivity_mol:r.Smol,
+      fresh_ethane_kg_per_kg:r.y.ethane,
+      coil_ethane_kg_per_kg:r.coil,
+      recycle_ethane_kg_per_kg:r.recycle,
+      steam_kg_per_kg:r.dilSteam,
+      ch4_kg_per_kg:r.y.ch4,
+      h2_kg_per_kg:r.y.h2,
+      c2h2_kg_per_kg:r.y.c2h2||0,
+      c3_kg_per_kg:r.y.c3||0,
+      c4plus_kg_per_kg:r.y.c4plus||0,
+      reactor_useful_heat_gj_per_t:r.qDemand*kJ2GJ,
+      purchased_heat_gj_per_t:r.qDeliver*kJ2GJ,
+      compressor_kwh_per_t:r.wComp*kJ2GJ/GJ_per_kWh,
+      refrigeration_kwh_per_t:r.wRef*kJ2GJ/GJ_per_kWh,
+      splitter_kwh_per_t:r.wSplit*kJ2GJ/GJ_per_kWh,
+      total_process_power_kwh_per_t:r.elec_kWh*1000,
+      tbmc_musd:r.tbmc,
+      toc_musd:r.toc,
+      annual_opex_musd:annualOpex,
+      cost_usd_per_t:r.coo,
+      carbon_kgco2e_per_t:lc.ci,
+      annual_product_kt:r.prod/1000,
+      gp_mean:r.gp&&r.gp.mean?{...r.gp.mean}:null,
+      flags:[...r.flags]
+    };
+  }
+};
+
 async function loadMechanismSurrogate(){
   try{
     const [mr,vr]=await Promise.all([
