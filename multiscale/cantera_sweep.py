@@ -320,6 +320,15 @@ def main() -> None:
         if provenance_path.exists()
         else None
     )
+    closure_max_abs = {
+        key: max(abs(float(row[key])) for row in rows)
+        for key in (
+            "carbon_residual",
+            "hydrogen_residual",
+            "oxygen_residual",
+            "mass_residual",
+        )
+    }
     meta = {
         "mechanism": args.mechanism,
         "mechanism_sha256": file_sha256(mech_path),
@@ -342,6 +351,7 @@ def main() -> None:
         "thermal_history": "T(f)=Tin+(Tout-Tin)*f**ramp_exponent",
         "thermal_discretization": "segment edges uniform in normalized temperature progress",
         "yield_basis": "kg species per kg ethane entering reactor",
+        "closure_max_abs": closure_max_abs,
         "failures": failures,
     }
     output.with_suffix(".meta.json").write_text(
