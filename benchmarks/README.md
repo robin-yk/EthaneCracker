@@ -1,6 +1,6 @@
 # Literature benchmark protocol
 
-The benchmark page replays published ethane-cracker cases through the same `model()` and `lca()` functions used by the root web app.
+The benchmark page replays published ethane-cracker cases through the same `model()` and `lca()` functions used by the root web app. The process replay includes AC-201 selective acetylene hydrogenation before cryogenic separation and the C2 splitter.
 
 Each case separates **fit**, **test**, and **context** quantities.
 
@@ -20,9 +20,9 @@ Residence time is determined from the 15.1 mol% residual ethane:
 - C2H4: published **0.377**, model **0.371–0.384 mol/mol**
 - H2: published **0.407**, model **0.396–0.412 mol/mol**
 - CH4: published **0.033**, model **0.035–0.060 mol/mol**
-- fresh ethane: published **1.108**, model **1.262–1.285 kg/kg ethylene**
-- high-temperature reactor heat: published **5.25**, model **7.87–7.90 GJ/t**
-- compressor work: published **370**, model **303–312 kWh/t**
+- fresh ethane: published **1.108**, model **1.248–1.272 kg/kg ethylene**
+- high-temperature reactor heat: published **5.25**, model **7.79–7.83 GJ/t**
+- compressor work: published **370**, model **299–309 kWh/t**
 
 The major reactor species distribution transfers well after one residence-time constraint. Fresh-feed selectivity and thermal duty remain higher than the published Aspen case.
 
@@ -36,11 +36,11 @@ For each point on an 800–900 °C and 1–5 bar grid, residence time is determi
 
 Independent outputs across those states:
 
-- C3+: published **0.1376**, model **0.1115–0.1252 kg/kg**
-- combustion heat: published **17.2**, model **17.49–18.56 GJ/t**
-- on-site GHG: published **442**, model **431–509 kgCO2e/t**
+- C3+: published **0.1376**, model **0.1145–0.1303 kg/kg**
+- combustion heat: published **17.2**, model **17.50–18.43 GJ/t**
+- on-site GHG: published **442**, model **442–507 kgCO2e/t**
 
-The published combustion-energy and on-site GHG values fall close to or inside the model envelope while C3+ production is 9–19% lower.
+The published combustion-energy and on-site GHG values fall close to or inside the model envelope while C3+ production is 5–17% lower.
 
 ## Wang et al., Frontiers in Energy Research 2026
 
@@ -54,14 +54,14 @@ Published geometry gives:
 - residence time at mean T/P: **0.291 s**
 - inlet/outlet-state residence bracket: **0.243–0.360 s**
 
-The published outlet composition gives a single-pass ethane conversion of **0.685**. The Aramco GP reaches **0.390** at the fastest allowed heating history, (n=0.45). The empirical baseline gives **0.490** at the same temperature and residence time.
+The published outlet composition gives a single-pass ethane conversion of **0.685**. The Aramco GP reaches **0.390** at the fastest allowed heating history, (n=0.45).
 
 Additional comparisons at the Aramco domain edge:
 
-- fresh ethane: published **1.331**, model **1.179 kg/kg**
-- recycle ethane: published **0.601**, model **1.844 kg/kg**
+- fresh ethane: published **1.331**, model **1.177 kg/kg**
+- recycle ethane: published **0.601**, model **1.841 kg/kg**
 - outlet C2H4: published **0.3995**, model **0.2541 mass fraction**
-- OPEX: published **$195.65 M/y**, web screening value **$171.92 M/y**
+- OPEX: published **$195.65 M/y**, web screening value **$171.61 M/y**
 
 The conversion target lies above the Aramco-GP thermal-history domain for this residence time. The paper uses a separate power-law kinetic model, a 502.77 °C reactor inlet, and 0.64 wt% ethylene in the reactor feed. These differences define the next kinetic benchmark.
 

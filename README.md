@@ -22,7 +22,7 @@ The original empirical reactor model remains available as **empirical baseline**
 
 For the Aramco GP route, Cantera supplies ethane conversion, ethylene selectivity, C2H4, C2H6, CH4, H2, C2H2, C3 and C4+ yields, and reactor enthalpy rise. The plant model converts those outputs to fresh ethane demand, recycle, tail-gas fuel, compressor load, refrigeration load, coproduct flow, heating duty, cost of ethylene, and carbon intensity.
 
-The browser starts in Aramco GP mode after the stored surrogate passes its provenance and validation checks. The empirical baseline remains one click away.
+The browser starts in Aramco GP mode after the stored surrogate passes its provenance and validation checks. The public workspace exposes the Aramco GP reactor model; the older empirical correlation remains only inside the calculation engine for regression checks.
 
 ## Current web model
 
@@ -32,6 +32,7 @@ The root `index.html` contains:
 - coil outlet temperature, residence time, steam dilution, pressure, and heating-history controls;
 - ethane recycle;
 - four-stage compression;
+- AC-201 selective acetylene hydrogenation;
 - cryogenic light-gas removal;
 - C2 splitter shortcut calculations;
 - TLE heat recovery;
@@ -102,21 +103,37 @@ The heating exponent describes the imposed thermal history. Reactor-specific val
 
 ## Mechanism-to-process transformation
 
-Cantera yields use kg species per kg ethane entering the coil. The plant model scales them to one kg of ethylene product.
+Cantera yields use kg species per kg ethane entering the coil. AC-201 recovers part of the reactor acetylene as ethylene before the plant is scaled to one kg of final ethylene product. If (f_{AC}) is the acetylene conversion in AC-201 and (S_{AC}) is its selectivity to ethylene,
 
 [
-m_{coil,C2H6}=\frac{1}{Y_{C2H4}}
+Y_{C2H4,AC}=Y_{C2H2}\,f_{AC}\,S_{AC}\frac{MW_{C2H4}}{MW_{C2H2}},
 ]
 
 [
-m_{fresh,C2H6}=\frac{X}{Y_{C2H4}}
+Y_{C2H4,final}=Y_{C2H4}+Y_{C2H4,AC},
 ]
 
 [
-m_{recycle,C2H6}=\frac{1-X}{Y_{C2H4}}
+m_{coil,C2H6}=\frac{1}{Y_{C2H4,final}}.
 ]
 
-CH4 and H2 set tail-gas fuel. C2H2, C3, C4+ and unconverted C2H6 contribute to downstream flow and refrigeration load. Cantera enthalpy supplies the 650 °C-to-outlet reactor duty; the process model supplies upstream preheat and TLE recovery.
+The ethane formed by over-hydrogenation is
+
+[
+Y_{C2H6,AC}=Y_{C2H2}\,f_{AC}(1-S_{AC})\frac{MW_{C2H6}}{MW_{C2H2}},
+]
+
+and the fresh-feed/recycle screening balances are
+
+[
+m_{fresh,C2H6}=(X-Y_{C2H6,AC})m_{coil,C2H6},
+]
+
+[
+m_{recycle,C2H6}=(1-X+Y_{C2H6,AC})m_{coil,C2H6}.
+]
+
+CH4 and H2 set the cracked-gas fuel inventory. C2H2 is compressed with the cracked gas and then passes through AC-201 before the cold box. The screening converter targets 5 ppm residual acetylene and assigns 90% of converted acetylene to ethylene; the balance forms ethane. Hydrogen is taken from the mechanism-predicted H2 stream before the remaining H2 enters the tail gas. C3, C4+, and unconverted C2H6 continue into the downstream flow calculations. Cantera enthalpy supplies the 650 °C-to-outlet reactor duty; the process model supplies upstream preheat and TLE recovery.
 
 ## Numerical checks
 
@@ -128,11 +145,13 @@ The browser stores the maximum raw Cantera closure residuals in the surrogate me
 
 ## Process and TEA scope
 
-The process layer uses screening correlations for the cold box, C2 splitter, capital scaling, and utility costs. Capital is reported as AACE Class 5.
+The process layer uses screening correlations for AC-201, the cold box, C2 splitter, capital scaling, and utility costs. Capital is reported as AACE Class 5.
 
-Current equations cover reactor chemistry, recycle, compression, refrigeration screening, C2 fractionation screening, TLE recovery, coproduct credits, cost, and LCA.
+AC-201 is a front-end screening block placed after compression and before the cold box. It converts acetylene to a 5 ppm target using mechanism-predicted H2. The default ethylene selectivity is 90%; the remainder forms ethane and returns with the recycle. The converter vessel is treated as part of the existing recovery-section capital anchor, so no separate converter CAPEX is added.
 
-Higher-fidelity extensions require radial reactor temperature gradients, furnace-side radiation, tube-wall conduction, pressure drop, coke-deposition kinetics, detailed quench chemistry, acetylene hydrogenation, rigorous multicomponent cryogenic thermodynamics, and vendor equipment design.
+Current equations cover reactor chemistry, acetylene conversion, recycle, compression, refrigeration screening, C2 fractionation screening, TLE recovery, coproduct credits, cost, and LCA.
+
+Higher-fidelity extensions require radial reactor temperature gradients, furnace-side radiation, tube-wall conduction, pressure drop, coke-deposition kinetics, detailed quench chemistry, a kinetic acetylene-converter model with green-oil/catalyst-aging behavior, rigorous multicomponent cryogenic thermodynamics, and vendor equipment design.
 
 ## Experimental chemistry benchmark
 
