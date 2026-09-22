@@ -465,6 +465,7 @@ async function init(){
       fetch("benchmarks/literature.json",{cache:"no-store"}).then(r=>r.json()),
       fetch("benchmarks/results.json",{cache:"no-store"}).then(r=>r.json())
     ]);
+    window.ethaneModel=api;
     document.body.dataset.appStatus="ready";$("live").textContent="Aramco GP ready · 256 train / 64 holdout";$("live").className="live good";
     render();benchmarkSummary();modelMeta();
   }catch(e){
