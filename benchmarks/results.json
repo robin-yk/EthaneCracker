@@ -117,8 +117,8 @@
           "name": "compressor work",
           "published": 370.2770780856423,
           "model_range": [
-            299.29484620340594,
-            309.1248767329787
+            299.43107542043856,
+            309.24433683669514
           ],
           "unit": "kWh/t",
           "role": "test",
@@ -128,8 +128,8 @@
           "name": "MSP / web cost",
           "published": 832,
           "model_range": [
-            418.8629157578613,
-            433.8688601791878
+            418.7785733250862,
+            433.07933889543744
           ],
           "unit": "USD/t",
           "role": "context",
@@ -139,8 +139,8 @@
           "name": "TCM / web annual OPEX",
           "published": 496,
           "model_range": [
-            163.60052189570703,
-            175.6725172310635
+            163.5676573577694,
+            175.3628140591644
           ],
           "unit": "MUSD/y",
           "role": "context",
@@ -245,8 +245,8 @@
           "name": "LCOE / web cost",
           "published": 746,
           "model_range": [
-            364.2426351861323,
-            387.0897473294196
+            364.6947757481047,
+            387.1096409362101
           ],
           "unit": "USD/t",
           "role": "context",
@@ -256,8 +256,8 @@
           "name": "WTG GHG / web carbon",
           "published": 869,
           "model_range": [
-            1080.5857650206353,
-            1182.33518022725
+            1082.6038178545102,
+            1182.7569810134273
           ],
           "unit": "kgCO2e/t",
           "role": "context",
@@ -418,20 +418,20 @@
         {
           "name": "CAPEX / web TOC",
           "published": 357.38,
-          "model": 509.1842582669058,
+          "model": 509.07951742780205,
           "unit": "MUSD",
           "role": "context",
           "note": "paper CAPEX and web TOC use different estimating structures",
-          "rel_error_pct": 42.47698759497056
+          "rel_error_pct": 42.44767962051655
         },
         {
           "name": "OPEX / web annual OPEX",
           "published": 195.65,
-          "model": 171.66032150910448,
+          "model": 171.60970868027644,
           "unit": "MUSD/y",
           "role": "context",
           "note": "utility and overhead definitions differ",
-          "rel_error_pct": -12.261527467874025
+          "rel_error_pct": -12.287396534486872
         }
       ],
       "notes": [
