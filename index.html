@@ -2242,6 +2242,8 @@ window.ethaneModel={
       c3_kg_per_kg:r.y.c3||0,
       c4plus_kg_per_kg:r.y.c4plus||0,
       reactor_useful_heat_gj_per_t:r.qDemand*kJ2GJ,
+      mechanism_zone_heat_gj_per_t:(r.gp&&r.gp.mean&&Number.isFinite(r.gp.mean.heat_MJ_per_kg_ethane))
+        ? r.gp.mean.heat_MJ_per_kg_ethane*r.coil : null,
       heater_input_gj_per_t:r.qDeliver*kJ2GJ,
       purchased_natural_gas_gj_per_t:r.gasBuy*kJ2GJ,
       compressor_kwh_per_t:r.wComp*kJ2GJ/GJ_per_kWh,
