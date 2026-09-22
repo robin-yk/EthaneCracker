@@ -592,8 +592,8 @@ function model(p){
   let Smol,Smass,n,y,coil,recycle,dilSteam;
   let nCH4=0,nC3=0,nCoke=0,nH2=0;
   let acetylene={enabled:false,targetPpm:ACET.targetPpm,selectivity:ACET.selectivity,
-    rawKg:0,convertedKg:0,residualKg:0,residualPpm:0,ethyleneRecoveredKg:0,
-    ethaneMadeKg:0,h2ConsumedKg:0,h2FromPlantKg:0,h2ExternalKg:0};
+    rawKg:0,convertedKg:0,residualKg:0,residualPpm:0,rawEthyleneKg:0,rawEthaneKg:0,rawH2Kg:0,
+    ethyleneRecoveredKg:0,ethaneMadeKg:0,h2ConsumedKg:0,h2FromPlantKg:0,h2ExternalKg:0};
 
   if(useMechanismSpecies){
     /* Cantera yields are kg species per kg ethane entering the coil. The
@@ -641,6 +641,9 @@ function model(p){
       convertedKg:(nArxn*MW.C2H2/1000)*coil,
       residualKg:y.c2h2,
       residualPpm:nAres/Math.max(1e-12,nAres+nE+nErec+nEth+nEthMade)*1e6,
+      rawEthyleneKg:Math.max(0,1-ethyleneRecoveredPerCoil*coil),
+      rawEthaneKg:Math.max(0,recycle-ethaneMadePerCoil*coil),
+      rawH2Kg:yh2raw*coil,
       ethyleneRecoveredKg:ethyleneRecoveredPerCoil*coil,
       ethaneMadeKg:ethaneMadePerCoil*coil,
       h2ConsumedKg:h2NeedPerCoil*coil,
@@ -697,18 +700,28 @@ function model(p){
   if(p.mode==='CH'){ if(fuelGas>=qDeliver) gasSell=fuelGas-qDeliver; else gasBuy=qDeliver-fuelGas; }
   else { elecHeat=qDeliver; gasSell=fuelGas; }
 
-  /* 4. Compressor. Specification fixed. */
-  const mol={c2h4:1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
-             h2:y.h2*1000/MW.H2,c2h2:(useMechanismSpecies?acetylene.rawKg:(y.c2h2||0))*1000/MW.C2H2,
-             c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4};
-  const nGas=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c2h2+mol.c3+mol.c4plus;
+  /* 4. Compressor. Specification fixed. AC-201 sits after compression, so
+     compressor flow uses the raw reactor outlet. */
+  const molComp={
+    c2h4:(useMechanismSpecies?acetylene.rawEthyleneKg:1)*1000/MW.C2H4,
+    c2h6:(useMechanismSpecies?acetylene.rawEthaneKg:recycle)*1000/MW.C2H6,
+    ch4:y.ch4*1000/MW.CH4,
+    h2:(useMechanismSpecies?acetylene.rawH2Kg:y.h2)*1000/MW.H2,
+    c2h2:(useMechanismSpecies?acetylene.rawKg:(y.c2h2||0))*1000/MW.C2H2,
+    c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4
+  };
+  const nGas=molComp.c2h4+molComp.c2h6+molComp.ch4+molComp.h2+molComp.c2h2+molComp.c3+molComp.c4plus;
   const gam=1.32,st=4,rSt=Math.pow(P_DISCH/1.5,1/st);
   const wComp=st*(gam/(gam-1))*8.314*313*(Math.pow(rSt,(gam-1)/gam)-1)/0.75*nGas/1000;
 
-  /* 5. Cold box. The recovery specification sets the temperature required. */
-  const lightFrac=(mol.ch4+mol.h2)/nGas;
+  /* 5. AC-201 effluent enters the cold box. */
+  const mol={c2h4:1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
+             h2:y.h2*1000/MW.H2,c2h2:(y.c2h2||0)*1000/MW.C2H2,
+             c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4};
+  const nPostAC=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c2h2+mol.c3+mol.c4plus;
+  const lightFrac=(mol.ch4+mol.h2)/nPostAC;
   const tCold=-100-40*Math.log10(0.01/(1-RECOVERY))-160*(lightFrac-0.40);
-  const mCold=coil-y.coke;
+  const mCold=1+recycle+y.ch4+y.h2+(y.c2h2||0)+y.c3+(y.c4plus||0);
   const qCold=mCold*2.2*(30-tCold)+(1+recycle+(y.c2h2||0)+y.c3+(y.c4plus||0))*350;
   const lv=[[-40,.55],[-100,.30],[tCold,.15]];
   let wRef=0; for(const[T,fr]of lv){const Tk=T+273.15;
