@@ -252,7 +252,7 @@ function wangCase(api,c){
   const fit=solveRamp(api,base,X);
   const r=fit.result, wet=wetMassFractions(r.gp_mean,dilution);
   const reached=fit.error<0.01;
-  const empirical=api.evaluate({...base,kinetics:"empirical",ramp:1});
+
   return {
     id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,
     protocol:reached?"geometry residence + conversion-constrained heating history":"geometry residence + heating-history domain limit",
@@ -268,7 +268,6 @@ function wangCase(api,c){
     metrics:[
       metric("single-pass conversion",X,r.conversion,"fraction",reached?"fit":"test",
         reached?"heating-ramp exponent inferred from this row":"published conversion remains outside the GP thermal-history domain"),
-      metric("empirical-baseline conversion",X,empirical.conversion,"fraction","context","same T, residence time and dilution with the original reactor correlation"),
       metric("fresh ethane",fresh,r.fresh_ethane_kg_per_kg,"kg/kg"),
       metric("recycle ethane",recEth,r.recycle_ethane_kg_per_kg,"kg/kg"),
       metric("outlet C2H4 mass fraction",e.outlet_ethylene_wtfrac,wet.C2H4,"kg/kg"),
