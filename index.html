@@ -25,9 +25,9 @@ h1 b{font-weight:700}
 .grade{font-size:11.5px;color:var(--secondary);border:1px solid var(--hairline);
   border-radius:6px;padding:2px 8px;white-space:nowrap}
 nav{display:flex;gap:18px;margin-top:9px;flex-wrap:wrap}
-nav button{background:none;border:0;border-bottom:2px solid transparent;padding:0 0 7px;
-  font:inherit;font-size:13px;color:var(--secondary);cursor:pointer}
-nav button:hover{color:var(--ink)}
+nav button,nav a{background:none;border:0;border-bottom:2px solid transparent;padding:0 0 7px;
+  font:inherit;font-size:13px;color:var(--secondary);cursor:pointer;text-decoration:none}
+nav button:hover,nav a:hover{color:var(--ink)}
 nav button.active{color:var(--accent);font-weight:500;border-bottom-color:var(--accent)}
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0 24px;padding:14px 0 0}
@@ -1851,7 +1851,8 @@ function renderExplained(r,l){
 /* ---------- tabs ---------- */
 const TABS=[['main','main'],['compare','fired vs Joule'],['carbon','carbon'],
             ['balance','balances'],['explained','explained'],['cite','cite']];
-$('nav').innerHTML=TABS.map(([id,lab])=>'<button data-tab="'+id+'">'+lab+'</button>').join('');
+$('nav').innerHTML=TABS.map(([id,lab])=>'<button data-tab="'+id+'">'+lab+'</button>').join('')
+  +'<a href="benchmarks/">benchmarks</a>';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render();});
 
 /* ---------- render ---------- */
