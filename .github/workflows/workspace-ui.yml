@@ -71,6 +71,9 @@ jobs:
           "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8000/benchmarks/ > /tmp/bench.html
           grep -q 'data-benchmark-status="complete"' /tmp/bench.html
           grep -q 'data-benchmark-count="3"' /tmp/bench.html
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom "http://127.0.0.1:8000/?uiAudit=1" > /tmp/control-audit.html
+          grep -q 'data-control-audit="pass"' /tmp/control-audit.html
+          grep -q 'data-control-audit-count="' /tmp/control-audit.html
 
       - name: Capture rendered workspace
         run: |
