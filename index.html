@@ -212,7 +212,7 @@ svg{display:block;width:100%;height:auto}
       <span class="seglab">Selectivity</span>
       <div class="seg"><button id="selCalc" class="active">from kinetics</button><button id="selDirect">set directly</button></div>
       <span class="seglab">Reactor model</span>
-      <div class="seg"><button id="kinEmp" class="active">empirical</button><button id="kinGP" disabled>Aramco GP</button></div>
+      <div class="seg"><button id="kinEmp" class="active">empirical baseline</button><button id="kinGP" disabled>Aramco GP</button></div>
       <span class="wor" id="kinStatus">loading mechanism surrogate…</span>
       <label class="ck"><input type="checkbox" id="tTle" checked><span>TLE heat recovery</span></label>
     </div>
@@ -1360,7 +1360,7 @@ function drawFig2(rCH,rJH,cot,tau,be){
       +'Joule optimum over '+sig(j.cotLo,4)+' to '+sig(j.cotHi,4)+'&thinsp;&deg;C, worth '+usd(j.saveLo)+' to '
       +usd(j.saveHi)+'&thinsp;t<sup>&minus;1</sup>. Every variant still produces an optimum, so the trade-off '
       +'between conversion, selectivity and run length is a result. Where it sits, and what it is worth, is not.'
-      : '<br><br>Re-running the optimum search across the selectivity curve variants, one moment.');
+      : '');
 }
 
 /* The grid factor at which the two routes have equal carbon intensity. */
@@ -1481,7 +1481,7 @@ function drawFig4(r){
   let s='<g>';
 
   /* a. Residuals against the tolerance. Mechanism mode reports the largest
-     raw Cantera closure residual in the training sweep; empirical mode reports the
+     raw Cantera closure residual in the training sweep. Empirical mode reports
      algebraic closure of the lumped screening model. */
   const FLOOR=1e-13;
   const rawClosure=r.useMechanismSpecies&&app.gp&&app.gp.source&&app.gp.source.closure_max_abs;
@@ -2135,7 +2135,7 @@ function robustOptimum(mode){
 }
 
 function bestPoint(mode){
-  const key=[S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor,S.selMode,S.sel].join('|');
+  const key=[S.kinetics,S.pressure,S.ramp,S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor,S.selMode,S.sel].join('|');
   if(key!==_bpKey){_bpKey=key;_bpVal={};}
   if(_bpVal[mode]) return _bpVal[mode];
   const W=MODE_LIMITS[mode], eff=(mode==='CH'?60:95);
@@ -2234,7 +2234,7 @@ loadMechanismSurrogate();
 </body>
 </html>
 +sig(-r.L.lpgCr,4)+' per tonne',
-    '<p>The screening model values '+sig(r.y.c3+(r.y.c4plus||0),3)+' kilograms of C3+ coproduct per kilogram of ethylene at the coproduct price input.</p>');
+    '<p>The screening price applies to '+sig(r.y.c3+(r.y.c4plus||0),3)+' kilograms of C3+ coproduct per kilogram of ethylene.</p>');
 
   h+='<h3>Carbon intensity</h3>';
   h+=item('Carbon intensity',sig(l.ci,4)+' kg CO2e per tonne',
