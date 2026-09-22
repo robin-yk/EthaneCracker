@@ -8,6 +8,7 @@ on:
       - workspace-detail-v3
       - workspace-polish-v4
       - ui-visual-audit-v5
+      - acetylene-converter-v1
       - main
     paths:
       - "index.html"
@@ -58,6 +59,8 @@ jobs:
           grep -q "Aramco GP" /tmp/root.html
           grep -q "R-101 · CRACKER + TLE" /tmp/root.html
           grep -q "C-101 · COMPRESSION" /tmp/root.html
+          grep -q "AC-201" /tmp/root.html
+          grep -q "ACETYLENE CONVERTER" /tmp/root.html
           grep -q "RECYCLE C2H6" /tmp/root.html
           grep -q "Block Properties" /tmp/root.html
           grep -q "CAN-101 · REACTION PRODUCT SLATE" /tmp/root.html
