@@ -709,7 +709,7 @@ function model(p){
   const lightFrac=(mol.ch4+mol.h2)/nGas;
   const tCold=-100-40*Math.log10(0.01/(1-RECOVERY))-160*(lightFrac-0.40);
   const mCold=coil-y.coke;
-  const qCold=mCold*2.2*(30-tCold)+(1+recycle+(useMechanismSpecies?acetylene.rawKg:(y.c2h2||0))+y.c3+(y.c4plus||0))*350;
+  const qCold=mCold*2.2*(30-tCold)+(1+recycle+(y.c2h2||0)+y.c3+(y.c4plus||0))*350;
   const lv=[[-40,.55],[-100,.30],[tCold,.15]];
   let wRef=0; for(const[T,fr]of lv){const Tk=T+273.15;
     wRef+=qCold*fr/Math.max(.05,ETA2*Tk/(T_AMB-Tk));}
