@@ -42,7 +42,8 @@ jobs:
       - name: Select build profile
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication" ]]; then
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
+          if [[ ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
             echo "TRAIN_POINTS=256" >> "$GITHUB_ENV"
             echo "HOLDOUT_POINTS=64" >> "$GITHUB_ENV"
             echo "SEGMENTS=40" >> "$GITHUB_ENV"
@@ -131,6 +132,41 @@ jobs:
                   print(fn,key,worst)
                   assert math.isfinite(worst) and worst < 1e-8
           PY
+
+      - name: Frontend JavaScript syntax gate
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html=Path("index.html").read_text(encoding="utf-8")
+          scripts=re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>",html,re.S|re.I)
+          if not scripts:
+              raise SystemExit("no inline script found")
+          Path("/tmp/ethane-root-inline.js").write_text("\n".join(scripts),encoding="utf-8")
+          print("inline scripts",len(scripts))
+          PY
+          node --check /tmp/ethane-root-inline.js
+
+      - name: Headless web smoke gate
+        run: |
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$BROWSER" --version
+          python -m http.server 8000 --bind 127.0.0.1 >/tmp/ethane-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=8000 \
+            --dump-dom http://127.0.0.1:8000/ > /tmp/ethane-dom.html
+          grep -q "Aramco" /tmp/ethane-dom.html
+          if grep -q "mechanism unavailable" /tmp/ethane-dom.html; then
+            echo "Root app did not load the qualified surrogate"
+            exit 1
+          fi
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=8000 \
+            --dump-dom http://127.0.0.1:8000/multiscale/demo.html > /tmp/ethane-gp-dom.html
+          grep -q "Independent Cantera holdout validation" /tmp/ethane-gp-dom.html
 
       - name: Write release manifest
         run: |
