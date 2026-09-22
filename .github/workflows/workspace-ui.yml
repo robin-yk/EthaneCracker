@@ -8,6 +8,7 @@ on:
       - workspace-detail-v3
       - workspace-polish-v4
       - ui-visual-audit-v5
+      - acetylene-converter-v1
       - main
     paths:
       - "index.html"
