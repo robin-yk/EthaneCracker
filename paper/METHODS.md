@@ -1,181 +1,225 @@
-# Mechanism-resolved multiscale ethane cracker — methods and claim boundary
+# Methods: reactor chemistry coupled to ethane-cracker TEA
 
-## Scientific claim
+## 1. Model architecture
 
-The web model links five computational layers:
+The calculation contains five layers:
 
-1. **elementary chemistry** — detailed gas-phase kinetics from AramcoMech 3.0;
-2. **reactor history** — a constant-pressure Lagrangian PFR approximation with a prescribed axial/time temperature history;
-3. **surrogate layer** — a Gaussian process trained on Cantera calculations and evaluated in the browser;
-4. **process layer** — recycle, compression, cryogenic separation, fractionation, and heat recovery;
-5. **plant layer** — screening CAPEX/OPEX and cradle-to-gate carbon intensity.
+1. AramcoMech 3.0 gas-phase kinetics;
+2. a prescribed-temperature plug-flow reactor calculation in Cantera;
+3. a Gaussian-process surrogate for browser evaluation;
+4. an ethane-cracker process model for recycle, compression, refrigeration, fractionation, and heat recovery;
+5. screening TEA and LCA.
 
-The intended claim is **mechanism-resolved early-stage process screening**. The model is not a furnace CFD model, a design-grade ethylene-plant simulator, or an investment-grade cost estimate.
+The web app loads the Aramco GP as its default reactor description after provenance and holdout checks pass. The empirical reactor model remains available as a baseline and feeds the same process model.
 
-## 1. Detailed chemical mechanism
+## 2. Chemical mechanism
 
-AramcoMech 3.0 is obtained at build time from the University of Galway Combustion Chemistry Centre official mechanism-download page. The Chemkin mechanism, thermodynamic data, and transport data are converted with Cantera `ck2yaml`. The build records:
+The release workflow downloads AramcoMech 3.0 from the University of Galway Combustion Chemistry Centre. The build retrieves the Chemkin mechanism, thermodynamic data, and transport data, then converts them with Cantera `ck2yaml`.
+
+The provenance record stores:
 
 - source URLs;
-- SHA-256 digests of the three downloaded source files;
-- SHA-256 of the converted YAML;
+- SHA-256 for each downloaded source file;
+- SHA-256 for the converted YAML;
 - Cantera version;
-- number of species and reactions;
-- Git commit used for the sweep.
+- gas-phase species count;
+- reaction count;
+- Git commit SHA used for the sweep.
 
 Primary mechanism reference:
 
 C.-W. Zhou et al., *Combustion and Flame* **197** (2018) 423–438. DOI: 10.1016/j.combustflame.2018.08.006.
 
-A mechanism SHA is part of every generated sweep metadata file. A changed upstream mechanism therefore produces a changed provenance record even when the filename is unchanged.
+## 3. Reactor calculation
 
-## 2. Reactor model
+A Lagrangian fluid element advances through a constant-pressure reactor network with the imposed thermal history
 
-The chemistry calculation uses a Lagrangian approximation to a plug-flow reactor. A reacting fluid element is integrated through a sequence of constant-pressure, isothermal Cantera reactor segments. The imposed temperature trajectory is
-
-\[
+[
 T(f)=T_{in}+(T_{out}-T_{in})f^n,
-\]
+]
 
-where \(f=t/\tau\), \(0\le f\le1\), \(\tau\) is residence time, and \(n\) is a heating-ramp exponent.
+where (f=t/\tau), (	au) is residence time, and (n) is the heating-ramp exponent.
 
-The initial screening domain is:
+The current domain is:
 
-| variable | domain |
+| variable | range |
 |---|---:|
 | outlet temperature | 750–1000 °C |
-| residence time | 0.02–1.0 s, log sampled |
+| residence time | 0.02–1.0 s |
 | steam / hydrocarbon | 0–0.70 kg kg⁻¹ |
 | pressure | 1–5 bar |
 | heating-ramp exponent | 0.45–4 |
-| inlet temperature | 650 °C, fixed in v1 |
+| inlet temperature | 650 °C |
 
-The ramp exponent is a compact descriptor of thermal history. It is not by itself identified with a fired or electrically heated reactor. Reactor-specific thermal histories must be calibrated against measured or simulated temperature profiles before claims about heating architecture are made.
+Residence time is sampled uniformly in log10 space. The other four variable dimensions use uniform Latin-hypercube coordinates.
 
-## 3. Cantera outputs and plant-scale transformation
+Segment boundaries are uniform in normalized temperature progress. This places more integration intervals where the prescribed temperature curve changes fastest.
 
-Every Cantera point reports:
+## 4. Segment-convergence check
+
+The release workflow evaluates five reactor conditions with 20 and 40 segments. Acceptance thresholds are:
+
+- conversion absolute difference ≤ 0.005;
+- ethylene selectivity absolute difference ≤ 0.005;
+- ethylene yield absolute difference ≤ 0.005 kg kg⁻¹;
+- enthalpy relative difference ≤ 0.01.
+
+The publication build passed all five cases. At the 850 °C, 0.35 s baseline, the 20-to-40 segment differences were approximately (8.8\times10^{-4}) in conversion, (5.8\times10^{-5}) in molar ethylene selectivity, (7.5\times10^{-4}) kg kg⁻¹ in ethylene yield, and 0.15% in enthalpy.
+
+## 5. Cantera outputs
+
+Each reactor point stores:
 
 - ethane conversion;
 - molar ethylene selectivity;
-- ethylene, ethane, methane, hydrogen, acetylene, CO and CO₂ mass yields;
-- total C3 mass lump;
-- total C4+ mass lump;
-- external enthalpy rise;
+- C2H4, C2H6, CH4, H2, C2H2, CO, and CO2 mass yields;
+- total C3 mass yield;
+- total C4+ mass yield;
+- enthalpy rise;
 - carbon, hydrogen, oxygen, and total-mass residuals.
 
 Species yields use kg species per kg ethane entering the coil.
 
-For ideal recovery of unreacted ethane, the per-kg-ethylene reactor flows are obtained directly from the mechanism-derived ethylene yield \(Y_{C2H4}\):
+C3 and C4+ are mass lumps formed by summing all mechanism species with three carbon atoms and four-or-more carbon atoms, respectively.
 
-\[
-m_{coil,C2H6} = \frac{1}{Y_{C2H4}},
-\]
+## 6. Plant-scale transformation
 
-\[
-m_{recycle,C2H6} = \frac{1-X}{Y_{C2H4}},
-\]
+For ideal recovery of unconverted ethane, the reactor inventory per kg ethylene follows directly from conversion (X) and ethylene mass yield (Y_{C2H4}):
 
-\[
-m_{fresh,C2H6} = \frac{X}{Y_{C2H4}}.
-\]
+[
+m_{coil,C2H6}=\frac{1}{Y_{C2H4}},
+]
 
-This removes the empirical byproduct partition used in the original screening model from the mechanism-resolved route.
+[
+m_{fresh,C2H6}=\frac{X}{Y_{C2H4}},
+]
 
-## 4. Design-space sampling
+[
+m_{recycle,C2H6}=\frac{1-X}{Y_{C2H4}}.
+]
 
-Training and external holdout points are generated as independent Latin-hypercube designs with different random seeds. Residence time is sampled uniformly in log₁₀ space; the other variables are sampled uniformly over their declared domains.
+The same scale factor converts CH4, H2, C2H2, C3, and C4+ yields to kg per kg ethylene.
 
-The training and holdout files are retained in the repository together with metadata. Elemental closure is a release gate. The current CI threshold is an absolute residual below 10⁻⁸ for C, H, O, and total mass at every generated point.
+The process model uses those flows in the tail-gas balance, compressor flow, cold-box screening calculation, and coproduct credit.
 
-## 5. Gaussian-process surrogate
+Cantera reports enthalpy rise from 650 °C to the selected outlet condition. The process model calculates preheat from 150 to 650 °C and combines both terms for the reactor heating requirement.
 
-Inputs are
+## 7. Gaussian-process surrogate
 
-\[
+The GP input vector is
+
+[
 [T_{out},\log_{10}\tau,S/H,P,n].
-\]
+]
 
-Each input is normalized to the span of the training set. All outputs share one anisotropic radial-basis-function kernel,
+Inputs are normalized with the training-set bounds.
 
-\[
-k(\mathbf x,\mathbf x')
+Conversion and selectivity use logit transforms. Non-negative yields and enthalpy use logarithmic transforms. These transforms place bounded and multi-decade outputs on smoother latent scales before fitting.
+
+All outputs share an anisotropic radial-basis-function covariance,
+
+[
+k(\mathbf{x},\mathbf{x}')
 =
 \exp\left[
--\frac12
-\sum_j\left(\frac{x_j-x'_j}{\ell_j}\right)^2
+-\frac{1}{2}
+\sum_j
+\left(
+\frac{x_j-x'_j}{\ell_j}
+\right)^2
 \right].
-\]
+]
 
-The base length-scale vector is multiplied by several candidate global factors. The factor minimizing mean output RMSE normalized by the observed tuning-set range is selected using an internal tuning split. After selection, the GP is refit on the complete training sweep.
+A deterministic candidate search selects the length-scale vector using an internal tuning subset. The model is then refit on the full training sweep.
 
-Posterior uncertainty is calibrated against residuals from the internal tuning split separately for each output. Browser inference exports the training coordinates, GP coefficients, covariance inverse, normalization parameters, and uncertainty calibration factors to a static JSON artifact. No Cantera calculation is performed in the browser.
+The browser artifact stores normalized training coordinates, GP coefficients, covariance inverse, output transforms, output scales, input domain, and provenance metadata.
 
-## 6. Three separate validation tiers
+## 8. Training and external holdout
 
-### Tier A — conservation
+The publication build uses:
 
-Every Cantera point must satisfy elemental and total-mass closure below the release threshold.
+- 256 training points with seed 42;
+- 64 holdout points with seed 4242;
+- 20 reactor segments.
 
-### Tier B — surrogate fidelity
+The holdout points remain outside GP fitting and hyperparameter selection.
 
-A second Cantera Latin-hypercube sweep is never used in GP fitting or hyperparameter selection. The release report gives, for every output:
+Release acceptance requires R² ≥ 0.90 and RMSE/observed range ≤ 0.08 for the designated outputs.
 
-- MAE;
-- RMSE;
-- maximum absolute error;
-- R²;
-- RMSE divided by observed output range;
-- empirical coverage of the calibrated 95% GP interval.
+The current holdout results are:
 
-This tier answers: *does the browser surrogate reproduce Cantera within the declared design space?*
+| quantity | R² | RMSE / range |
+|---|---:|---:|
+| C2H6 conversion | 0.9991 | 0.0099 |
+| C2H4 selectivity | 0.9872 | 0.0229 |
+| C2H4 yield | 0.9979 | 0.0161 |
+| CH4 yield | 0.9724 | 0.0311 |
+| H2 yield | 0.9961 | 0.0197 |
+| C2H2 yield | 0.9680 | 0.0386 |
+| C3 lump | 0.9936 | 0.0215 |
+| C4+ lump | 0.9797 | 0.0316 |
+| enthalpy rise | 0.9980 | 0.0136 |
 
-### Tier C — chemical-mechanism fidelity
+The validation artifact also stores MAE, RMSE, maximum absolute error, prediction range, and calibrated 95% interval coverage.
 
-A separate external benchmark must compare AramcoMech predictions with experimental ethane-pyrolysis measurements. The primary target is:
+## 9. Conservation checks
+
+Every raw Cantera row records carbon, hydrogen, oxygen, and total-mass residuals. The release gate requires each absolute residual to stay below (10^{-8}).
+
+The sweep metadata stores the maximum absolute residual for each quantity. The web balances figure reads those maxima in Aramco GP mode.
+
+The empirical baseline retains its original algebraic C/H/mass/energy residual calculation.
+
+## 10. Process model
+
+The downstream model uses the same equations for both reactor descriptions.
+
+Compression uses a four-stage ideal-gas shortcut to 32 bar. The cold-box calculation estimates refrigeration duty from flow, light-gas fraction, recovery, and Carnot-based work. The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
+
+TLE recovery credits recovered sensible heat. Tail gas supplies fired-heater demand before purchased natural gas. The Joule case supplies reactor heat electrically.
+
+The capital model starts from the published 610 kt y⁻¹ bare-module anchor and applies section-specific capacity scaling. Total overnight cost uses the existing TOC/TBMC factor. OPEX combines feedstock, utilities, credits, capital charge, maintenance, and labor.
+
+## 11. LCA
+
+The LCA reads the same process inventory used by the cost model.
+
+Scope 1 includes purchased gas, tail-gas combustion, and the empirical decoking term where present. Scope 2 uses purchased electricity and the selected grid factor. Scope 3 uses the upstream ethane factor.
+
+TLE steam and C3+ coproducts enter the selected coproduct treatment. The C3+ screening lump uses the same price and displacement-factor basis already used by the TEA.
+
+## 12. Fired and Joule comparison
+
+The fired and Joule cases share the reactor chemistry model. The heating mode changes efficiency, energy source, and the declared accessible temperature/residence-time envelope.
+
+The current fired envelope spans 760–900 °C with residence time ≥0.20 s. The Joule envelope spans 760–950 °C with residence time ≥0.05 s.
+
+These envelopes are screening inputs. Reactor-specific thermal histories require measured or simulated profiles. The heating-ramp exponent supplies a continuous thermal-history coordinate for that future calibration.
+
+## 13. Experimental kinetic benchmark
+
+Surrogate holdout validation measures GP fidelity to Cantera.
+
+Experimental chemistry validation uses an external ethane-pyrolysis dataset. The selected reference is:
 
 S. J. Cassady, R. Choudhary, N. H. Pinkowski, J. Shao, D. F. Davidson, R. K. Hanson, “The thermal decomposition of ethane,” *Fuel* **268** (2020) 117409. DOI: 10.1016/j.fuel.2020.117409.
 
-That study reports time histories for ethane, ethylene, methane, and acetylene during 1% and 2% ethane pyrolysis in Ar at 1178–1527 K and 3.1–4.2 atm. Tier C is distinct from GP validation: a surrogate can perfectly reproduce a chemically inaccurate mechanism.
+The study reports time histories for ethane, ethylene, methane, and acetylene during 1% and 2% ethane pyrolysis in Ar over 1178–1527 K and 3.1–4.2 atm.
 
-## 7. Browser guardrails
+Current release status:
 
-The browser returns the raw GP mean and calibrated sigma. It does not silently truncate values to physically allowed ranges.
+- raw Cantera conservation: complete;
+- reactor segment convergence: complete;
+- independent GP holdout: complete;
+- browser integration and headless test: complete;
+- Cassady et al. experimental comparison: pending.
 
-A result is marked unqualified when:
+## 14. Model scope
 
-- any input lies outside the declared design domain;
-- conversion or selectivity falls outside [0,1];
-- a predicted species mass yield is negative beyond numerical tolerance;
-- any required result is non-finite.
+The current calculation covers gas-phase chemistry, imposed thermal history, recycle, compression, refrigeration screening, C2 fractionation screening, heat recovery, CAPEX/OPEX, and LCA.
 
-The UI exposes mechanism identity, mechanism size, SHA-256, Cantera version, number of training points, and independent holdout metrics.
+Higher-fidelity reactor work requires radial temperature gradients, furnace-side radiation, tube-wall conduction, pressure drop, and coke-deposition kinetics.
 
-## 8. Process / TEA boundary
+Higher-fidelity downstream work requires rigorous multicomponent thermodynamics, detailed quench chemistry, acetylene hydrogenation, and vendor equipment design.
 
-The downstream process model remains screening-level. Cryogenic separation and fractionation use shortcut relationships, and equipment costs remain correlation-based. The economic output must therefore retain its AACE Class 5 framing.
-
-The mechanism-resolved reactor route materially improves the propagation of reactor chemistry into:
-
-- fresh-feed requirement;
-- recycle load;
-- light-gas load;
-- C3/C4+ coproduct production;
-- reactor enthalpy demand;
-- compression and refrigeration demand.
-
-It does not provide vendor equipment sizing, furnace radiation, tube-wall stresses, detailed hydraulics, or rigorous multicomponent column design.
-
-## 9. Remaining work before a manuscript-level release
-
-The release is publishable only after all of the following are present in one tagged revision:
-
-1. official AramcoMech provenance and reproducible Chemkin→YAML conversion;
-2. sufficiently dense independent train/holdout sweeps;
-3. pre-declared numerical acceptance criteria that the independent holdout passes;
-4. Cassady et al. external kinetic validation;
-5. mechanism-derived reactor inventory connected to the root TEA/LCA app;
-6. side-by-side empirical vs mechanism-resolved comparison;
-7. convergence study with respect to reactor segment count and sweep density;
-8. figure/data export sufficient to reproduce every reported web-paper result from the tagged commit.
-
+Economic results retain the AACE Class 5 screening classification.
