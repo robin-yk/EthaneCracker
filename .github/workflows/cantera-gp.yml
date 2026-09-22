@@ -16,6 +16,8 @@ on:
       - cantera-gp-v1
       - main
     paths:
+      - "index.html"
+      - "README.md"
       - "multiscale/**"
       - ".github/workflows/cantera-gp.yml"
 
