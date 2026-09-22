@@ -131,6 +131,23 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
 @media(max-width:1100px){.workspace{grid-template-columns:230px 1fr}.outputs{position:static;grid-column:1/-1}.casegrid{grid-template-columns:1fr}.modelgrid{grid-template-columns:1fr}}
 @media(max-width:760px){body{padding-bottom:0}.shell{padding:4px}.workspace{display:block}.inputs,.outputs{position:static;margin-bottom:4px}.flow{grid-template-columns:1fr}.unit:after,.unit:before{display:none}.resultband{grid-template-columns:1fr}.big{border-right:0;border-bottom:1px solid #aaa}.comparetop{grid-template-columns:1fr}.statusbar{display:none}.windowtitle .caption span:last-child{display:none}}
 </style>
+<style>
+/* PFD geometry is shared by symbols, stream labels and connecting paths. */
+.flowwrap{overflow-x:auto;background-image:none}
+.flowcanvas{position:relative;min-width:1040px;background:#fff;isolation:isolate}
+.flowcanvas .flow{padding:84px 64px 82px;min-height:350px;gap:28px;align-items:start;grid-template-columns:repeat(6,minmax(0,1fr))}
+.flowcanvas .equipbox{background:transparent}
+.flowcanvas .unit[data-block="product"] .equipbox{transform:translateY(-21px)}
+.flowcanvas .equipname{min-height:28px;margin-top:10px}
+.flowcanvas .unit .u{display:block;border:0;background:transparent;margin:3px auto 0;padding:0;font-size:10px;line-height:1.4}
+.flowcanvas .streamtag{font:10px Tahoma,Arial,sans-serif;border:0;padding:2px 0;background:#fff;transform:translateX(-50%)}
+.flowcanvas .pfdlines{z-index:2;overflow:visible}
+.flowcanvas .unit{z-index:3}
+.flowcanvas .equipbox svg{fill:none;stroke:#222;stroke-width:1.6;stroke-linecap:square;stroke-linejoin:miter}
+.flowcanvas .equipname{font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.3px}
+.flowcanvas .equipname span{font-family:Arial,Helvetica,sans-serif;font-size:9px;letter-spacing:0}
+.flowcanvas .streamtag:focus-visible,.flowcanvas .unit:focus-visible{outline:2px solid #3a6ea5;outline-offset:3px}
+</style>
 </head>
 <body data-app-status="loading">
 <iframe class="engine" id="engineFrame" src="engine.html" title="Calculation engine"></iframe>
@@ -225,6 +242,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       <div class="slatehead"><b>PLANT MATERIAL BASIS</b><span>kg / kg C2H4 product</span></div>
       <div class="species" id="species"></div>
       <div class="flowwrap">
+        <div class="flowcanvas">
         <svg class="pfdlines" viewBox="0 0 1200 270" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#355f86"/></marker>
@@ -250,37 +268,38 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
         <span class="streamtag st-c3" data-stream="c3">S-303 C3+</span>
         <div class="flow" id="flowsheet">
           <div class="unit" data-block="reactor">
-            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="10" y="12" width="52" height="48" fill="#fff7e8" stroke="#0a246a" stroke-width="2"/><path d="M18 49 C25 38,25 33,18 23 M30 49 C37 38,37 33,30 23 M42 49 C49 38,49 33,42 23" fill="none" stroke="#c57718" stroke-width="2"/><path d="M10 55 H62" stroke="#0a246a" stroke-width="2"/></svg></div>
+            <div class="equipbox"><svg viewBox="0 0 72 72"><path d="M16 24 L26 12 H46 L56 24 V59 H16 Z M26 12 V5 H46 V12 M16 59 V65 H22 V59 M50 59 V65 H56 V59"/><path d="M10 36 H23 V29 H34 V47 H45 V36 H62"/><path d="M36 12 V24"/></svg></div>
             <div class="equipname">R-101<br><span>CRACKER + TLE</span></div>
             <div class="u" id="uReactor">—</div><div class="u" id="uFeed">—</div>
           </div>
           <div class="unit" data-block="compressor">
-            <div class="equipbox"><svg viewBox="0 0 72 72"><circle cx="36" cy="36" r="25" fill="#eef6ff" stroke="#3a6ea5" stroke-width="2"/><path d="M23 24 L52 36 L23 48 Z" fill="#3a6ea5"/><line x1="8" y1="36" x2="20" y2="36" stroke="#3a6ea5" stroke-width="2"/><line x1="52" y1="36" x2="64" y2="36" stroke="#3a6ea5" stroke-width="2"/></svg></div>
+            <div class="equipbox"><svg viewBox="0 0 72 72"><path d="M16 16 L56 25 V47 L16 56 Z M8 36 H16 M56 36 H64 M24 54 V61 H49 V49"/></svg></div>
             <div class="equipname">C-101<br><span>COMPRESSOR</span></div>
             <div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div>
           </div>
           <div class="unit" data-block="converter">
-            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="18" y="8" width="36" height="56" rx="6" fill="#faf1ff" stroke="#8b4e9e" stroke-width="2"/><circle cx="28" cy="22" r="3" fill="#8b4e9e"/><circle cx="43" cy="29" r="3" fill="#8b4e9e"/><circle cx="29" cy="39" r="3" fill="#8b4e9e"/><circle cx="43" cy="49" r="3" fill="#8b4e9e"/><path d="M9 36 H18 M54 36 H63" stroke="#8b4e9e" stroke-width="2"/></svg></div>
+            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="22" y="8" width="28" height="56" rx="12"/><path d="M22 20 H50 M22 52 H50 M25 23 L47 49 M47 23 L25 49 M9 36 H22 M50 36 H63 M27 63 V68 M45 63 V68"/></svg></div>
             <div class="equipname">AC-201<br><span>ACETYLENE CONVERTER</span></div>
             <div class="u" id="uAcet">—</div><div class="u" id="uAcetH2">—</div>
           </div>
           <div class="unit" data-block="coldbox">
-            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="13" y="10" width="46" height="52" fill="#eefbfb" stroke="#008080" stroke-width="2"/><path d="M36 18 V54 M20 36 H52 M24 24 L48 48 M48 24 L24 48" stroke="#008080" stroke-width="1.6"/><circle cx="36" cy="36" r="5" fill="#fff" stroke="#008080"/></svg></div>
+            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="13" y="10" width="46" height="52"/><path d="M13 36 H23 L29 24 L39 48 L45 36 H59 M36 10 V19 M50 53 V62"/></svg></div>
             <div class="equipname">T-201<br><span>COLD BOX</span></div>
             <div class="u" id="uCold">—</div><div class="u" id="uRef">—</div>
           </div>
           <div class="unit" data-block="splitter">
-            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="26" y="6" width="20" height="60" rx="9" fill="#fff8ed" stroke="#8a5b25" stroke-width="2"/><path d="M27 19 H45 M27 29 H45 M27 39 H45 M27 49 H45" stroke="#8a5b25" stroke-width="1.5"/><line x1="16" y1="36" x2="26" y2="36" stroke="#8a5b25" stroke-width="2"/><line x1="46" y1="15" x2="60" y2="15" stroke="#8a5b25" stroke-width="2"/><line x1="46" y1="57" x2="60" y2="57" stroke="#8a5b25" stroke-width="2"/></svg></div>
+            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="24" y="4" width="24" height="62" rx="11"/><path d="M24 15 H48 M24 55 H48 M24 24 H43 V27 M29 34 H48 M24 44 H43 V47 M16 36 H24 M48 15 H60 M48 57 H60 M29 65 V70 H43 V65"/></svg></div>
             <div class="equipname">T-301<br><span>C2 SPLITTER</span></div>
             <div class="u" id="uSplit">—</div><div class="u">99.9 mol% C2H4</div>
           </div>
           <div class="unit" data-block="product">
-            <div class="equipbox"><svg viewBox="0 0 72 72"><circle cx="28" cy="36" r="18" fill="#eff9f0" stroke="#246c39" stroke-width="2"/><path d="M20 36 H54 M45 27 L55 36 L45 45" fill="none" stroke="#246c39" stroke-width="3"/></svg></div>
+            <div class="equipbox"><svg viewBox="0 0 72 72"><path d="M10 26 H44 L55 36 L44 46 H10 Z"/></svg></div>
             <div class="equipname">P-401<br><span>ETHYLENE</span></div>
             <div class="u">1.000 kg basis</div><div class="u" id="uCap">—</div>
           </div>
         </div>
       </div>
+        </div>
       <div class="scope" id="scope">—</div>
     </section>
 
@@ -712,7 +731,40 @@ function openStream(id){
   $("streamTable").innerHTML=rows.slice(1).map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
   $("streamwin").classList.add("open");
 }
+function layoutFlowsheet(){
+  const canvas=document.querySelector('.flowcanvas'),svg=canvas.querySelector('.pfdlines');
+  if(!canvas.getBoundingClientRect().width)return;
+  const base=canvas.getBoundingClientRect(),w=canvas.clientWidth,h=canvas.clientHeight;
+  svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  const port=(id,x,y)=>{const b=canvas.querySelector(`[data-block="${id}"] .equipbox`).getBoundingClientRect();return [b.left-base.left+x,b.top-base.top+y]};
+  let paths='';
+  const line=(points,color='#222',marker='arr')=>{paths+=`<path d="M${points.map(p=>p.join(' ')).join(' L')}" fill="none" stroke="#222" stroke-width="1.6" stroke-linejoin="miter" marker-end="url(#${marker})"/>`};
+  const tag=(cls,x,y)=>{const e=canvas.querySelector(cls);e.style.left=x+'px';e.style.top=y+'px';e.style.right='auto';e.style.bottom='auto'};
+  svg.querySelectorAll('marker').forEach(m=>{m.setAttribute('markerUnits','userSpaceOnUse');m.setAttribute('markerWidth','8');m.setAttribute('markerHeight','8');m.setAttribute('refX','8');m.querySelector('path').setAttribute('fill','#222')});
+  const feed=port('reactor',10,36),joint=[24,feed[1]];
+  line([[12,feed[1]],feed]);
+  [['reactor',62,'compressor',8],['compressor',64,'converter',9],['converter',63,'coldbox',13],['coldbox',59,'splitter',16]].forEach(([a,x,b,y])=>line([port(a,x,36),port(b,y,36)]));
+  line([port('splitter',60,15),port('product',10,36)]);
+  const out=port('product',55,36);line([out,[w-12,out[1]]]);
+  const recycle=port('splitter',60,57),lane=h-32;
+  const recycleX=port('product',0,36)[0]-14;
+  line([recycle,[recycleX,recycle[1]],[recycleX,lane],[joint[0],lane],joint],'#28733b','arrg');
+  paths+=`<circle cx="${joint[0]}" cy="${joint[1]}" r="2.6" fill="#222"/>`;
+  const heat=port('reactor',36,12),hydrogen=port('converter',36,8),tail=port('coldbox',36,10);
+  line([[heat[0],36],heat],'#9a6123','arro');
+  line([[hydrogen[0],36],hydrogen],'#8b4e9e','arrh');
+  line([tail,[tail[0],36]],'#9a6123','arro');
+  const c3=port('coldbox',50,62),c3x=port('splitter',0,36)[0]-16;
+  line([c3,[c3[0],c3[1]+14],[c3x,c3[1]+14],[c3x,h-72],[c3x+36,h-72]],'#9a6123','arro');
+  tag('.st-feed',54,feed[1]-26);tag('.st-energy',heat[0],12);tag('.st-h2',hydrogen[0],12);tag('.st-tail',tail[0],12);
+  tag('.st-product',(port('splitter',60,15)[0]+port('product',10,36)[0])/2,out[1]-25);
+  tag('.st-recycle',w/2,lane+8);tag('.st-c3',c3x+38,h-65);
+  let layer=svg.querySelector('.connections');if(!layer){svg.querySelectorAll(':scope > path').forEach(p=>p.remove());layer=document.createElementNS('http://www.w3.org/2000/svg','g');layer.setAttribute('class','connections');svg.append(layer)}layer.innerHTML=paths;
+}
 function bindFlowsheet(){
+  const flowObserver=new ResizeObserver(()=>requestAnimationFrame(layoutFlowsheet));
+  flowObserver.observe(document.querySelector('.flowcanvas'));
+  document.querySelectorAll('.equipbox').forEach(e=>flowObserver.observe(e));
   document.querySelectorAll(".unit").forEach(u=>u.onclick=()=>openBlock(u.dataset.block));
   document.querySelectorAll("[data-stream]").forEach(s=>s.onclick=()=>openStream(s.dataset.stream));
   $("propClose").onclick=$("propOK").onclick=()=>{$("propwin").classList.remove("open");document.querySelectorAll(".unit").forEach(x=>x.classList.remove("selected"))};
