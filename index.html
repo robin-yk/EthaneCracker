@@ -466,10 +466,14 @@ async function init(){
       fetch("benchmarks/results.json",{cache:"no-store"}).then(r=>r.json())
     ]);
     window.ethaneModel=api;
-    document.body.dataset.appStatus="ready";$("live").textContent="Aramco GP ready · 256 train / 64 holdout";$("live").className="live good";
+    document.body.dataset.appStatus="ready";
+    document.body.dataset.kinetics="aramco-gp";
+    $("live").textContent="Aramco GP ready · 256 train / 64 holdout";$("live").className="live good";
     render();benchmarkSummary();modelMeta();
   }catch(e){
-    document.body.dataset.appStatus="error";$("live").textContent=String(e&&e.message||e);$("live").className="live bad";
+    document.body.dataset.appStatus="error";
+    document.body.dataset.kinetics="unavailable";
+    $("live").textContent=String(e&&e.message||e);$("live").className="live bad";
   }
 }
 init();
