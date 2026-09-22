@@ -152,19 +152,27 @@ def simulate_case(
     h_in = float(gas.enthalpy_mass)
     y = gas.Y.copy()
 
+    # Reuse one ReactorNet per operating point. The imposed temperature is updated
+    # between integration intervals, then the reactor/integrator state is synchronized.
+    # This is materially faster for large detailed mechanisms than constructing a new
+    # CVODE system for every temperature segment.
     dt = residence_time_s / segments
+    gas.TPY = tin_k, p_pa, y
+    reactor = ct.IdealGasConstPressureReactor(
+        gas, energy="off", clone=False, name="pfr-fluid-element"
+    )
+    net = ct.ReactorNet([reactor])
+    net.rtol = 1e-8
+    net.atol = 1e-15
     for i in range(segments):
         f = (i + 0.5) / segments
         t_k = tin_k + (tout_k - tin_k) * (f**ramp_exponent)
-        gas.TPY = t_k, p_pa, y
-        reactor = ct.IdealGasConstPressureReactor(
-            gas, energy="off", clone=False, name=f"segment-{i}"
-        )
-        net = ct.ReactorNet([reactor])
-        net.rtol = 1e-8
-        net.atol = 1e-15
-        net.advance(dt)
         y = reactor.phase.Y.copy()
+        gas.TPY = t_k, p_pa, y
+        reactor.syncState()
+        net.reinitialize()
+        net.advance((i + 1) * dt)
+    y = reactor.phase.Y.copy()
 
     gas.TPY = tout_k, p_pa, y
     h_out = float(gas.enthalpy_mass)
