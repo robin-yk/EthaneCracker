@@ -180,6 +180,8 @@ Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. T
 
 Process references for this block are the U.S. EPA *Industrial Process Profiles for Environmental Use: Chapter 5 — Basic Petrochemical Industry*, Olefins Production Process No. 8, and the palladium acetylene-hydrogenation study reporting ethylene selectivity around 90% (DOI: 10.1016/0304-5102(93)E0323-9).
 
+The web interface also reports a bed-count severity indicator from the raw C2 acetylene concentration: one bed below 0.5 mol%, two beds from 0.5 to 1.7 mol%, and three beds above 1.7 mol%. This follows published tail-end reactor practice and is displayed as a design indicator only; bed count does not independently scale CAPEX in the present screening TEA.
+
 The cold-box calculation estimates refrigeration duty from the converter effluent flow, light-gas fraction, recovery, and Carnot-based work. The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
 
 TLE recovery credits recovered sensible heat. Tail gas supplies fired-heater demand before purchased natural gas. The Joule case supplies reactor heat electrically.
