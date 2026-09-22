@@ -416,7 +416,7 @@ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'
 const MW={C2H6:30.07,C2H4:28.05,CH4:16.04,H2:2.016,C2H2:26.038,C3:42.08,C4:56.11,C:12.011};
 const FLOOR_RATIO=MW.C2H6/MW.C2H4;   // 1.0719 kg C2H6 per kg C2H4, analytic floor
 const P_DISCH=32, RECOVERY=0.995, PURITY=0.999;
-/* Back-end acetylene converter screening model. The converter is treated as part
+/* Front-end acetylene converter screening model. The converter is treated as part
    of the existing recovery-section capital anchor. It reduces acetylene to a
    polymer-grade target before the C2 splitter and accounts for H2 use plus the
    ethylene/ethane split from selective hydrogenation. */
