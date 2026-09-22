@@ -468,7 +468,7 @@ function render(){
     ? fmt(ac.rawKg,4)+" → "+fmt(ac.residualKg,6)+" kg C2H2"
     : "bypassed";
   $("uAcetH2").textContent=ac.enabled
-    ? fmt(ac.h2ConsumedKg,5)+" kg H2 · "+fmt(ac.residualPpm,2)+" ppm"
+    ? fmt(ac.rawC2MolPct,3)+" mol% · "+ac.beds+" bed"+(ac.beds===1?"":"s")+" · "+fmt(ac.residualPpm,2)+" ppm"
     : "—";
   $("uCold").textContent=fmt(result.refrigeration_kwh_per_t,0)+" kWh/t";
   $("uRef").textContent="light-gas removal";
@@ -623,6 +623,9 @@ const blockProps={
   converter:()=>[
     ["Block","AC-201 · ACETYLENE CONVERTER"],
     ["Raw C2H2",fmt((result.acetylene_converter||{}).rawKg,6)+" kg/kg C2H4"],
+    ["Raw C2 acetylene",fmt((result.acetylene_converter||{}).rawC2MolPct,3)+" mol%"],
+    ["Suggested beds",(result.acetylene_converter||{}).beds||1],
+    ["C2H2 conversion",pct((result.acetylene_converter||{}).conversion||0)],
     ["Residual C2H2",fmt((result.acetylene_converter||{}).residualKg,7)+" kg/kg C2H4"],
     ["Residual specification",fmt((result.acetylene_converter||{}).residualPpm,2)+" ppm"],
     ["C2H4 recovered",fmt((result.acetylene_converter||{}).ethyleneRecoveredKg,6)+" kg/kg C2H4"],
