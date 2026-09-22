@@ -103,18 +103,34 @@ The heating exponent describes the imposed thermal history. Reactor-specific val
 
 ## Mechanism-to-process transformation
 
-Cantera yields use kg species per kg ethane entering the coil. The plant model scales them to one kg of ethylene product.
+Cantera yields use kg species per kg ethane entering the coil. AC-201 recovers part of the reactor acetylene as ethylene before the plant is scaled to one kg of final ethylene product. If (f_{AC}) is the acetylene conversion in AC-201 and (S_{AC}) is its selectivity to ethylene,
 
 [
-m_{coil,C2H6}=\frac{1}{Y_{C2H4}}
+Y_{C2H4,AC}=Y_{C2H2}\,f_{AC}\,S_{AC}\frac{MW_{C2H4}}{MW_{C2H2}},
 ]
 
 [
-m_{fresh,C2H6}=\frac{X}{Y_{C2H4}}
+Y_{C2H4,final}=Y_{C2H4}+Y_{C2H4,AC},
 ]
 
 [
-m_{recycle,C2H6}=\frac{1-X}{Y_{C2H4}}
+m_{coil,C2H6}=\frac{1}{Y_{C2H4,final}}.
+]
+
+The ethane formed by over-hydrogenation is
+
+[
+Y_{C2H6,AC}=Y_{C2H2}\,f_{AC}(1-S_{AC})\frac{MW_{C2H6}}{MW_{C2H2}},
+]
+
+and the fresh-feed/recycle screening balances are
+
+[
+m_{fresh,C2H6}=(X-Y_{C2H6,AC})m_{coil,C2H6},
+]
+
+[
+m_{recycle,C2H6}=(1-X+Y_{C2H6,AC})m_{coil,C2H6}.
 ]
 
 CH4 and H2 set the cracked-gas fuel inventory. C2H2 is compressed with the cracked gas and then passes through AC-201 before the cold box. The screening converter targets 5 ppm residual acetylene and assigns 90% of converted acetylene to ethylene; the balance forms ethane. Hydrogen is taken from the mechanism-predicted H2 stream before the remaining H2 enters the tail gas. C3, C4+, and unconverted C2H6 continue into the downstream flow calculations. Cantera enthalpy supplies the 650 °C-to-outlet reactor duty; the process model supplies upstream preheat and TLE recovery.
