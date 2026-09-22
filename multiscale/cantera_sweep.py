@@ -2,24 +2,31 @@
 """
 Generate a mechanism-resolved ethane-cracking design space with Cantera.
 
-The reactor is a Lagrangian plug-flow approximation: a fluid element is advanced
-through a prescribed temperature history using a sequence of constant-pressure,
-isothermal reactor segments. Chemistry is solved by Cantera in every segment.
+A Lagrangian plug-flow approximation advances a fluid element through a prescribed
+temperature history using constant-pressure, isothermal reactor segments. Chemistry
+is solved by Cantera in each segment. The thermal history is
 
-The default mechanism is gri30.yaml only so the script runs with a stock Cantera
-installation. GRI-Mech is a demonstration mechanism and should be replaced with
-a validated ethane-pyrolysis mechanism (for example an AramcoMech Cantera YAML)
-before research conclusions are drawn.
+    T(f) = Tin + (Tout - Tin) * f**ramp_exponent
 
-Outputs are per kg of fresh ethane, excluding dilution steam from the denominator.
+where f is normalized residence time from 0 to 1.
+
+All product yields are reported per kg of ethane entering the reactor. The plant
+recycle calculation can therefore recover:
+    coil ethane / kg ethylene = 1 / y_C2H4
+    recycle ethane / kg ethylene = (1-X) / y_C2H4
+    fresh ethane / kg ethylene = X / y_C2H4
+under the stated ideal ethane-recovery assumption.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
+import os
+import platform
 from pathlib import Path
 
 import cantera as ct
@@ -34,11 +41,20 @@ INPUT_RANGES = {
     "ramp_exponent": (0.45, 4.0),
 }
 
-OUTPUT_SPECIES = ("C2H4", "CH4", "H2", "C2H2", "C3H6", "C3H8")
+OUTPUT_SPECIES = ("C2H4", "CH4", "H2", "C2H2", "C2H6", "CO", "CO2")
+
+
+def file_sha256(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
 
 
 def latin_hypercube(n: int, d: int, rng: np.random.Generator) -> np.ndarray:
-    """Simple max-coverage Latin hypercube on [0, 1]^d."""
     x = np.empty((n, d), dtype=float)
     for j in range(d):
         perm = rng.permutation(n)
@@ -66,13 +82,13 @@ def scale_samples(unit: np.ndarray) -> list[dict[str, float]]:
             INPUT_RANGES["ramp_exponent"][1] - INPUT_RANGES["ramp_exponent"][0]
         )
         rows.append(
-            {
-                "temperature_c": float(t),
-                "residence_time_s": float(10**log_tau),
-                "steam_hc_kgkg": float(steam),
-                "pressure_bar": float(p),
-                "ramp_exponent": float(ramp),
-            }
+            dict(
+                temperature_c=float(t),
+                residence_time_s=float(10**log_tau),
+                steam_hc_kgkg=float(steam),
+                pressure_bar=float(p),
+                ramp_exponent=float(ramp),
+            )
         )
     return rows
 
@@ -90,9 +106,21 @@ def species_kmol(gas: ct.Solution, total_mass_kg: float, species: str) -> float:
     return total_mass_kg * float(gas.Y[k]) / float(gas.molecular_weights[k])
 
 
+def carbon_lumps(gas: ct.Solution, total_mass_kg: float) -> tuple[float, float]:
+    """Return total C3 and C4+ species mass, kg, from the outlet state."""
+    c3 = 0.0
+    c4plus = 0.0
+    for k, name in enumerate(gas.species_names):
+        nc = gas.n_atoms(name, "C")
+        if nc == 3:
+            c3 += total_mass_kg * float(gas.Y[k])
+        elif nc >= 4:
+            c4plus += total_mass_kg * float(gas.Y[k])
+    return c3, c4plus
+
+
 def simulate_case(
-    mechanism: str,
-    phase: str,
+    gas: ct.Solution,
     temperature_c: float,
     residence_time_s: float,
     steam_hc_kgkg: float,
@@ -101,8 +129,6 @@ def simulate_case(
     inlet_temperature_c: float,
     segments: int,
 ) -> dict[str, float]:
-    gas = ct.Solution(mechanism, phase)
-
     required = {"C2H6", "H2O", "C2H4"}
     missing = sorted(required.difference(gas.species_names))
     if missing:
@@ -111,7 +137,7 @@ def simulate_case(
     mw_ethane = float(gas.molecular_weights[gas.species_index("C2H6")])
     mw_water = float(gas.molecular_weights[gas.species_index("H2O")])
 
-    # Basis: 1 kmol fresh C2H6. Molecular weights in Cantera are kg/kmol.
+    # Basis: 1 kmol C2H6 entering the reactor.
     fresh_ethane_kmol = 1.0
     fresh_ethane_mass = mw_ethane
     steam_mass = steam_hc_kgkg * fresh_ethane_mass
@@ -131,7 +157,9 @@ def simulate_case(
         f = (i + 0.5) / segments
         t_k = tin_k + (tout_k - tin_k) * (f**ramp_exponent)
         gas.TPY = t_k, p_pa, y
-        reactor = ct.IdealGasConstPressureReactor(gas, energy="off")
+        reactor = ct.IdealGasConstPressureReactor(
+            gas, energy="off", clone=False, name=f"segment-{i}"
+        )
         net = ct.ReactorNet([reactor])
         net.rtol = 1e-8
         net.atol = 1e-15
@@ -159,18 +187,20 @@ def simulate_case(
     }
 
     for sp in OUTPUT_SPECIES:
-        key = sp.lower().replace("+", "plus")
+        key = sp.lower()
         result[f"y_{key}_kg_per_kg_ethane"] = (
             species_mass(gas, total_mass, sp) / fresh_ethane_mass
         )
 
-    # Elemental closure is useful for rejecting mechanism/configuration mistakes.
+    c3, c4plus = carbon_lumps(gas, total_mass)
+    result["y_c3_kg_per_kg_ethane"] = c3 / fresh_ethane_mass
+    result["y_c4plus_kg_per_kg_ethane"] = c4plus / fresh_ethane_mass
+
+    # Elemental and total-mass closure.
     c_in = fresh_ethane_kmol * 2.0
-    c_out = 0.0
     h_in_atoms = fresh_ethane_kmol * 6.0 + steam_kmol * 2.0
-    h_out_atoms = 0.0
     o_in = steam_kmol
-    o_out = 0.0
+    c_out = h_out_atoms = o_out = 0.0
     for k, sp_name in enumerate(gas.species_names):
         n_k = total_mass * float(gas.Y[k]) / float(gas.molecular_weights[k])
         c_out += n_k * gas.n_atoms(sp_name, "C")
@@ -179,6 +209,7 @@ def simulate_case(
     result["carbon_residual"] = (c_out - c_in) / max(c_in, 1e-30)
     result["hydrogen_residual"] = (h_out_atoms - h_in_atoms) / max(h_in_atoms, 1e-30)
     result["oxygen_residual"] = (o_out - o_in) / max(o_in, 1e-30) if o_in else o_out
+    result["mass_residual"] = float(gas.Y.sum() - 1.0)
 
     return result
 
@@ -194,9 +225,9 @@ def main() -> None:
     ap.add_argument("--output", default="multiscale/data/cantera_sweep.csv")
     args = ap.parse_args()
 
+    gas = ct.Solution(args.mechanism, args.phase)
     rng = np.random.default_rng(args.seed)
-    unit = latin_hypercube(args.points, 5, rng)
-    cases = scale_samples(unit)
+    cases = scale_samples(latin_hypercube(args.points, 5, rng))
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -207,14 +238,13 @@ def main() -> None:
         try:
             rows.append(
                 simulate_case(
-                    args.mechanism,
-                    args.phase,
+                    gas,
                     inlet_temperature_c=args.inlet_temperature_c,
                     segments=args.segments,
                     **case,
                 )
             )
-        except Exception as exc:  # preserve failed locations for audit
+        except Exception as exc:
             failures.append({"case": i, **case, "error": str(exc)})
         if i % max(1, args.points // 20) == 0 or i == args.points:
             print(f"{i}/{args.points} cases; {len(failures)} failed")
@@ -228,9 +258,23 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
 
+    mech_path = Path(args.mechanism)
+    provenance_path = mech_path.with_suffix(".provenance.json")
+    mechanism_provenance = (
+        json.loads(provenance_path.read_text())
+        if provenance_path.exists()
+        else None
+    )
     meta = {
         "mechanism": args.mechanism,
+        "mechanism_sha256": file_sha256(mech_path),
+        "mechanism_species": gas.n_species,
+        "mechanism_reactions": gas.n_reactions,
+        "mechanism_provenance": mechanism_provenance,
         "phase": args.phase,
+        "cantera_version": ct.__version__,
+        "python_version": platform.python_version(),
+        "git_sha": os.getenv("GITHUB_SHA"),
         "points_requested": args.points,
         "points_succeeded": len(rows),
         "points_failed": len(failures),
@@ -239,12 +283,17 @@ def main() -> None:
         "inlet_temperature_c": args.inlet_temperature_c,
         "input_ranges": INPUT_RANGES,
         "reactor_model": "prescribed-temperature Lagrangian PFR approximation",
+        "thermal_history": "T(f)=Tin+(Tout-Tin)*f**ramp_exponent",
+        "yield_basis": "kg species per kg ethane entering reactor",
         "failures": failures,
     }
     output.with_suffix(".meta.json").write_text(
         json.dumps(meta, indent=2), encoding="utf-8"
     )
-    print(f"wrote {len(rows)} cases to {output}")
+    print(
+        f"wrote {len(rows)} cases to {output}; mechanism "
+        f"{gas.n_species} species / {gas.n_reactions} reactions"
+    )
 
 
 if __name__ == "__main__":
