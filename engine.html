@@ -592,7 +592,7 @@ function model(p){
   let Smol,Smass,n,y,coil,recycle,dilSteam;
   let nCH4=0,nC3=0,nCoke=0,nH2=0;
   let acetylene={enabled:false,targetPpm:ACET.targetPpm,selectivity:ACET.selectivity,
-    rawKg:0,convertedKg:0,residualKg:0,residualPpm:0,rawEthyleneKg:0,rawEthaneKg:0,rawH2Kg:0,
+    rawKg:0,convertedKg:0,residualKg:0,residualPpm:0,rawC2MolPct:0,conversion:0,beds:1,rawEthyleneKg:0,rawEthaneKg:0,rawH2Kg:0,
     ethyleneRecoveredKg:0,ethaneMadeKg:0,h2ConsumedKg:0,h2FromPlantKg:0,h2ExternalKg:0};
 
   if(useMechanismSpecies){
@@ -641,6 +641,9 @@ function model(p){
       convertedKg:(nArxn*MW.C2H2/1000)*coil,
       residualKg:y.c2h2,
       residualPpm:nAres/Math.max(1e-12,nAres+nE+nErec+nEth+nEthMade)*1e6,
+      rawC2MolPct:100*nA/Math.max(1e-12,nA+nE+nEth),
+      conversion:nA>0?nArxn/nA:0,
+      beds:(nA/Math.max(1e-12,nA+nE+nEth)<0.005?1:(nA/Math.max(1e-12,nA+nE+nEth)<=0.017?2:3)),
       rawEthyleneKg:Math.max(0,1-ethyleneRecoveredPerCoil*coil),
       rawEthaneKg:Math.max(0,recycle-ethaneMadePerCoil*coil),
       rawH2Kg:yh2raw*coil,
