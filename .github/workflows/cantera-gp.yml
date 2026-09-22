@@ -194,11 +194,11 @@ jobs:
           "$BROWSER" --headless=new --no-sandbox --disable-gpu \
             --virtual-time-budget=8000 \
             --dump-dom http://127.0.0.1:8000/ > /tmp/ethane-dom.html
-          grep -q "Aramco" /tmp/ethane-dom.html
-          if grep -q "mechanism unavailable" /tmp/ethane-dom.html; then
-            echo "Root app did not load the qualified surrogate"
+          grep -q 'data-kinetics="aramco-gp"' /tmp/ethane-dom.html || {
+            echo "Root app did not reach the qualified Aramco-GP runtime state"
+            grep -o 'data-kinetics="[^"]*"' /tmp/ethane-dom.html || true
             exit 1
-          fi
+          }
           "$BROWSER" --headless=new --no-sandbox --disable-gpu \
             --virtual-time-budget=8000 \
             --dump-dom http://127.0.0.1:8000/multiscale/demo.html > /tmp/ethane-gp-dom.html
