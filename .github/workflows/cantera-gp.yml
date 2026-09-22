@@ -11,6 +11,12 @@ on:
       - "multiscale/test_gp.py"
       - "multiscale/requirements.txt"
       - ".github/workflows/cantera-gp.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "multiscale/**"
+      - ".github/workflows/cantera-gp.yml"
 
 permissions:
   contents: write
@@ -53,6 +59,7 @@ jobs:
             --output multiscale/surrogate.json
 
       - name: Commit generated smoke-test artifacts
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -65,3 +72,15 @@ jobs:
             git commit -m "Generate Cantera GP smoke-test surrogate [skip ci]"
             git push origin HEAD:cantera-gp-v1
           fi
+
+      - name: Summarize generated data
+        run: |
+          python - <<'PY'
+          import csv, json
+          rows=list(csv.DictReader(open("multiscale/data/cantera_sweep.csv")))
+          print("ROWS", len(rows))
+          for r in rows[:3]:
+              print({k:r[k] for k in ["temperature_c","residence_time_s","x_c2h6","s_c2h4_mol","heat_MJ_per_kg_ethane"]})
+          m=json.load(open("multiscale/surrogate.json"))
+          print("SURROGATE", m["schema"], "training_points", m["training_points"])
+          PY
