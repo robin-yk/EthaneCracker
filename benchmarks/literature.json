@@ -1,0 +1,122 @@
+{
+  "schema": "ethane-literature-benchmarks-v1",
+  "cases": [
+    {
+      "id": "chen-2024",
+      "short": "Chen et al. 2024",
+      "title": "Ethylene production: process design, techno-economic and life-cycle assessments",
+      "journal": "Green Chemistry 26 (2024) 2903–2911",
+      "doi": "10.1039/D3GC03858K",
+      "url": "https://doi.org/10.1039/D3GC03858K",
+      "protocol": "composition_constrained",
+      "evidence": {
+        "temperature_c": 950,
+        "pressure_bar": 4.5,
+        "ethane_tph": 88,
+        "water_tph": 35,
+        "ethylene_tph": 79.4,
+        "reactor_ethane_to_steam_vol_ratio": 3,
+        "reactor_heat_gjh": 416.76,
+        "compressor_mw": 29.4,
+        "msp_usd_per_t": 832,
+        "tcm_musd_per_y": 496,
+        "ethane_price_usd_per_t": 200,
+        "equipment_cost_musd": 780,
+        "utility_cost_musd_per_y": 66.1,
+        "pressure_candidates_bar": [
+          1,
+          4.5
+        ],
+        "outlet_c2h4_molfrac": 0.377,
+        "outlet_h2_molfrac": 0.407,
+        "outlet_ch4_molfrac": 0.033,
+        "outlet_c2h6_molfrac": 0.151
+      },
+      "notes": [
+        "Residence time is inferred from the reported 15.1 mol% residual ethane at the reactor outlet. Ethylene, hydrogen, methane, fresh ethane, heat, and compressor work remain test quantities.",
+        "The process description calls the reactor pressure ambient while Table 1 lists 4.5 bar. Both pressures are evaluated and the result is reported as a source-defined envelope.",
+        "The reported 3:1 ethane:steam volume ratio gives the reactor dilution input after molecular-weight conversion.",
+        "MSP and annual manufacturing cost are shown as economic context because the paper uses a 20-year discounted cash-flow MSP calculation."
+      ]
+    },
+    {
+      "id": "shin-2025",
+      "short": "Shin et al. 2025",
+      "title": "Decarbonization approaches for ethylene production: comparative techno-economic and life-cycle analysis",
+      "journal": "Green Chemistry 27 (2025) 3655–3675",
+      "doi": "10.1039/D4GC04538F",
+      "url": "https://doi.org/10.1039/D4GC04538F",
+      "protocol": "inventory_envelope",
+      "evidence": {
+        "capacity_tpy": 1000000,
+        "steam_hc_kgkg": 0.33,
+        "ethane_kgh": 151182,
+        "ethylene_kgh": 114335,
+        "c3plus_kgh": 15738,
+        "ng_kgh": 5920,
+        "combustion_energy_mjh": 1173780,
+        "lcoe_usd_per_t": 746,
+        "ghg_kgco2e_per_t": 869,
+        "ethane_upstream_kgco2e_per_t": 454,
+        "grid_kgco2e_per_kwh": 0.439,
+        "electricity_usd_per_kwh": 0.07,
+        "gas_usd_per_gj": 5,
+        "ethane_price_usd_per_t": 200,
+        "c3plus_price_usd_per_t": 443,
+        "baseline_tpc_usd_per_kg_day": 233,
+        "combustion_energy_gj_per_t": 17.2,
+        "onsite_ghg_kgco2e_per_t": 442
+      },
+      "notes": [
+        "The paper reports steam ratio and plant inventory but no single reactor temperature/residence-time/pressure triplet in the main article.",
+        "Residence time is fitted to fresh-ethane demand across 800–900 °C and 1–5 bar. C3+ production, total combustion heat, and on-site GHG remain test quantities.",
+        "The 17.2 GJ/t combustion-energy value is the paper's model-validation quantity and includes heat from imported natural gas plus hydrogen/methane purge gas."
+      ]
+    },
+    {
+      "id": "wang-2026",
+      "short": "Wang et al. 2026",
+      "title": "Development of a novel microwave-assisted process that converts waste polyethylene plastic to ethylene",
+      "journal": "Frontiers in Energy Research 14 (2026) 1726062",
+      "doi": "10.3389/fenrg.2026.1726062",
+      "url": "https://doi.org/10.3389/fenrg.2026.1726062",
+      "protocol": "geometry_plus_conversion_constraint",
+      "evidence": {
+        "temperature_c": 840,
+        "pressure_bar": 3.2,
+        "inlet_temperature_c": 502.77,
+        "inlet_pressure_bar": 3.3,
+        "tube_length_m": 10.5,
+        "tube_diameter_m": 0.085,
+        "tube_count": 245,
+        "reactor_feed_tph": 194.28,
+        "reactor_ethane_wtfrac": 0.7618,
+        "steam_tph": 45,
+        "fresh_ethane_tph": 102,
+        "recycle_stream_tph": 47.3,
+        "recycle_ethane_wtfrac": 0.9731,
+        "ethylene_tph": 76.63,
+        "outlet_ethane_wtfrac": 0.24,
+        "outlet_ethylene_wtfrac": 0.3995,
+        "outlet_h2_wtfrac": 0.0309,
+        "outlet_ch4_wtfrac": 0.034,
+        "outlet_c3h6_wtfrac": 0.0424,
+        "capex_musd": 357.38,
+        "opex_musd_per_y": 195.65,
+        "ethane_price_usd_per_t": 90,
+        "electricity_usd_per_kwh": 0.06,
+        "gas_usd_per_gj": 3.59,
+        "steam_price_usd_per_t": 0,
+        "inlet_ethylene_wtfrac": 0.0064,
+        "outlet_c3_wtfrac": 0.0476,
+        "outlet_c4plus_wtfrac": 0.0161
+      },
+      "notes": [
+        "Residence time is derived from the published tube geometry and reactor-feed flow using ideal-gas volumetric flow at the arithmetic-mean reactor temperature and pressure; inlet and outlet states define a bracket.",
+        "The heating-ramp exponent is inferred from the published single-pass ethane conversion. Fresh ethane, recycle ethane, ethylene, CH4, H2, C3 and C4+ outlet fractions remain test quantities.",
+        "The web surrogate uses a 650 °C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 °C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
+      ]
+    }
+  ],
+  "sources_checked": "2026-09-22"
+}

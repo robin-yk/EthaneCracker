@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ethane cracker · literature benchmarks</title>
+<style>
+:root{--ink:#212529;--muted:#6c757d;--line:#e3e7ea;--accent:#2f8f83;--warn:#a35d10;--mono:"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);font-family:Roboto,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55}
+.wrap{max-width:1120px;margin:auto;padding:34px 24px 64px}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.top{display:flex;justify-content:space-between;gap:24px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:14px}
+h1{font-size:24px;margin:0;font-weight:500}h2{font-size:17px;margin:34px 0 10px}h3{font-size:15px;margin:0}.sub{color:var(--muted);max-width:800px;margin-top:6px}
+.status{font-family:var(--mono);font-size:11px;color:var(--muted);margin:18px 0}.case{border-top:1px solid var(--line);padding:22px 0 26px}.head{display:flex;justify-content:space-between;gap:18px;align-items:start;flex-wrap:wrap}
+.proto{font:11px var(--mono);color:var(--muted)}.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:14px 0}
+.fact{background:#fff;padding:10px 12px}.k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.v{font:600 17px var(--mono);margin-top:2px}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}th:first-child,td:first-child{text-align:left}.fit{color:var(--muted)}.test{font-weight:600}.context{color:var(--muted)}
+.note{font-size:12px;color:var(--muted);max-width:900px;margin:10px 0 0}.note p{margin:4px 0}.err{color:#a43f32}.ok{color:var(--accent)}
+pre.machine{display:none}
+iframe{display:none}
+@media(max-width:700px){.wrap{padding:24px 16px}.top{display:block}.facts{grid-template-columns:1fr 1fr}th:nth-child(4),td:nth-child(4){display:none}}
+</style>
+</head>
+<body data-benchmark-status="loading" data-benchmark-count="0">
+<iframe id="modelFrame" src="../index.html"></iframe>
+<div class="wrap">
+<div class="top"><div><h1>Literature benchmarks</h1><div class="sub">Published ethane-cracker inventories are replayed through the same reactor/process model used on the main page. Fitted variables and comparison variables are marked separately.</div></div><a href="../">model</a></div>
+<div class="status" id="status">loading Aramco GP…</div>
+<div id="cases"></div>
+<h2>Interpretation</h2>
+<p class="note">A fit row sets one unreported reactor coordinate from one published reactor or inventory quantity. A test row then compares quantities that did not enter that fit. “Inside” means the published value falls within the source-defined model envelope. Economic context rows keep each paper's reported TEA value beside the web calculation while preserving the two cost boundaries.</p>
+<pre class="machine" id="machine-results"></pre>
+</div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const frame=$("modelFrame");
+const MW={C2H6:30.07,H2O:18.015};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rel=(a,b)=>100*(a-b)/b;
+const fmt=(x,n=3)=>Number.isFinite(x)?x.toLocaleString("en-US",{maximumFractionDigits:n}):"—";
+const pct=x=>(100*x).toFixed(2)+"%";
+const metric=(name,pub,mod,unit,role="test",note="")=>({name,published:pub,model:mod,unit,role,note,rel_error_pct:(Number.isFinite(pub)&&Number.isFinite(mod)&&pub!==0)?rel(mod,pub):null});
+
+async function modelApi(){
+  const t0=Date.now();
+  while(Date.now()-t0<30000){
+    const w=frame.contentWindow;
+    if(w&&w.ethaneModel&&w.ethaneModel.ready())return w.ethaneModel;
+    await sleep(100);
+  }
+  throw new Error("main model did not expose a qualified Aramco GP within 30 s");
+}
+
+function solveTau(api,base,target,selector){
+  const pick=selector||((r)=>r.fresh_ethane_kg_per_kg);
+  const at=tau=>{
+    const result=api.evaluate({...base,tau});
+    const value=pick(result);
+    return {tau,result,value,d:value-target,error:Math.abs(value-target)/Math.max(Math.abs(target),1e-12)};
+  };
+  let lo=at(0.02),hi=at(1.0),best=lo.error<hi.error?lo:hi;
+  if(lo.d===0)return lo;
+  if(hi.d===0)return hi;
+  if(lo.d*hi.d<0){
+    for(let i=0;i<36;i++){
+      const mid=at(Math.sqrt(lo.tau*hi.tau));
+      if(mid.error<best.error)best=mid;
+      if(lo.d*mid.d<=0)hi=mid; else lo=mid;
+    }
+    return best;
+  }
+  for(let i=1;i<80;i++){
+    const tau=0.02*Math.pow(50,i/79);
+    const q=at(tau);
+    if(q.error<best.error)best=q;
+  }
+  return best;
+}
+
+function solveRamp(api,base,target,selector){
+  const pick=selector||((r)=>r.conversion);
+  const at=ramp=>{
+    const result=api.evaluate({...base,ramp});
+    const value=pick(result);
+    return {ramp,result,value,d:value-target,error:Math.abs(value-target)/Math.max(Math.abs(target),1e-12)};
+  };
+  let lo=at(0.45),hi=at(4.0),best=lo.error<hi.error?lo:hi;
+  if(lo.d*hi.d<0){
+    for(let i=0;i<36;i++){
+      const mid=at((lo.ramp+hi.ramp)/2);
+      if(mid.error<best.error)best=mid;
+      if(lo.d*mid.d<=0)hi=mid; else lo=mid;
+    }
+    return best;
+  }
+  for(let i=1;i<80;i++){
+    const ramp=0.45+(4.0-0.45)*i/79;
+    const q=at(ramp);
+    if(q.error<best.error)best=q;
+  }
+  return best;
+}
+
+function wangTau(e){
+  const vol=e.tube_count*Math.PI*e.tube_diameter_m**2/4*e.tube_length_m;
+  const hydro=e.reactor_feed_tph-e.steam_tph;
+  const nKmolH=hydro*1000/MW.C2H6+e.steam_tph*1000/MW.H2O;
+  const tauAt=(tc,pbar)=>{
+    const q=nKmolH*8.314*(tc+273.15)/(pbar*1e5)*1000;
+    return vol/(q/3600);
+  };
+  const tin=tauAt(e.inlet_temperature_c,e.inlet_pressure_bar);
+  const tout=tauAt(e.temperature_c,e.pressure_bar);
+  const tmean=(e.inlet_temperature_c+e.temperature_c)/2;
+  const pmean=(e.inlet_pressure_bar+e.pressure_bar)/2;
+  return {central:tauAt(tmean,pmean),inlet:tin,outlet:tout,volume_m3:vol};
+}
+
+function dryMoleFractions(g){
+  if(!g)return null;
+  const species=[
+    ["C2H4",g.y_c2h4_kg_per_kg_ethane,28.05],
+    ["C2H6",g.y_c2h6_kg_per_kg_ethane,30.07],
+    ["CH4",g.y_ch4_kg_per_kg_ethane,16.04],
+    ["H2",g.y_h2_kg_per_kg_ethane,2.016],
+    ["C2H2",g.y_c2h2_kg_per_kg_ethane,26.038],
+    ["C3",g.y_c3_kg_per_kg_ethane,42.08],
+    ["C4+",g.y_c4plus_kg_per_kg_ethane,56.11]
+  ];
+  const n=species.map(([k,m,mw])=>[k,(m||0)/mw]),tot=n.reduce((s,x)=>s+x[1],0);
+  return Object.fromEntries(n.map(([k,v])=>[k,v/tot]));
+}
+
+function wetMassFractions(g,dilution){
+  if(!g)return null;
+  const total=1+dilution;
+  return {
+    C2H4:(g.y_c2h4_kg_per_kg_ethane||0)/total,
+    C2H6:(g.y_c2h6_kg_per_kg_ethane||0)/total,
+    CH4:(g.y_ch4_kg_per_kg_ethane||0)/total,
+    H2:(g.y_h2_kg_per_kg_ethane||0)/total,
+    C2H2:(g.y_c2h2_kg_per_kg_ethane||0)/total,
+    C3:(g.y_c3_kg_per_kg_ethane||0)/total,
+    C4plus:(g.y_c4plus_kg_per_kg_ethane||0)/total
+  };
+}
+
+function rangeOf(values){
+  const v=values.filter(Number.isFinite);
+  return [Math.min(...v),Math.max(...v)];
+}
+
+function rangeMetric(name,published,values,unit,role="test",note=""){
+  return {name,published,model_range:rangeOf(values),unit,role,note};
+}
+
+function chenCase(api,c){
+  const e=c.evidence;
+  const dilution=(1/e.reactor_ethane_to_steam_vol_ratio)*MW.H2O/MW.C2H6;
+  const fresh=e.ethane_tph/e.ethylene_tph;
+  const cap=e.ethylene_tph*8000/1000;
+  const heat=e.reactor_heat_gjh/e.ethylene_tph;
+  const comp=e.compressor_mw*1000/e.ethylene_tph;
+  const fits=e.pressure_candidates_bar.map(P=>{
+    const base={kinetics:"gp",selMode:"calc",mode:"CH",eff:60,cot:e.temperature_c,pressure:P,ramp:1,dilution,cap,ethane:e.ethane_price_usd_per_t};
+    const fit=solveTau(api,base,e.outlet_c2h6_molfrac,r=>dryMoleFractions(r.gp_mean).C2H6);
+    return {P,fit,r:fit.result,dry:dryMoleFractions(fit.result.gp_mean)};
+  });
+  const rv=k=>fits.map(x=>x.r[k]);
+  const dryv=k=>fits.map(x=>x.dry[k]);
+  const tauRange=rangeOf(fits.map(x=>x.fit.tau));
+  const fitRange=rangeOf(fits.map(x=>x.fit.value));
+  const flags=[...new Set(fits.flatMap(x=>x.r.flags))];
+  return {
+    id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,
+    protocol:"composition-constrained pressure envelope",
+    inputs:{temperature_c:e.temperature_c,pressure_bar:e.pressure_candidates_bar,dilution_kgkg:dilution},
+    inferred:{residence_time_s:tauRange,ethane_outlet_fit:fitRange},
+    facts:[
+      ["temperature",e.temperature_c+" °C"],
+      ["source pressure","1 / 4.5 bar"],
+      ["inferred residence",fmt(tauRange[0],3)+"–"+fmt(tauRange[1],3)+" s"],
+      ["published MSP","$"+fmt(e.msp_usd_per_t,0)+"/t"]
+    ],
+    metrics:[
+      rangeMetric("dry C2H6 mole fraction",e.outlet_c2h6_molfrac,fits.map(x=>x.fit.value),"mol/mol","fit","residence time inferred from this row"),
+      rangeMetric("dry C2H4 mole fraction",e.outlet_c2h4_molfrac,dryv("C2H4"),"mol/mol"),
+      rangeMetric("dry H2 mole fraction",e.outlet_h2_molfrac,dryv("H2"),"mol/mol"),
+      rangeMetric("dry CH4 mole fraction",e.outlet_ch4_molfrac,dryv("CH4"),"mol/mol"),
+      rangeMetric("fresh ethane",fresh,rv("fresh_ethane_kg_per_kg"),"kg/kg"),
+      rangeMetric("high-temperature reactor heat",heat,rv("mechanism_zone_heat_gj_per_t"),"GJ/t","test","web value is the Cantera 650 °C-to-outlet enthalpy rise"),
+      rangeMetric("compressor work",comp,rv("compressor_kwh_per_t"),"kWh/t"),
+      rangeMetric("MSP / web cost",e.msp_usd_per_t,rv("cost_usd_per_t"),"USD/t","context","20-year MSP and screening cost use different financial boundaries"),
+      rangeMetric("TCM / web annual OPEX",e.tcm_musd_per_y,rv("annual_opex_musd"),"MUSD/y","context","manufacturing-cost definitions differ")
+    ],
+    notes:c.notes,model_flags:flags
+  };
+}
+
+function shinCase(api,c){
+  const e=c.evidence, fresh=e.ethane_kgh/e.ethylene_kgh;
+  const c3=e.c3plus_kgh/e.ethylene_kgh;
+  const ethaneUp=(e.ethane_upstream_kgco2e_per_t/1000)/fresh;
+  const candidates=[];
+  for(let T=800;T<=900;T+=5){
+    for(let P=1;P<=5.001;P+=0.5){
+      const base={kinetics:"gp",selMode:"calc",mode:"CH",eff:60,cot:T,pressure:P,ramp:1,dilution:e.steam_hc_kgkg,cap:e.capacity_tpy/1000,
+        ethane:e.ethane_price_usd_per_t,elec:e.electricity_usd_per_kwh,gas:e.gas_usd_per_gj,lpg:e.c3plus_price_usd_per_t,grid:e.grid_kgco2e_per_kwh,ethaneUp};
+      const fit=solveTau(api,base,fresh);
+      if(fit.error<0.005)candidates.push({T,P,tau:fit.tau,r:fit.result,error:fit.error});
+    }
+  }
+  if(!candidates.length)throw new Error("Shin inventory envelope found no point within 0.5% fresh-feed error");
+  const vals=k=>candidates.map(x=>x.r[k]).filter(Number.isFinite);
+  const nested=(group,key)=>candidates.map(x=>x.r[group][key]).filter(Number.isFinite);
+  const central=candidates.reduce((a,b)=>Math.abs(b.T-850)+Math.abs(b.P-3)<Math.abs(a.T-850)+Math.abs(a.P-3)?b:a);
+  const rr=central.r, c3range=candidates.map(x=>x.r.c3_kg_per_kg+x.r.c4plus_kg_per_kg);
+  return {
+    id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,protocol:"inventory-constrained operating envelope",
+    inputs:{temperature_c:"800–900",pressure_bar:"1–5",steam_hc:e.steam_hc_kgkg},
+    inferred:{accepted_points:candidates.length,residence_time_s:rangeOf(candidates.map(x=>x.tau))},
+    facts:[
+      ["fresh ethane",fmt(fresh,3)+" kg/kg"],
+      ["accepted states",String(candidates.length)],
+      ["published heat",fmt(e.combustion_energy_gj_per_t,1)+" GJ/t"],
+      ["published LCOE","$"+fmt(e.lcoe_usd_per_t,0)+"/t"]
+    ],
+    metrics:[
+      rangeMetric("fresh ethane",fresh,vals("fresh_ethane_kg_per_kg"),"kg/kg","fit","residence time fitted at each T/P point"),
+      rangeMetric("C3+ coproduct",c3,c3range,"kg/kg"),
+      rangeMetric("combustion heat",e.combustion_energy_gj_per_t,vals("heater_input_gj_per_t"),"GJ/t","test","paper validation quantity includes imported natural gas and purge-gas heat"),
+      rangeMetric("on-site GHG",e.onsite_ghg_kgco2e_per_t,nested("carbon_scopes_kgco2e_per_t","scope1"),"kgCO2e/t"),
+      rangeMetric("LCOE / web cost",e.lcoe_usd_per_t,vals("cost_usd_per_t"),"USD/t","context","financial and power-generation boundaries differ"),
+      rangeMetric("WTG GHG / web carbon",e.ghg_kgco2e_per_t,vals("carbon_kgco2e_per_t"),"kgCO2e/t","context","ethane upstream factor matched; electricity and coproduct boundaries follow the web model")
+    ],
+    central:{temperature_c:central.T,pressure_bar:central.P,residence_time_s:central.tau},
+    notes:c.notes,model_flags:rr.flags
+  };
+}
+
+function wangCase(api,c){
+  const e=c.evidence,t=wangTau(e);
+  const dilution=e.steam_tph/(e.reactor_feed_tph-e.steam_tph);
+  const cap=e.ethylene_tph*8000/1000;
+  const fresh=e.fresh_ethane_tph/e.ethylene_tph;
+  const recEth=e.recycle_stream_tph*e.recycle_ethane_wtfrac/e.ethylene_tph;
+  const ethIn=e.reactor_feed_tph*e.reactor_ethane_wtfrac;
+  const ethOut=e.reactor_feed_tph*e.outlet_ethane_wtfrac;
+  const X=1-ethOut/ethIn;
+  const base={kinetics:"gp",selMode:"calc",mode:"CH",eff:60,cot:e.temperature_c,pressure:e.pressure_bar,dilution,tau:t.central,cap,
+    ethane:e.ethane_price_usd_per_t,elec:e.electricity_usd_per_kwh,gas:e.gas_usd_per_gj,steam:0,lpg:850};
+  const fit=solveRamp(api,base,X);
+  const r=fit.result, wet=wetMassFractions(r.gp_mean,dilution);
+  const reached=fit.error<0.01;
+  const empirical=api.evaluate({...base,kinetics:"empirical",ramp:1});
+  return {
+    id:c.id,short:c.short,title:c.title,journal:c.journal,doi:c.doi,url:c.url,
+    protocol:reached?"geometry residence + conversion-constrained heating history":"geometry residence + heating-history domain limit",
+    inputs:{...base,ramp:fit.ramp,inlet_temperature_c:e.inlet_temperature_c},
+    inferred:{residence_time_s:t.central,residence_time_bracket_s:rangeOf([t.outlet,t.inlet]),reactor_volume_m3:t.volume_m3,
+      ramp_exponent:fit.ramp,conversion_fit_error_pct:fit.error*100,conversion_target_reached:reached},
+    facts:[
+      ["T / P",e.temperature_c+" °C / "+e.pressure_bar+" bar"],
+      ["derived residence",fmt(t.central,3)+" s"],
+      [reached?"fitted ramp n":"ramp domain edge",fmt(fit.ramp,3)],
+      ["published CAPEX","$"+fmt(e.capex_musd,2)+" M"]
+    ],
+    metrics:[
+      metric("single-pass conversion",X,r.conversion,"fraction",reached?"fit":"test",
+        reached?"heating-ramp exponent inferred from this row":"published conversion remains outside the GP thermal-history domain"),
+      metric("empirical-baseline conversion",X,empirical.conversion,"fraction","context","same T, residence time and dilution with the original reactor correlation"),
+      metric("fresh ethane",fresh,r.fresh_ethane_kg_per_kg,"kg/kg"),
+      metric("recycle ethane",recEth,r.recycle_ethane_kg_per_kg,"kg/kg"),
+      metric("outlet C2H4 mass fraction",e.outlet_ethylene_wtfrac,wet.C2H4,"kg/kg"),
+      metric("outlet CH4 mass fraction",e.outlet_ch4_wtfrac,wet.CH4,"kg/kg"),
+      metric("outlet H2 mass fraction",e.outlet_h2_wtfrac,wet.H2,"kg/kg"),
+      metric("outlet C3 mass fraction",e.outlet_c3_wtfrac,wet.C3,"kg/kg"),
+      metric("outlet C4+ mass fraction",e.outlet_c4plus_wtfrac,wet.C4plus,"kg/kg"),
+      metric("CAPEX / web TOC",e.capex_musd,r.toc_musd,"MUSD","context","paper CAPEX and web TOC use different estimating structures"),
+      metric("OPEX / web annual OPEX",e.opex_musd_per_y,r.annual_opex_musd,"MUSD/y","context","utility and overhead definitions differ")
+    ],
+    notes:c.notes,model_flags:r.flags
+  };
+}
+
+function cellValue(m){
+  if(Array.isArray(m.model_range))return fmt(m.model_range[0])+"–"+fmt(m.model_range[1]);
+  return fmt(m.model);
+}
+function comparisonText(m){
+  if(m.role!=="test")return "";
+  if(Array.isArray(m.model_range)){
+    const [lo,hi]=m.model_range, p=m.published;
+    if(p>=lo&&p<=hi)return "inside";
+    const near=p<lo?lo:hi;
+    const d=100*(near-p)/p;
+    return "nearest "+(d>=0?"+":"")+fmt(d,1)+"%";
+  }
+  if(m.rel_error_pct==null)return "";
+  return (m.rel_error_pct>=0?"+":"")+fmt(m.rel_error_pct,1)+"%";
+}
+function renderCase(x){
+  const rows=x.metrics.map(m=>{
+    const err=comparisonText(m);
+    const pub=fmt(m.published)+" "+m.unit;
+    const mod=cellValue(m)+" "+m.unit;
+    return '<tr class="'+m.role+'"><td>'+m.name+'</td><td>'+pub+'</td><td>'+mod+'</td><td>'+err+'</td><td>'+m.role+(m.note?'<br><span class="context">'+m.note+'</span>':'')+'</td></tr>';
+  }).join("");
+  return '<section class="case"><div class="head"><div><h3>'+x.short+'</h3><div><a href="'+x.url+'" target="_blank" rel="noopener">'+x.doi+'</a> · '+x.journal+'</div></div><div class="proto">'+x.protocol+'</div></div>'
+    +'<div class="facts">'+x.facts.map(a=>'<div class="fact"><div class="k">'+a[0]+'</div><div class="v">'+a[1]+'</div></div>').join("")+'</div>'
+    +'<table><thead><tr><th>quantity</th><th>published</th><th>web model</th><th>difference</th><th>use</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="note">'+x.notes.map(n=>'<p>'+n+'</p>').join("")+'</div></section>';
+}
+
+async function main(){
+  try{
+    const [api,data]=await Promise.all([modelApi(),fetch("./literature.json",{cache:"no-store"}).then(r=>r.json())]);
+    const by=Object.fromEntries(data.cases.map(x=>[x.id,x]));
+    $("status").textContent="Aramco GP loaded · evaluating three literature cases";
+    const results=[chenCase(api,by["chen-2024"]),shinCase(api,by["shin-2025"]),wangCase(api,by["wang-2026"])];
+    $("cases").innerHTML=results.map(renderCase).join("");
+    const machine={schema:"ethane-literature-results-v1",model_version:api.version,cases:results};
+    $("machine-results").textContent=JSON.stringify(machine);
+    document.body.dataset.benchmarkStatus="complete";
+    document.body.dataset.benchmarkCount=String(results.length);
+    $("status").textContent="3 cases evaluated";
+  }catch(e){
+    document.body.dataset.benchmarkStatus="error";
+    $("status").innerHTML='<span class="err">'+String(e&&e.message||e)+'</span>';
+  }
+}
+main();
+</script>
+</body></html>

@@ -25,9 +25,9 @@ h1 b{font-weight:700}
 .grade{font-size:11.5px;color:var(--secondary);border:1px solid var(--hairline);
   border-radius:6px;padding:2px 8px;white-space:nowrap}
 nav{display:flex;gap:18px;margin-top:9px;flex-wrap:wrap}
-nav button{background:none;border:0;border-bottom:2px solid transparent;padding:0 0 7px;
-  font:inherit;font-size:13px;color:var(--secondary);cursor:pointer}
-nav button:hover{color:var(--ink)}
+nav button,nav a{background:none;border:0;border-bottom:2px solid transparent;padding:0 0 7px;
+  font:inherit;font-size:13px;color:var(--secondary);cursor:pointer;text-decoration:none}
+nav button:hover,nav a:hover{color:var(--ink)}
 nav button.active{color:var(--accent);font-weight:500;border-bottom-color:var(--accent)}
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0 24px;padding:14px 0 0}
@@ -1851,7 +1851,8 @@ function renderExplained(r,l){
 /* ---------- tabs ---------- */
 const TABS=[['main','main'],['compare','fired vs Joule'],['carbon','carbon'],
             ['balance','balances'],['explained','explained'],['cite','cite']];
-$('nav').innerHTML=TABS.map(([id,lab])=>'<button data-tab="'+id+'">'+lab+'</button>').join('');
+$('nav').innerHTML=TABS.map(([id,lab])=>'<button data-tab="'+id+'">'+lab+'</button>').join('')
+  +'<a href="benchmarks/">benchmarks</a>';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render();});
 
 /* ---------- render ---------- */
@@ -2215,6 +2216,54 @@ $('sTau').value=logInv(S.tau,0.05,1.5);
 $('sEthane').value=logInv(S.ethane,50,900);
 $('sElec').value=logInv(S.elec,0.008,0.30);
 $('sGas').value=logInv(S.gas,1,30);
+
+/* ---------- stable read-only API for literature benchmarks ---------- */
+window.ethaneModel={
+  version:'ethane-web-model-v1',
+  ready:()=>!!app.gp,
+  defaults:()=>({...S}),
+  evaluate:(overrides={})=>{
+    const p={...S,...overrides};
+    if(p.kinetics==='gp'&&!app.gp) throw new Error('Aramco GP is still loading');
+    const r=model(p), lc=lca(r,p);
+    const annualOpex=(r.coo-r.L.capital)*r.prod/1e6;
+    return {
+      inputs:{...p},
+      reactor_model:r.reactorModel,
+      conversion:r.X,
+      selectivity_mass:r.Smass,
+      selectivity_mol:r.Smol,
+      fresh_ethane_kg_per_kg:r.y.ethane,
+      coil_ethane_kg_per_kg:r.coil,
+      recycle_ethane_kg_per_kg:r.recycle,
+      steam_kg_per_kg:r.dilSteam,
+      ch4_kg_per_kg:r.y.ch4,
+      h2_kg_per_kg:r.y.h2,
+      c2h2_kg_per_kg:r.y.c2h2||0,
+      c3_kg_per_kg:r.y.c3||0,
+      c4plus_kg_per_kg:r.y.c4plus||0,
+      reactor_useful_heat_gj_per_t:r.qDemand*kJ2GJ,
+      mechanism_zone_heat_gj_per_t:(r.gp&&r.gp.mean&&Number.isFinite(r.gp.mean.heat_MJ_per_kg_ethane))
+        ? r.gp.mean.heat_MJ_per_kg_ethane*r.coil : null,
+      heater_input_gj_per_t:r.qDeliver*kJ2GJ,
+      purchased_natural_gas_gj_per_t:r.gasBuy*kJ2GJ,
+      compressor_kwh_per_t:r.wComp*kJ2GJ/GJ_per_kWh,
+      refrigeration_kwh_per_t:r.wRef*kJ2GJ/GJ_per_kWh,
+      splitter_kwh_per_t:r.wSplit*kJ2GJ/GJ_per_kWh,
+      total_process_power_kwh_per_t:r.elec_kWh*1000,
+      tbmc_musd:r.tbmc,
+      toc_musd:r.toc,
+      annual_opex_musd:annualOpex,
+      cost_usd_per_t:r.coo,
+      carbon_kgco2e_per_t:lc.ci,
+      carbon_scopes_kgco2e_per_t:{scope1:lc.scope1,scope2:lc.scope2,scope3:lc.scope3},
+      annual_product_kt:r.prod/1000,
+      cost_breakdown_usd_per_t:{...r.L},
+      gp_mean:r.gp&&r.gp.mean?{...r.gp.mean}:null,
+      flags:[...r.flags]
+    };
+  }
+};
 
 async function loadMechanismSurrogate(){
   try{
