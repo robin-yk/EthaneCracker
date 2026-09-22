@@ -340,6 +340,34 @@ svg{display:block;width:100%;height:auto}
     </div>
   </div>
 
+  <div class="tab" id="t-model">
+    <div class="exp">
+      <h3>Computational chain</h3>
+      <div class="item">
+        <div class="t">Current reactor route</div>
+        <div class="v" id="modelRoute">—</div>
+        <p id="modelSummary"></p>
+      </div>
+      <h3>Mechanism provenance</h3>
+      <div class="item">
+        <table><tbody id="modelProv"></tbody></table>
+      </div>
+      <h3>Independent Cantera holdout</h3>
+      <div class="item">
+        <table>
+          <thead><tr><th>Output</th><th class="r">R²</th><th class="r">RMSE / range</th><th class="r">95% coverage</th></tr></thead>
+          <tbody id="modelVal"></tbody>
+        </table>
+        <p id="modelValNote"></p>
+      </div>
+      <h3>Claim boundary</h3>
+      <div class="item">
+        <p id="modelBoundary"></p>
+        <p><a href="multiscale/demo.html" style="color:var(--accent)">Open the mechanism-surrogate workspace →</a></p>
+      </div>
+    </div>
+  </div>
+
   <div class="tab" id="t-cite">
     <div class="exp">
       <h3>How to cite</h3>
@@ -372,10 +400,13 @@ svg{display:block;width:100%;height:auto}
       </div>
       <div class="item">
         <div class="t">What the tool takes from the paper</div>
-        <p>The published cost of $680 per tonne used as the benchmark marker, the total bare module
-          cost anchor of $126.8 million at 610 thousand tonnes per year, and the ratio of total
-          overnight cost to bare module cost. Everything else, including the kinetics, the separation
-          duties and the emission factors, is built here and is stated on the balances tab.</p>
+        <p>The published cost of $680 per tonne is used as a benchmark marker, and the reported capital
+          basis anchors the screening capital model. The empirical reactor route is constructed in this
+          tool. The mechanism-resolved route uses AramcoMech 3.0 evaluated with Cantera and compressed
+          into a validated Gaussian-process surrogate. Downstream separations, costs and emissions remain
+          screening models and their assumptions are stated on the balances and model-evidence tabs.</p>
+        <p><b>Mechanism reference:</b> Zhou, C.-W. et al., <em>Combustion and Flame</em> 197 (2018)
+          423–438, DOI 10.1016/j.combustflame.2018.08.006.</p>
       </div>
     </div>
   </div>
@@ -1308,14 +1339,18 @@ function drawFig2(rCH,rJH,cot,tau,be){
     +'because that route buys gas; the Joule curve is a straight line through it. The crossing at '
     +'$'+sig(be,3)+'&thinsp;kWh<sup>&minus;1</sup> is the break-even, and it is a market quantity rather than a '
     +'property of either reactor.'
-    +(q&&j ? '<br><br>The two middle bars in <b>b</b> are located by the selectivity curve, which rests on three '
-      +'remembered points rather than on data. Re-running the search across '+q.n+' variants of those points, each '
-      +'within their two significant figures, moves the fired optimum over '+sig(q.cotLo,4)+' to '+sig(q.cotHi,4)
-      +'&thinsp;&deg;C and its value over '+usd(q.saveLo)+' to '+usd(q.saveHi)+'&thinsp;t<sup>&minus;1</sup>; the '
-      +'Joule optimum over '+sig(j.cotLo,4)+' to '+sig(j.cotHi,4)+'&thinsp;&deg;C, worth '+usd(j.saveLo)+' to '
-      +usd(j.saveHi)+'&thinsp;t<sup>&minus;1</sup>. Every variant still produces an optimum, so the trade-off '
-      +'between conversion, selectivity and run length is a result. Where it sits, and what it is worth, is not.'
-      : '<br><br>Re-running the optimum search across the selectivity curve variants, one moment.');
+    +(S.kinetics==='gp'
+      ? '<br><br>The operating-point search in <b>b</b> uses the AramcoMech/Cantera surrogate directly. The '
+        +'three-anchor selectivity robustness scan belongs only to the empirical reactor route and is therefore '
+        +'not applied here. Pressure and heating-ramp exponent are held at their displayed values during this search.'
+      : q&&j ? '<br><br>The two middle bars in <b>b</b> are located by the selectivity curve, which rests on three '
+        +'remembered points rather than on data. Re-running the search across '+q.n+' variants of those points, each '
+        +'within their two significant figures, moves the fired optimum over '+sig(q.cotLo,4)+' to '+sig(q.cotHi,4)
+        +'&thinsp;&deg;C and its value over '+usd(q.saveLo)+' to '+usd(q.saveHi)+'&thinsp;t<sup>&minus;1</sup>; the '
+        +'Joule optimum over '+sig(j.cotLo,4)+' to '+sig(j.cotHi,4)+'&thinsp;&deg;C, worth '+usd(j.saveLo)+' to '
+        +usd(j.saveHi)+'&thinsp;t<sup>&minus;1</sup>. Every variant still produces an optimum, so the trade-off '
+        +'between conversion, selectivity and run length is a result. Where it sits, and what it is worth, is not.'
+      : '');
 }
 
 /* The grid factor at which the two routes have equal carbon intensity. */
@@ -1793,9 +1828,47 @@ function renderExplained(r,l){
   $('explained').innerHTML=h;
 }
 
+function drawModelEvidence(r){
+  const isGP=S.kinetics==='gp'&&app.gp, m=app.gp, v=app.gpValidation;
+  $('modelRoute').textContent=isGP?'AramcoMech 3.0 → Cantera → GP → process TEA/LCA':'empirical screening reactor → process TEA/LCA';
+  $('modelSummary').innerHTML=isGP
+    ? 'At the displayed operating point, conversion <b>'+pctS(r.X*100)+'</b> and mass selectivity <b>'+pctS(r.Smass*100)
+      +'</b> come from the mechanism surrogate. The downstream plant remains a screening model.'
+    : 'Conversion and selectivity come from the original transparent screening correlations. Select Aramco GP above to use the mechanism-resolved reactor layer.';
+  if(m){
+    const src=m.source||{}, p=src.mechanism_provenance||{};
+    const sha=src.mechanism_sha256||(p.yaml&&p.yaml.sha256)||'—';
+    $('modelProv').innerHTML=[
+      ['Mechanism',p.mechanism_name||'AramcoMech 3.0'],
+      ['Cantera',src.cantera_version||'—'],
+      ['Mechanism size',(src.mechanism_species||'—')+' species · '+(src.mechanism_reactions||'—')+' reactions'],
+      ['Training points',m.training_points],
+      ['Mechanism SHA-256','<code>'+sha+'</code>']
+    ].map(([a,b])=>'<tr><td>'+a+'</td><td class="r">'+b+'</td></tr>').join('');
+  }else $('modelProv').innerHTML='<tr><td colspan="2">Qualified mechanism surrogate is not loaded.</td></tr>';
+  if(v&&v.outputs){
+    const keys=[['x_c2h6','C2H6 conversion'],['s_c2h4_mol','C2H4 selectivity'],
+      ['y_c2h4_kg_per_kg_ethane','C2H4 yield'],['heat_MJ_per_kg_ethane','Enthalpy rise']];
+    $('modelVal').innerHTML=keys.map(([k,n])=>{
+      const q=v.outputs[k]||{};
+      return '<tr><td>'+n+'</td><td class="r">'+(q.r2==null?'—':sig(q.r2,4))+'</td>'
+        +'<td class="r">'+(q.rmse_over_range==null?'—':sig(q.rmse_over_range,3))+'</td>'
+        +'<td class="r">'+(q.coverage_95==null?'—':pctS(q.coverage_95*100,3))+'</td></tr>';
+    }).join('');
+    $('modelValNote').innerHTML=(v.passed?'<span class="badge b-pass">PASS</span> ':'<span class="badge b-warn">NOT QUALIFIED</span> ')
+      +v.validation_points+' independent Cantera points; these points are excluded from fitting and kernel selection.';
+  }else{
+    $('modelVal').innerHTML='<tr><td colspan="4">Independent holdout report is unavailable.</td></tr>';
+    $('modelValNote').textContent='';
+  }
+  $('modelBoundary').innerHTML='The detailed mechanism resolves homogeneous gas-phase chemistry. The current release does not resolve radial gradients, '
+    +'furnace radiation, pressure drop, solid-carbon deposition, rigorous multicomponent columns, vendor equipment design, or investment-grade economics. '
+    +'The heating-ramp exponent is a thermal-history descriptor and is not a fired/Joule identifier by itself.';
+}
+
 /* ---------- tabs ---------- */
 const TABS=[['main','main'],['compare','fired vs Joule'],['carbon','carbon'],
-            ['balance','balances'],['explained','explained'],['cite','cite']];
+            ['balance','balances'],['model','model evidence'],['explained','explained'],['cite','cite']];
 $('nav').innerHTML=TABS.map(([id,lab])=>'<button data-tab="'+id+'">'+lab+'</button>').join('');
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render();});
 
@@ -1864,6 +1937,7 @@ function render(){
   /* Sticky readout. Cost and carbon come from one inventory, so they are shown together,
      with the prices that produced them and the change against any pinned baseline. */
   const lNow=lca(r,S), B=app.baseRes, BL=app.baseLca;
+  drawModelEvidence(r);
   $('skCoo').textContent=usd(r.coo)+'/t';
   $('skCi').textContent=sig(lNow.ci,4)+' kg/t';
   $('skBe').textContent='$'+sig(be,3)+'/kWh';
@@ -1885,7 +1959,7 @@ function render(){
   /* The headline number lives in the sticky bar, where it stays visible while the knobs
      move. Repeating it here in 46 px pushed the flowsheet off the first screen. */
   $('ovCtx').innerHTML=
-    '<b>'+sig(r.coo/r.L.floor,3)+'x</b> the stoichiometric floor of <b>'+usd(r.L.floor)+'</b> · '
+    '<b>'+esc(r.reactorModel)+'</b> · <b>'+sig(r.coo/r.L.floor,3)+'x</b> the stoichiometric floor of <b>'+usd(r.L.floor)+'</b> · '
     +'published benchmark <b>'+usd(PUB.coo)+'</b> ('+(gapPub>0?'+':'−')+sig(Math.abs(gapPub),3)+'%)<br>'
     +(rJH.coo<rCH.coo?'Joule':'Fired')+' heating is cheaper by <b>'+usd(Math.abs(rJH.coo-rCH.coo))
     +'</b>/t at this power price · break-even <b>$'+sig(be,3)+'</b>/kWh '
@@ -1974,41 +2048,53 @@ function render(){
 
   if(S.tab==='balance') drawFig4(r);
 
-  $('specBody').innerHTML=[
-    ['Activation energy',sig(EA/1000,4)+' kJ/mol','Literature, first-order ethane pyrolysis'],
-    ['Pre-exponential',A_PRE.toExponential(2).replace('e+','e')+' /s','Not measured. Computed to force the rate law through '
-      +CAL.cot+' C, '+sig(CAL.tau,2)+' s, '+sig(CAL.X*100,2)+'% conversion'],
+  const chemistryRows=(S.kinetics==='gp'&&app.gp)
+    ? [
+      ['Reactor chemistry','AramcoMech 3.0 → Cantera → GP',
+       'Detailed gas-phase chemistry supplies conversion, ethylene selectivity and the 650 °C-to-outlet enthalpy rise'],
+      ['GP reactor inputs',sig(S.cot,4)+' °C, '+sig(S.tau,3)+' s, '+sig(S.dilution,3)+' kg/kg, '
+        +sig(S.pressure,3)+' bar, n='+sig(S.ramp,3),
+       'Five-dimensional mechanism-resolved design space'],
+      ['GP training',sig(app.gp.training_points,4)+' Cantera points',
+       app.gpValidation?'Independent holdout: '+app.gpValidation.validation_points+' points':'Independent holdout report unavailable'],
+      ['Thermal history','650 °C → outlet; exponent '+sig(S.ramp,3),
+       'Prescribed-temperature PFR descriptor; it is not identified with a heating technology without a calibrated temperature profile']
+    ]
+    : [
+      ['Activation energy',sig(EA/1000,4)+' kJ/mol','Literature, first-order ethane pyrolysis'],
+      ['Pre-exponential',A_PRE.toExponential(2).replace('e+','e')+' /s',
+       'Computed to force the rate law through '+CAL.cot+' C, '+sig(CAL.tau,2)+' s, '+sig(CAL.X*100,2)+'% conversion'],
+      ['Selectivity curve',SEL_ANCHOR.map(([x,s])=>sig(x*100,2)+'%&thinsp;&rarr;&thinsp;'+sig(s*100,2)+'%').join(', '),
+       'No dataset. Quadratic through three screening anchors'],
+      ['Dilution and residence corrections',sig(SEL_DIL,1)+' per unit steam ratio, '+sig(SEL_TAU,1)+' per ln s',
+       'Screening assumption, one significant figure']
+    ];
+  const commonRows=[
     ['Fired envelope',MODE_LIMITS.CH.cot[0]+' to '+MODE_LIMITS.CH.cot[1]+' C, '
-      +sig(MODE_LIMITS.CH.tau[0],2)+' s and longer','Assumption: tube wall alloy limit and radiant flux'],
+      +sig(MODE_LIMITS.CH.tau[0],2)+' s and longer','Screening assumption: tube-wall alloy limit and radiant flux'],
     ['Joule envelope',MODE_LIMITS.JH.cot[0]+' to '+MODE_LIMITS.JH.cot[1]+' C, '
-      +sig(MODE_LIMITS.JH.tau[0],2)+' s and longer','Assumption: heat released inside the reacting volume'],
-    ['Selectivity curve',SEL_ANCHOR.map(([x,s])=>sig(x*100,2)+'%&thinsp;&rarr;&thinsp;'+sig(s*100,2)+'%').join(', '),
-     'No dataset. Quadratic through three points taken as typical of reported ethane cracking. '
-     +'The largest unsourced term in the model'],
-    ['Selectivity curve range',sig(VALID.X[0]*100,2)+' to '+sig(VALID.X[1]*100,2)+'% conversion',
-     'Where the curve runs unflagged. The three points span '+sig(SEL_ANCHOR[0][0]*100,2)+' to '
-     +sig(SEL_ANCHOR[2][0]*100,2)+'%, so the edges of this band are already extrapolation'],
-    ['Dilution and residence corrections',sig(SEL_DIL,1)+' per unit steam ratio, '+sig(SEL_TAU,1)+' per ln s',
-     'Assumption, one significant figure, direction and order of magnitude only'],
+      +sig(MODE_LIMITS.JH.tau[0],2)+' s and longer','Screening assumption: heat released inside the reacting volume'],
     ['Compressor discharge',sig(P_DISCH,3)+' bar','Design constant'],
-    ['Product purity',pctS(PURITY*100,4)+' mol','Downstream specification, met by FUG'],
+    ['Product purity',pctS(PURITY*100,4)+' mol','Downstream specification, met by FUG shortcut'],
     ['Cold box recovery',pctS(RECOVERY*100,4),'Downstream specification, sets required temperature'],
-    ['Reaction enthalpy',sig(H_RXN,3)+' kJ/mol','Literature, at reaction temperature'],
-    ['Refrigeration second-law efficiency',pctS(ETA2*100,3),'Assumption, multistage cryogenic'],
-    ['Dilution steam latent heat',sig(H_VAP_DSG,4)+' kJ/kg','Steam tables at roughly 5 barg, the usual generator pressure'],
+    ['Refrigeration second-law efficiency',pctS(ETA2*100,3),'Screening assumption, multistage cryogenic'],
+    ['Dilution steam latent heat',sig(H_VAP_DSG,4)+' kJ/kg','Steam tables at roughly 5 barg'],
     ['Low grade heat value',pctS(STEAM_GRADE*100,2)+' of the steam price',
-     'Assumption. The generator draws from the cold end of the recovery train, not from the transfer line exchanger. '
-     +'This factor alone sets where the dilution optimum sits'],
-    ['Quench heat rejection','$'+sig(CW_REJECT,2)+' / GJ','Cooling water, one significant figure'],
-    ['TBMC anchor','$'+sig(REF.tbmc,4)+' M at '+sig(REF.cap,3)+' kt/y','Back-calculated from CEJ 2025 SI, TCI taken as TOC'],
-    ['TOC / TBMC','2.50','CEJ 2025 SI, assumption 11']
-  ].map(([a,b,c])=>'<tr><td>'+a+'</td><td class="r">'+b+'</td><td style="color:var(--secondary)">'+c+'</td></tr>').join('');
+     'Assumption for heat recovered at the cold end of the train'],
+    ['Quench heat rejection','$'+sig(CW_REJECT,2)+' / GJ','Cooling-water screening cost'],
+    ['TBMC anchor','$'+sig(REF.tbmc,4)+' M at '+sig(REF.cap,3)+' kt/y','CEJ 2025 capital basis'],
+    ['TOC / TBMC','2.50','CEJ 2025 SI assumption 11']
+  ];
+  $('specBody').innerHTML=chemistryRows.concat(commonRows)
+    .map(([a,b,c])=>'<tr><td>'+a+'</td><td class="r">'+b+'</td><td style="color:var(--secondary)">'+c+'</td></tr>').join('');
 
-  $('foot').innerHTML='Screening estimate, AACE Class 5, &plusmn;40%. Capital is correlation based and does not '
-   +'resolve differences that design based estimation would. The byproduct split moves with severity '
-   +'(CH<sub>4</sub> 45 to 80%, coke 8 to 25%, C<sub>3+</sub> the balance) and is not calibrated against measurement. '
-   +'The dilution steam generation and quench condensation duties are charged against an assumed value for low '
-   +'grade heat, which no market quotes; that one factor decides where the dilution optimum sits.';
+  $('foot').innerHTML='Screening estimate, AACE Class 5, &plusmn;40%. '
+   +(S.kinetics==='gp'
+     ? 'The reactor conversion, ethylene selectivity and hot-section enthalpy come from the AramcoMech/Cantera surrogate. '
+       +'The current plant coupling still uses the original empirical byproduct/coking partition for downstream lumping and run length; '
+       +'that boundary is retained explicitly until the mechanism-resolved species inventory is connected end to end. '
+     : 'The empirical reactor route uses a first-order conversion law and an uncalibrated byproduct/selectivity correlation. ')
+   +'Capital and cryogenic separation remain screening correlations. The low-grade heat value used for dilution-steam generation is an assumption.';
 }
 
 /* Slider travel follows the active heating method, so the handle cannot be dragged into
@@ -2081,7 +2167,8 @@ function robustOptimum(mode){
 }
 
 function bestPoint(mode){
-  const key=[S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor,S.selMode,S.sel].join('|');
+  const key=[S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor,
+             S.selMode,S.sel,S.kinetics,S.pressure,S.ramp].join('|');
   if(key!==_bpKey){_bpKey=key;_bpVal={};}
   if(_bpVal[mode]) return _bpVal[mode];
   const W=MODE_LIMITS[mode], eff=(mode==='CH'?60:95);
