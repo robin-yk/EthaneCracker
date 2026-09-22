@@ -1,0 +1,194 @@
+{
+  "schema": "ethane-pfr-segment-convergence-v1",
+  "coarse_segments": 20,
+  "reference_segments": 40,
+  "acceptance": {
+    "max_conversion_selectivity_abs": 0.005,
+    "max_ethylene_yield_abs": 0.005,
+    "max_enthalpy_relative": 0.01
+  },
+  "cases": [
+    {
+      "case": {
+        "name": "baseline",
+        "temperature_c": 850.0,
+        "residence_time_s": 0.35,
+        "steam_hc_kgkg": 0.35,
+        "pressure_bar": 1.5,
+        "ramp_exponent": 1.0
+      },
+      "metrics": {
+        "x_c2h6": {
+          "coarse": 0.38011645313733033,
+          "reference": 0.3809959600526722,
+          "abs_error": 0.0008795069153418877,
+          "relative_error": 0.0023084415782789326
+        },
+        "s_c2h4_mol": {
+          "coarse": 0.9372484652457922,
+          "reference": 0.9371900235576613,
+          "abs_error": 5.844168813085027e-05,
+          "relative_error": 6.235841895648882e-05
+        },
+        "y_c2h4_kg_per_kg_ethane": {
+          "coarse": 0.3323783830149314,
+          "reference": 0.33312666115230527,
+          "abs_error": 0.0007482781373738812,
+          "relative_error": 0.002246227110089423
+        },
+        "heat_MJ_per_kg_ethane": {
+          "coarse": 2.716189215838494,
+          "reference": 2.720209094452502,
+          "abs_error": 0.004019878614007766,
+          "relative_error": 0.0014777829477174251
+        }
+      }
+    },
+    {
+      "case": {
+        "name": "rapid-high",
+        "temperature_c": 950.0,
+        "residence_time_s": 0.08,
+        "steam_hc_kgkg": 0.35,
+        "pressure_bar": 1.5,
+        "ramp_exponent": 0.6
+      },
+      "metrics": {
+        "x_c2h6": {
+          "coarse": 0.7926528051047348,
+          "reference": 0.7936006383208809,
+          "abs_error": 0.00094783321614611,
+          "relative_error": 0.0011943453298519997
+        },
+        "s_c2h4_mol": {
+          "coarse": 0.8778041468773504,
+          "reference": 0.8776205033905345,
+          "abs_error": 0.0001836434868158765,
+          "relative_error": 0.00020925159121328837
+        },
+        "y_c2h4_kg_per_kg_ethane": {
+          "coarse": 0.6491454144856127,
+          "reference": 0.6497856766807342,
+          "abs_error": 0.0006402621951214771,
+          "relative_error": 0.00098534365729958
+        },
+        "heat_MJ_per_kg_ethane": {
+          "coarse": 5.105494970807573,
+          "reference": 5.110225831188268,
+          "abs_error": 0.0047308603806950345,
+          "relative_error": 0.000925763466620609
+        }
+      }
+    },
+    {
+      "case": {
+        "name": "slow-dilute",
+        "temperature_c": 800.0,
+        "residence_time_s": 0.6,
+        "steam_hc_kgkg": 0.5,
+        "pressure_bar": 4.0,
+        "ramp_exponent": 2.0
+      },
+      "metrics": {
+        "x_c2h6": {
+          "coarse": 0.11621826649714506,
+          "reference": 0.11650031278652451,
+          "abs_error": 0.0002820462893794451,
+          "relative_error": 0.002420991692067535
+        },
+        "s_c2h4_mol": {
+          "coarse": 0.9530661007727911,
+          "reference": 0.9530417467166009,
+          "abs_error": 2.435405619016784e-05,
+          "relative_error": 2.5554028744356595e-05
+        },
+        "y_c2h4_kg_per_kg_ethane": {
+          "coarse": 0.10333769743122734,
+          "reference": 0.1035858372556272,
+          "abs_error": 0.00024813982439986226,
+          "relative_error": 0.0023954995294145033
+        },
+        "heat_MJ_per_kg_ethane": {
+          "coarse": 1.312012465523301,
+          "reference": 1.3132957952621764,
+          "abs_error": 0.0012833297388754605,
+          "relative_error": 0.0009771825536221003
+        }
+      }
+    },
+    {
+      "case": {
+        "name": "short-low-pressure",
+        "temperature_c": 900.0,
+        "residence_time_s": 0.05,
+        "steam_hc_kgkg": 0.2,
+        "pressure_bar": 1.0,
+        "ramp_exponent": 0.5
+      },
+      "metrics": {
+        "x_c2h6": {
+          "coarse": 0.35895282761679426,
+          "reference": 0.35984313843287963,
+          "abs_error": 0.0008903108160853712,
+          "relative_error": 0.0024741636590951367
+        },
+        "s_c2h4_mol": {
+          "coarse": 0.9342980717637647,
+          "reference": 0.9342302715470776,
+          "abs_error": 6.780021668706393e-05,
+          "relative_error": 7.257334594263075e-05
+        },
+        "y_c2h4_kg_per_kg_ethane": {
+          "coarse": 0.312884605719196,
+          "reference": 0.31363789175817774,
+          "abs_error": 0.0007532860389817264,
+          "relative_error": 0.0024017698714877468
+        },
+        "heat_MJ_per_kg_ethane": {
+          "coarse": 2.7855261936577858,
+          "reference": 2.7896070111013485,
+          "abs_error": 0.004080817443562701,
+          "relative_error": 0.001462864635528564
+        }
+      }
+    },
+    {
+      "case": {
+        "name": "late-heating",
+        "temperature_c": 925.0,
+        "residence_time_s": 0.25,
+        "steam_hc_kgkg": 0.3,
+        "pressure_bar": 3.0,
+        "ramp_exponent": 3.5
+      },
+      "metrics": {
+        "x_c2h6": {
+          "coarse": 0.5091617557769571,
+          "reference": 0.5107515299693481,
+          "abs_error": 0.0015897741923910358,
+          "relative_error": 0.0031126175823427164
+        },
+        "s_c2h4_mol": {
+          "coarse": 0.9117922845276297,
+          "reference": 0.9116482358890522,
+          "abs_error": 0.00014404863857753192,
+          "relative_error": 0.00015800901368174497
+        },
+        "y_c2h4_kg_per_kg_ethane": {
+          "coarse": 0.4331248014931113,
+          "reference": 0.4344085222868687,
+          "abs_error": 0.0012837207937574369,
+          "relative_error": 0.002955100390295085
+        },
+        "heat_MJ_per_kg_ethane": {
+          "coarse": 3.6321998151241446,
+          "reference": 3.6394227739276293,
+          "abs_error": 0.007222958803484669,
+          "relative_error": 0.0019846440636765383
+        }
+      }
+    }
+  ],
+  "passed": true,
+  "failures": []
+}
