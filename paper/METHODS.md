@@ -174,7 +174,9 @@ The empirical baseline retains its original algebraic C/H/mass/energy residual c
 
 The downstream model uses the same equations for both reactor descriptions.
 
-Compression uses a four-stage ideal-gas shortcut to 32 bar. The cold-box calculation estimates refrigeration duty from flow, light-gas fraction, recovery, and Carnot-based work. The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
+Compression uses a four-stage ideal-gas shortcut to 32 bar. The compressed cracked gas then passes through a screening acetylene converter before cryogenic separation. AC-201 reduces acetylene to a 5 ppm target. Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane; hydrogen is withdrawn from the mechanism-predicted H2 stream. The 256-point Cantera training design contains more H2 than this stoichiometric requirement at every point (minimum H2/requirement ratio 15.5). The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
+
+The cold-box calculation estimates refrigeration duty from the converter effluent flow, light-gas fraction, recovery, and Carnot-based work. The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
 
 TLE recovery credits recovered sensible heat. Tail gas supplies fired-heater demand before purchased natural gas. The Joule case supplies reactor heat electrically.
 
@@ -216,10 +218,10 @@ Current release status:
 
 ## 14. Model scope
 
-The current calculation covers gas-phase chemistry, imposed thermal history, recycle, compression, refrigeration screening, C2 fractionation screening, heat recovery, CAPEX/OPEX, and LCA.
+The current calculation covers gas-phase chemistry, imposed thermal history, recycle, compression, screening acetylene hydrogenation, refrigeration screening, C2 fractionation screening, heat recovery, CAPEX/OPEX, and LCA.
 
 Higher-fidelity reactor work requires radial temperature gradients, furnace-side radiation, tube-wall conduction, pressure drop, and coke-deposition kinetics.
 
-Higher-fidelity downstream work requires rigorous multicomponent thermodynamics, detailed quench chemistry, acetylene hydrogenation, and vendor equipment design.
+Higher-fidelity downstream work requires rigorous multicomponent thermodynamics, detailed quench chemistry, acetylene-hydrogenation kinetics including catalyst deactivation and green-oil formation, and vendor equipment design.
 
 Economic results retain the AACE Class 5 screening classification.
