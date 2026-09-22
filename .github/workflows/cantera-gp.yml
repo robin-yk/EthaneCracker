@@ -46,7 +46,7 @@ jobs:
           if [[ ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
             echo "TRAIN_POINTS=256" >> "$GITHUB_ENV"
             echo "HOLDOUT_POINTS=64" >> "$GITHUB_ENV"
-            echo "SEGMENTS=40" >> "$GITHUB_ENV"
+            echo "SEGMENTS=20" >> "$GITHUB_ENV"
             echo "MAX_NRMSE=0.08" >> "$GITHUB_ENV"
             echo "MIN_R2=0.90" >> "$GITHUB_ENV"
             echo "PROFILE=publication" >> "$GITHUB_ENV"
@@ -85,6 +85,16 @@ jobs:
           assert "C2H6" in gas.species_names and "C2H4" in gas.species_names
           PY
 
+      - name: Reactor discretization convergence
+        run: |
+          REF_SEGMENTS=$((SEGMENTS * 2))
+          python multiscale/check_segment_convergence.py \
+            --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
+            --phase gas \
+            --coarse "$SEGMENTS" \
+            --reference "$REF_SEGMENTS" \
+            --output multiscale/segment_convergence.json
+
       - name: Generate AramcoMech training sweep
         run: |
           python multiscale/cantera_sweep.py \
@@ -105,6 +115,18 @@ jobs:
             --seed 4242 \
             --output multiscale/data/aramco_holdout.csv
 
+      - name: Preserve raw Cantera design spaces
+        uses: actions/upload-artifact@v4
+        with:
+          name: aramco-cantera-${{ github.run_id }}
+          path: |
+            multiscale/data/aramco_train.csv
+            multiscale/data/aramco_train.meta.json
+            multiscale/data/aramco_holdout.csv
+            multiscale/data/aramco_holdout.meta.json
+            multiscale/segment_convergence.json
+          retention-days: 30
+
       - name: Train browser GP
         run: |
           python multiscale/train_gp.py \
@@ -120,6 +142,18 @@ jobs:
             --output multiscale/validation.json \
             --max-nrmse "$MAX_NRMSE" \
             --min-r2 "$MIN_R2"
+
+      - name: Preserve surrogate validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aramco-gp-validation-${{ github.run_id }}
+          path: |
+            multiscale/surrogate.json
+            multiscale/training_report.json
+            multiscale/validation.json
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Quality-control elemental closure
         run: |
@@ -181,6 +215,7 @@ jobs:
             "multiscale/surrogate.json",
             "multiscale/training_report.json",
             "multiscale/validation.json",
+            "multiscale/segment_convergence.json",
           ]
           def sha(p):
               h=hashlib.sha256();h.update(Path(p).read_bytes());return h.hexdigest()
@@ -207,6 +242,7 @@ jobs:
           git add multiscale/surrogate.json
           git add multiscale/training_report.json
           git add multiscale/validation.json
+          git add multiscale/segment_convergence.json
           git add multiscale/release_manifest.json
           if git diff --cached --quiet; then
             echo "No generated changes."
