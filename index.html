@@ -70,13 +70,25 @@ details summary{cursor:pointer;font-size:11px;font-weight:bold}
 .bar{height:10px;background:#fff;border:1px solid #aaa;position:relative}.bar i{display:block;height:100%;background:repeating-linear-gradient(90deg,#008080 0 4px,#0b8f8f 4px 8px)}
 .speciesrow .num{font:10px var(--mono);text-align:right}
 .flow{padding:23px 18px 24px;display:grid;grid-template-columns:repeat(5,1fr);gap:25px;background-color:#fff;background-image:linear-gradient(#e5e5e5 1px,transparent 1px),linear-gradient(90deg,#e5e5e5 1px,transparent 1px);background-size:12px 12px;min-height:220px;align-items:center}
-.unit{border:2px outset #d4d0c8;padding:0;min-height:98px;position:relative;background:#f4f1e7;box-shadow:2px 2px 0 rgba(0,0,0,.14)}
+.unit{border:2px outset #d4d0c8;padding:0;min-height:98px;position:relative;background:#f4f1e7;box-shadow:2px 2px 0 rgba(0,0,0,.14);cursor:move;user-select:none}
+.unit.dragging{opacity:.45}
+.unit.selected{outline:2px solid #ff9800;outline-offset:1px}
 .unit:after{content:"";position:absolute;right:-27px;top:48px;width:25px;border-top:2px solid #4e6f8e}
 .unit:not(:last-child):before{content:"▶";position:absolute;right:-31px;top:40px;color:#4e6f8e;font-size:11px}
 .unit:last-child:after{display:none}.unit:last-child:before{display:none}
 .unit h4{font-size:10px;margin:0 0 7px;padding:3px 5px;background:#0a246a;color:#fff;font-weight:bold}.unit:nth-child(2) h4{background:#3a6ea5}.unit:nth-child(3) h4{background:#008080}.unit:nth-child(4) h4{background:#8a5b25}.unit:nth-child(5) h4{background:#246c39}
 .unit .u{font:10px var(--mono);color:#333;margin:4px 6px}
 .scope{padding:6px 8px;border-top:1px solid #aaa;background:#efefea;font-size:10px;color:#555}
+.streamtag{position:absolute;background:#fff;border:1px solid #777;padding:1px 4px;font:9px var(--mono);z-index:4;white-space:nowrap}
+.flowwrap{position:relative;background:#fff}
+.st-feed{left:6px;top:92px}.st-energy{left:16%;top:18px}.st-recycle{left:49%;bottom:8px}.st-product{right:4px;top:92px}.st-c3{right:14%;bottom:8px}
+.propwin{position:fixed;z-index:80;width:315px;right:24px;bottom:34px;background:var(--desk);border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.25);display:none}
+.propwin.open{display:block}.proptitle{height:22px;background:linear-gradient(90deg,#0a246a,#3a6ea5);color:#fff;font-weight:bold;padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
+.proptitle button{width:18px;height:17px;padding:0;background:var(--desk);border:1px outset #fff;font-size:10px}
+.propbody{padding:7px;background:var(--face)}.proptabs{display:flex;gap:2px;border-bottom:1px solid #888;margin-bottom:6px}
+.proptabs span{padding:3px 8px;border:1px solid #888;border-bottom:0;background:#d8d5cc;font-size:10px}.proptabs span.active{background:#fff;position:relative;top:1px}
+.proptable{width:100%;border-collapse:collapse;background:#fff;border:1px inset #ddd}.proptable td{font-size:10px;padding:4px 5px;border-bottom:1px solid #ddd}.proptable td:first-child{color:#555;width:52%}
+.propfoot{display:flex;justify-content:flex-end;gap:4px;margin-top:7px}.propfoot button{font-size:10px;padding:3px 12px;background:var(--desk);border:2px outset #d4d0c8}
 .outputs{position:sticky;top:114px;background:var(--face)}
 .heroout{padding:8px;background:#fff;border-bottom:1px solid #888}
 .heroout .k{font-size:9px;color:#555;text-transform:uppercase}.heroout .cost{font:700 27px var(--mono);margin:1px 0 8px;color:#0a246a}
@@ -149,10 +161,6 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
         <div class="item" data-tree-view="cite">Reports</div>
       </div>
       <div class="group">
-        <h4>Reactor model</h4>
-        <div class="seg"><button id="modelGP" class="active">Aramco GP</button><button id="modelEmp">Empirical</button></div>
-      </div>
-      <div class="group">
         <h4>Heating</h4>
         <div class="seg"><button id="heatFired" class="active">Fired</button><button id="heatJoule">Joule</button></div>
       </div>
@@ -184,12 +192,19 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
         <div class="big"><div class="k">C₂H₄ yield</div><div class="n" id="rY">—</div><div class="s">kg/kg coil ethane</div></div>
       </div>
       <div class="species" id="species"></div>
-      <div class="flow">
-        <div class="unit"><h4>Reactor + TLE</h4><div class="u" id="uReactor">—</div><div class="u" id="uFeed">—</div></div>
-        <div class="unit"><h4>Compression</h4><div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div></div>
-        <div class="unit"><h4>Cold box</h4><div class="u" id="uCold">—</div><div class="u" id="uRef">—</div></div>
-        <div class="unit"><h4>C₂ splitter</h4><div class="u" id="uSplit">—</div><div class="u">99.9 mol% product</div></div>
-        <div class="unit"><h4>Ethylene</h4><div class="u">1.000 kg basis</div><div class="u" id="uCap">—</div></div>
+      <div class="flowwrap">
+        <span class="streamtag st-feed">FEED: C2H6 + STEAM</span>
+        <span class="streamtag st-energy">FUEL / POWER</span>
+        <span class="streamtag st-recycle">RECYCLE C2H6</span>
+        <span class="streamtag st-product">C2H4 PRODUCT</span>
+        <span class="streamtag st-c3">C3+</span>
+        <div class="flow" id="flowsheet">
+          <div class="unit" draggable="true" data-block="reactor"><h4>R-101 · CRACKER + TLE</h4><div class="u" id="uReactor">—</div><div class="u" id="uFeed">—</div></div>
+          <div class="unit" draggable="true" data-block="compressor"><h4>C-101 · COMPRESSION</h4><div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div></div>
+          <div class="unit" draggable="true" data-block="coldbox"><h4>T-201 · COLD BOX</h4><div class="u" id="uCold">—</div><div class="u" id="uRef">—</div></div>
+          <div class="unit" draggable="true" data-block="splitter"><h4>T-301 · C2 SPLITTER</h4><div class="u" id="uSplit">—</div><div class="u">99.9 mol% product</div></div>
+          <div class="unit" draggable="true" data-block="product"><h4>P-401 · ETHYLENE</h4><div class="u">1.000 kg basis</div><div class="u" id="uCap">—</div></div>
+        </div>
       </div>
       <div class="scope" id="scope">—</div>
     </section>
@@ -245,6 +260,14 @@ https://doi.org/10.1016/j.combustflame.2018.08.006</pre>
   </div>
 </section>
 </main>
+<div class="propwin" id="propwin">
+  <div class="proptitle"><span id="propTitle">Block Properties</span><button id="propClose">×</button></div>
+  <div class="propbody">
+    <div class="proptabs"><span class="active">Results</span><span>Input</span><span>Setup</span></div>
+    <table class="proptable" id="propTable"></table>
+    <div class="propfoot"><button id="propOK">OK</button></div>
+  </div>
+</div>
 <div class="statusbar">
   <div class="statuscell" id="statusRun">READY</div>
   <div class="statuscell" id="statusCase">Case: Reference case</div>
@@ -275,13 +298,13 @@ function qState(){
   if(!q.size)return;
   const map={T:"cot",tau:"tau",steam:"dilution",P:"pressure",n:"ramp",cap:"cap",ethane:"ethane",elec:"elec",gas:"gas",grid:"grid"};
   for(const [k,v] of Object.entries(map))if(q.has(k))state[v]=+q.get(k);
-  if(q.has("model"))state.kinetics=q.get("model")==="empirical"?"empirical":"gp";
+  state.kinetics="gp";
   if(q.has("heat")){state.mode=q.get("heat")==="joule"?"JH":"CH";state.eff=state.mode==="JH"?95:60}
   if(q.has("case"))state.name=q.get("case");
 }
 function writeURL(){
   const q=new URLSearchParams();
-  q.set("model",state.kinetics==="gp"?"aramco":"empirical");
+  q.set("model","aramco");
   q.set("heat",state.mode==="JH"?"joule":"fired");
   q.set("T",state.cot);q.set("tau",state.tau.toFixed(4));q.set("steam",state.dilution);
   q.set("P",state.pressure);q.set("n",state.ramp);q.set("cap",state.cap);
@@ -302,8 +325,6 @@ function bind(){
   pairs.forEach(([id,k])=>$(id).oninput=e=>{state[k]=+e.target.value;state.name="Custom";render()});
   $("inTau").oninput=e=>{state.tau=tauFromSlider(+e.target.value);state.name="Custom";render()};
   [["inEthane","ethane"],["inElec","elec"],["inGas","gas"],["inGrid","grid"]].forEach(([id,k])=>$(id).oninput=e=>{state[k]=+e.target.value;state.name="Custom";render()});
-  $("modelGP").onclick=()=>{state.kinetics="gp";state.name="Custom";render()};
-  $("modelEmp").onclick=()=>{state.kinetics="empirical";state.name="Custom";render()};
   $("heatFired").onclick=()=>{state.mode="CH";state.eff=60;state.name="Custom";render()};
   $("heatJoule").onclick=()=>{state.mode="JH";state.eff=95;state.name="Custom";render()};
   document.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>loadPreset(b.dataset.load));
@@ -331,7 +352,6 @@ function syncControls(){
   $("inRamp").value=state.ramp;$("vRamp").textContent=fmt(state.ramp,2);
   $("inCap").value=state.cap;$("vCap").textContent=fmt(state.cap,0)+" kt/y";
   $("inEthane").value=state.ethane;$("inElec").value=state.elec;$("inGas").value=state.gas;$("inGrid").value=state.grid;
-  $("modelGP").classList.toggle("active",state.kinetics==="gp");$("modelEmp").classList.toggle("active",state.kinetics==="empirical");
   $("heatFired").classList.toggle("active",state.mode==="CH");$("heatJoule").classList.toggle("active",state.mode==="JH");
 }
 function evaluate(){
@@ -340,10 +360,12 @@ function evaluate(){
 function render(){
   if(!api)return;
   syncControls();evaluate();writeURL();
-  $("modeTag").textContent=(state.kinetics==="gp"?"Aramco GP":"empirical")+" · "+(state.mode==="JH"?"Joule":"fired");
+  state.kinetics="gp";
+  $("modeTag").textContent="Aramco GP · "+(state.mode==="JH"?"Joule":"fired");
   $("statusRun").textContent="READY";
   $("statusCase").textContent="Case: "+state.name;
-  $("statusModel").textContent=(state.kinetics==="gp"?"Aramco GP":"Empirical")+" · "+(state.mode==="JH"?"Joule":"Fired");
+  $("statusModel").textContent="ARAMCO-GP · "+(state.mode==="JH"?"JOULE":"FIRED");
+  updateWindowTitle();
   $("rX").textContent=pct(result.conversion);
   $("rS").textContent=pct(result.selectivity_mass);
   const y=(result.gp_mean&&result.gp_mean.y_c2h4_kg_per_kg_ethane)||result.conversion*result.selectivity_mass;
@@ -389,7 +411,7 @@ function presetResult(id,mods={}){
 }
 function comparisonOptions(){
   return [
-    ["current","Current workspace"],["fired","Current · fired"],["joule","Current · Joule"],["empirical","Current · empirical"],
+    ["current","Current workspace"],["fired","Current · fired"],["joule","Current · Joule"],
     ["chen","Chen 2024"],["shin","Shin 2025"],["wang","Wang 2026"]
   ];
 }
@@ -402,7 +424,6 @@ function resolveComp(id){
   if(id==="current")return {name:"Current",r:api.evaluate(state)};
   if(id==="fired")return {name:"Fired",r:api.evaluate({...state,mode:"CH",eff:60})};
   if(id==="joule")return {name:"Joule",r:api.evaluate({...state,mode:"JH",eff:95})};
-  if(id==="empirical")return {name:"Empirical",r:api.evaluate({...state,kinetics:"empirical"})};
   return {name:presets[id].name,r:presetResult(id)};
 }
 function renderCompare(){
@@ -457,8 +478,68 @@ function download(name,text,type){
 function toCSV(o){
   const rows=[["field","value"]];Object.entries(o).forEach(([k,v])=>{if(v&&typeof v==="object")return;rows.push([k,v])});return rows.map(r=>r.map(x=>'"'+String(x).replaceAll('"','""')+'"').join(",")).join("\n");
 }
+function caseFileName(){
+  const raw=(state.name||"Untitled Case").trim();
+  if(raw==="Reference case")return "Reference_Case.bkp";
+  if(raw==="Custom")return "Untitled_Case.bkp";
+  return raw.replace(/[^A-Za-z0-9]+/g,"_").replace(/^_+|_+$/g,"")+".bkp";
+}
+function updateWindowTitle(){
+  const el=document.querySelector(".windowtitle .caption span:last-child");
+  if(el)el.textContent="Ethane Cracker Simulator - ["+caseFileName()+"]";
+}
+const blockProps={
+  reactor:()=>[
+    ["Block","R-101 · CRACKER + TLE"],["Model","AramcoMech 3.0 / Cantera GP"],
+    ["Outlet T",fmt(state.cot,1)+" °C"],["Pressure",fmt(state.pressure,2)+" bar"],
+    ["Residence",fmt(state.tau,4)+" s"],["Steam / HC",fmt(state.dilution,3)+" kg/kg"],
+    ["Heating exponent",fmt(state.ramp,2)],["Conversion",pct(result.conversion)],
+    ["C2H4 selectivity",pct(result.selectivity_mass)],["Useful heat",fmt(result.reactor_useful_heat_gj_per_t,3)+" GJ/t"],
+    ["Status",result.flags&&result.flags.length?"WARNING":"CONVERGED"]
+  ],
+  compressor:()=>[
+    ["Block","C-101 · COMPRESSION"],["Stages","4"],["Discharge","32 bar"],
+    ["Shaft work",fmt(result.compressor_kwh_per_t,1)+" kWh/t"],["Feed basis",fmt(result.fresh_ethane_kg_per_kg+result.recycle_ethane_kg_per_kg,3)+" kg/kg C2H4"],
+    ["Status","CALCULATED"]
+  ],
+  coldbox:()=>[
+    ["Block","T-201 · COLD BOX"],["Refrigeration",fmt(result.refrigeration_kwh_per_t,1)+" kWh/t"],
+    ["Purpose","H2 / CH4 light-gas removal"],["Status","CALCULATED"]
+  ],
+  splitter:()=>[
+    ["Block","T-301 · C2 SPLITTER"],["Product purity","99.9 mol% C2H4"],
+    ["Power equivalent",fmt(result.splitter_kwh_per_t,1)+" kWh/t"],["Method","FUG shortcut"],["Status","CALCULATED"]
+  ],
+  product:()=>[
+    ["Stream","P-401 · ETHYLENE"],["Basis","1.000 kg C2H4"],["Plant output",fmt(result.annual_product_kt,1)+" kt/y"],
+    ["Cost","$"+fmt(result.cost_usd_per_t,1)+"/t"],["Carbon",fmt(result.carbon_kgco2e_per_t,1)+" kgCO2e/t"]
+  ]
+};
+function openBlock(block){
+  if(!result||!blockProps[block])return;
+  document.querySelectorAll(".unit").forEach(x=>x.classList.toggle("selected",x.dataset.block===block));
+  const rows=blockProps[block]();
+  $("propTitle").textContent=rows[0][1];
+  $("propTable").innerHTML=rows.slice(1).map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
+  $("propwin").classList.add("open");
+}
+function bindFlowsheet(){
+  document.querySelectorAll(".unit").forEach(u=>{
+    u.onclick=()=>openBlock(u.dataset.block);
+    u.addEventListener("dragstart",e=>{u.classList.add("dragging");e.dataTransfer.setData("text/plain",u.dataset.block)});
+    u.addEventListener("dragend",()=>u.classList.remove("dragging"));
+    u.addEventListener("dragover",e=>e.preventDefault());
+    u.addEventListener("drop",e=>{
+      e.preventDefault();
+      const id=e.dataTransfer.getData("text/plain");
+      const src=document.querySelector('.unit[data-block="'+id+'"]');
+      if(src&&src!==u)$("flowsheet").insertBefore(src,u);
+    });
+  });
+  $("propClose").onclick=$("propOK").onclick=()=>{$("propwin").classList.remove("open");document.querySelectorAll(".unit").forEach(x=>x.classList.remove("selected"))};
+}
 async function init(){
-  qState();bind();fillCompare();
+  qState();bind();bindFlowsheet();fillCompare();
   try{
     [api,literature,bench]=await Promise.all([
       waitApi(),
