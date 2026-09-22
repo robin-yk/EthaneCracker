@@ -349,6 +349,7 @@ https://doi.org/10.1016/j.combustflame.2018.08.006</pre>
 "use strict";
 const $=id=>document.getElementById(id);
 const frame=$("engineFrame");
+const UI_AUDIT=new URLSearchParams(location.search).get("uiAudit")==="1";
 const tauFromSlider=v=>0.02*Math.pow(50,v/1000);
 const tauToSlider=t=>1000*Math.log(t/0.02)/Math.log(50);
 const fmt=(x,n=3)=>Number.isFinite(x)?Number(x).toLocaleString("en-US",{maximumFractionDigits:n}):"—";
@@ -786,7 +787,7 @@ async function init(){
     document.body.dataset.kinetics="aramco-gp";
     $("live").textContent="Aramco GP ready · 256 train / 64 holdout";$("live").className="live good";
     render();benchmarkSummary();modelMeta();
-    if(new URLSearchParams(location.search).get("uiAudit")==="1")await runUIAudit();
+    if(UI_AUDIT)await runUIAudit();
   }catch(e){
     document.body.dataset.appStatus="error";
     document.body.dataset.kinetics="unavailable";
