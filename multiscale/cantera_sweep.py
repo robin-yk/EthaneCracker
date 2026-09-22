@@ -27,6 +27,7 @@ import json
 import math
 import os
 import platform
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import cantera as ct
@@ -222,6 +223,33 @@ def simulate_case(
     return result
 
 
+_WORKER_GAS = None
+_WORKER_INLET_T = None
+_WORKER_SEGMENTS = None
+
+
+def _init_worker(mechanism: str, phase: str, inlet_temperature_c: float, segments: int):
+    global _WORKER_GAS, _WORKER_INLET_T, _WORKER_SEGMENTS
+    _WORKER_GAS = ct.Solution(mechanism, phase)
+    _WORKER_INLET_T = inlet_temperature_c
+    _WORKER_SEGMENTS = segments
+
+
+def _worker(case: dict[str, float]):
+    try:
+        return {
+            "ok": True,
+            "row": simulate_case(
+                _WORKER_GAS,
+                inlet_temperature_c=_WORKER_INLET_T,
+                segments=_WORKER_SEGMENTS,
+                **case,
+            ),
+        }
+    except Exception as exc:
+        return {"ok": False, "case": case, "error": str(exc)}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mechanism", default="gri30.yaml")
@@ -231,6 +259,10 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--inlet-temperature-c", type=float, default=650.0)
     ap.add_argument("--output", default="multiscale/data/cantera_sweep.csv")
+    ap.add_argument(
+        "--workers", type=int, default=0,
+        help="parallel worker processes; 0 selects up to four CPUs",
+    )
     args = ap.parse_args()
 
     gas = ct.Solution(args.mechanism, args.phase)
@@ -242,20 +274,32 @@ def main() -> None:
 
     rows = []
     failures = []
-    for i, case in enumerate(cases, 1):
-        try:
-            rows.append(
-                simulate_case(
-                    gas,
-                    inlet_temperature_c=args.inlet_temperature_c,
-                    segments=args.segments,
-                    **case,
-                )
-            )
-        except Exception as exc:
-            failures.append({"case": i, **case, "error": str(exc)})
-        if i % max(1, args.points // 20) == 0 or i == args.points:
-            print(f"{i}/{args.points} cases; {len(failures)} failed")
+    workers = args.workers if args.workers > 0 else min(4, os.cpu_count() or 1)
+    print(f"running {args.points} cases with {workers} worker(s)")
+
+    if workers == 1:
+        _init_worker(args.mechanism, args.phase, args.inlet_temperature_c, args.segments)
+        results = map(_worker, cases)
+        pool = None
+    else:
+        pool = ProcessPoolExecutor(
+            max_workers=workers,
+            initializer=_init_worker,
+            initargs=(args.mechanism, args.phase, args.inlet_temperature_c, args.segments),
+        )
+        results = pool.map(_worker, cases, chunksize=1)
+
+    try:
+        for i, result in enumerate(results, 1):
+            if result["ok"]:
+                rows.append(result["row"])
+            else:
+                failures.append({"case": i, **result["case"], "error": result["error"]})
+            if i % max(1, args.points // 20) == 0 or i == args.points:
+                print(f"{i}/{args.points} cases; {len(failures)} failed")
+    finally:
+        if pool is not None:
+            pool.shutdown()
 
     if not rows:
         raise RuntimeError("all Cantera cases failed")
@@ -287,6 +331,7 @@ def main() -> None:
         "points_succeeded": len(rows),
         "points_failed": len(failures),
         "segments": args.segments,
+        "workers": workers,
         "seed": args.seed,
         "inlet_temperature_c": args.inlet_temperature_c,
         "input_ranges": INPUT_RANGES,
