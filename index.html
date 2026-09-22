@@ -2029,41 +2029,53 @@ function render(){
 
   if(S.tab==='balance') drawFig4(r);
 
-  $('specBody').innerHTML=[
-    ['Activation energy',sig(EA/1000,4)+' kJ/mol','Literature, first-order ethane pyrolysis'],
-    ['Pre-exponential',A_PRE.toExponential(2).replace('e+','e')+' /s','Not measured. Computed to force the rate law through '
-      +CAL.cot+' C, '+sig(CAL.tau,2)+' s, '+sig(CAL.X*100,2)+'% conversion'],
+  const reactorSpecs=S.kinetics==='gp'
+    ? [
+      ['Reactor chemistry','AramcoMech 3.0','Official Galway distribution; converted with Cantera ck2yaml'],
+      ['GP training',app.gp?app.gp.training_points+' Cantera points':'loading','Five-dimensional Latin-hypercube design'],
+      ['Independent holdout',app.gpValidation?app.gpValidation.validation_points+' Cantera points':'loading','Separate Latin-hypercube seed'],
+      ['Reactor domain','750–1000 C; 0.02–1.0 s; 0–0.70 steam/HC; 1–5 bar; n=0.45–4','Stored in surrogate metadata'],
+      ['Reactor inlet','650 C','Fixed in the current Cantera sweep'],
+      ['Heating history','T(f)=Tin+(Tout−Tin)f^n','Prescribed thermal-history coordinate'],
+      ['Species inventory','C2H4, C2H6, CH4, H2, C2H2, C3, C4+','Mechanism-derived yields passed to the process model'],
+      ['Reactor enthalpy','Cantera enthalpy rise','650 C to selected outlet condition'],
+      ['Run length',sig(r.runDays,3)+' d','Empirical coking/run-length correlation retained from the original TEA']
+    ]
+    : [
+      ['Activation energy',sig(EA/1000,4)+' kJ/mol','Literature first-order ethane pyrolysis'],
+      ['Pre-exponential',A_PRE.toExponential(2).replace('e+','e')+' /s',
+       'Calibrated at '+CAL.cot+' C, '+sig(CAL.tau,2)+' s and '+sig(CAL.X*100,2)+'% conversion'],
+      ['Selectivity anchors',SEL_ANCHOR.map(([x,s])=>sig(x*100,2)+'%&thinsp;&rarr;&thinsp;'+sig(s*100,2)+'%').join(', '),
+       'Three-point empirical screening curve'],
+      ['Dilution and residence corrections',sig(SEL_DIL,1)+' per unit steam ratio, '+sig(SEL_TAU,1)+' per ln s',
+       'Empirical screening terms'],
+      ['Byproduct partition','severity-dependent CH4 / C3+ / coke split','Closed C/H lumped balance']
+    ];
+  const commonSpecs=[
     ['Fired envelope',MODE_LIMITS.CH.cot[0]+' to '+MODE_LIMITS.CH.cot[1]+' C, '
-      +sig(MODE_LIMITS.CH.tau[0],2)+' s and longer','Assumption: tube wall alloy limit and radiant flux'],
+      +sig(MODE_LIMITS.CH.tau[0],2)+' s and longer','Screening envelope'],
     ['Joule envelope',MODE_LIMITS.JH.cot[0]+' to '+MODE_LIMITS.JH.cot[1]+' C, '
-      +sig(MODE_LIMITS.JH.tau[0],2)+' s and longer','Assumption: heat released inside the reacting volume'],
-    ['Selectivity curve',SEL_ANCHOR.map(([x,s])=>sig(x*100,2)+'%&thinsp;&rarr;&thinsp;'+sig(s*100,2)+'%').join(', '),
-     'No dataset. Quadratic through three points taken as typical of reported ethane cracking. '
-     +'The largest unsourced term in the model'],
-    ['Selectivity curve range',sig(VALID.X[0]*100,2)+' to '+sig(VALID.X[1]*100,2)+'% conversion',
-     'Where the curve runs unflagged. The three points span '+sig(SEL_ANCHOR[0][0]*100,2)+' to '
-     +sig(SEL_ANCHOR[2][0]*100,2)+'%, so the edges of this band are already extrapolation'],
-    ['Dilution and residence corrections',sig(SEL_DIL,1)+' per unit steam ratio, '+sig(SEL_TAU,1)+' per ln s',
-     'Assumption, one significant figure, direction and order of magnitude only'],
+      +sig(MODE_LIMITS.JH.tau[0],2)+' s and longer','Screening envelope'],
     ['Compressor discharge',sig(P_DISCH,3)+' bar','Design constant'],
-    ['Product purity',pctS(PURITY*100,4)+' mol','Downstream specification, met by FUG'],
-    ['Cold box recovery',pctS(RECOVERY*100,4),'Downstream specification, sets required temperature'],
-    ['Reaction enthalpy',sig(H_RXN,3)+' kJ/mol','Literature, at reaction temperature'],
-    ['Refrigeration second-law efficiency',pctS(ETA2*100,3),'Assumption, multistage cryogenic'],
-    ['Dilution steam latent heat',sig(H_VAP_DSG,4)+' kJ/kg','Steam tables at roughly 5 barg, the usual generator pressure'],
-    ['Low grade heat value',pctS(STEAM_GRADE*100,2)+' of the steam price',
-     'Assumption. The generator draws from the cold end of the recovery train, not from the transfer line exchanger. '
-     +'This factor alone sets where the dilution optimum sits'],
-    ['Quench heat rejection','$'+sig(CW_REJECT,2)+' / GJ','Cooling water, one significant figure'],
-    ['TBMC anchor','$'+sig(REF.tbmc,4)+' M at '+sig(REF.cap,3)+' kt/y','Back-calculated from CEJ 2025 SI, TCI taken as TOC'],
-    ['TOC / TBMC','2.50','CEJ 2025 SI, assumption 11']
-  ].map(([a,b,c])=>'<tr><td>'+a+'</td><td class="r">'+b+'</td><td style="color:var(--secondary)">'+c+'</td></tr>').join('');
+    ['Product purity',pctS(PURITY*100,4)+' mol','Downstream specification, FUG shortcut'],
+    ['Cold-box recovery',pctS(RECOVERY*100,4),'Downstream specification'],
+    ['Refrigeration second-law efficiency',pctS(ETA2*100,3),'Multistage cryogenic screening assumption'],
+    ['Dilution steam latent heat',sig(H_VAP_DSG,4)+' kJ/kg','Steam tables near 5 barg'],
+    ['Low-grade heat value',pctS(STEAM_GRADE*100,2)+' of the HP steam price','Screening assumption for dilution-steam economics'],
+    ['Quench heat rejection','$'+sig(CW_REJECT,2)+' / GJ','Cooling-water screening value'],
+    ['TBMC anchor','$'+sig(REF.tbmc,4)+' M at '+sig(REF.cap,3)+' kt/y','CEJ 2025 process reference'],
+    ['TOC / TBMC','2.50','CEJ 2025 SI basis']
+  ];
+  $('specBody').innerHTML=reactorSpecs.concat(commonSpecs)
+    .map(([a,b,c])=>'<tr><td>'+a+'</td><td class="r">'+b+'</td><td style="color:var(--secondary)">'+c+'</td></tr>').join('');
 
-  $('foot').innerHTML='Screening estimate, AACE Class 5, &plusmn;40%. Capital is correlation based and does not '
-   +'resolve differences that design based estimation would. The byproduct split moves with severity '
-   +'(CH<sub>4</sub> 45 to 80%, coke 8 to 25%, C<sub>3+</sub> the balance) and is not calibrated against measurement. '
-   +'The dilution steam generation and quench condensation duties are charged against an assumed value for low '
-   +'grade heat, which no market quotes; that one factor decides where the dilution optimum sits.';
+  $('foot').innerHTML=S.kinetics==='gp'
+    ? 'Screening estimate, AACE Class 5, &plusmn;40%. AramcoMech/Cantera supplies gas-phase chemistry and reactor enthalpy. '
+      +'Run length remains empirical. The gas-phase mechanism assigns no solid coke yield. Cold-box and C2-splitter duties use screening correlations. '
+      +'The low-grade heat value controls dilution-steam economics.'
+    : 'Screening estimate, AACE Class 5, &plusmn;40%. The empirical baseline uses first-order conversion, a three-point selectivity curve, '
+      +'and a severity-dependent byproduct split. Cold-box and C2-splitter duties use screening correlations. '
+      +'The low-grade heat value controls dilution-steam economics.';
 }
 
 /* Slider travel follows the active heating method, so the handle cannot be dragged into
