@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ethane cracker · Cantera-GP reactor surrogate</title>
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#202428;background:#fff}
+body{margin:0}.wrap{max-width:980px;margin:auto;padding:32px 24px 56px}
+h1{font-size:24px;margin:0 0 4px}p{line-height:1.55;color:#596168}
+.note{border-left:3px solid #b66a16;padding:9px 12px;margin:18px 0;color:#596168}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:18px;margin:28px 0}
+label{font-size:12px;font-weight:700;display:block}.val{font-family:monospace;font-weight:400}
+input[type=range]{width:100%}.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:#dfe3e6;border:1px solid #dfe3e6}
+.card{background:#fff;padding:14px}.k{font-size:11px;text-transform:uppercase;color:#6c747b}.v{font:700 23px/1.3 monospace}.s{font:12px/1.4 monospace;color:#6c747b}
+.good{color:#17786c}.bad{color:#b24632}.meta{font-size:12px;color:#6c747b;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Ethane cracker · Cantera → GP</h1>
+<p>Instant reactor prediction from an offline Cantera design space. This page contains no chemistry solver; it evaluates the exported Gaussian-process surrogate.</p>
+<div id="status" class="note">Loading <code>surrogate.json</code>…</div>
+
+<div class="grid">
+<div><label>Outlet temperature <span class="val" id="vt"></span></label><input id="t" type="range" min="750" max="1000" step="2" value="850"></div>
+<div><label>Residence time <span class="val" id="vtau"></span></label><input id="tau" type="range" min="-1.699" max="0" step="0.005" value="-0.456"></div>
+<div><label>Steam / hydrocarbon <span class="val" id="vs"></span></label><input id="s" type="range" min="0" max="0.7" step="0.01" value="0.35"></div>
+<div><label>Pressure <span class="val" id="vp"></span></label><input id="p" type="range" min="1" max="5" step="0.05" value="1.5"></div>
+<div><label>Heating-ramp exponent <span class="val" id="vr"></span></label><input id="r" type="range" min="0.45" max="4" step="0.05" value="1"></div>
+</div>
+
+<div class="results">
+<div class="card"><div class="k">C₂H₆ conversion</div><div class="v" id="x">—</div><div class="s" id="xs"></div></div>
+<div class="card"><div class="k">C₂H₄ selectivity, mol</div><div class="v" id="sel">—</div><div class="s" id="sels"></div></div>
+<div class="card"><div class="k">C₂H₄ yield</div><div class="v" id="yeth">—</div><div class="s">kg / kg fresh ethane</div></div>
+<div class="card"><div class="k">CH₄ yield</div><div class="v" id="ych4">—</div><div class="s">kg / kg fresh ethane</div></div>
+<div class="card"><div class="k">H₂ yield</div><div class="v" id="yh2">—</div><div class="s">kg / kg fresh ethane</div></div>
+<div class="card"><div class="k">External enthalpy rise</div><div class="v" id="q">—</div><div class="s">MJ / kg fresh ethane</div></div>
+</div>
+<div class="meta" id="meta"></div>
+</div>
+
+<script type="module">
+import {EthaneGPSurrogate} from "./gp_runtime.js";
+
+const $=id=>document.getElementById(id);
+let gp=null;
+const input=()=>({
+  temperature_c:+$("t").value,
+  residence_time_s:10**(+$("tau").value),
+  steam_hc_kgkg:+$("s").value,
+  pressure_bar:+$("p").value,
+  ramp_exponent:+$("r").value
+});
+const pct=x=>(100*x).toFixed(2)+"%";
+const num=x=>Number.isFinite(x)?x.toFixed(4):"—";
+
+function render(){
+  const p=input();
+  $("vt").textContent=p.temperature_c.toFixed(0)+" °C";
+  $("vtau").textContent=p.residence_time_s.toFixed(3)+" s";
+  $("vs").textContent=p.steam_hc_kgkg.toFixed(2)+" kg/kg";
+  $("vp").textContent=p.pressure_bar.toFixed(2)+" bar";
+  $("vr").textContent=p.ramp_exponent.toFixed(2);
+  if(!gp)return;
+
+  const z=gp.predict(p), m=z.mean, s=z.sigma;
+  $("x").textContent=pct(m.x_c2h6);
+  $("xs").textContent="GP σ "+pct(s.x_c2h6);
+  $("sel").textContent=pct(m.s_c2h4_mol);
+  $("sels").textContent="GP σ "+pct(s.s_c2h4_mol);
+  $("yeth").textContent=num(m.y_c2h4_kg_per_kg_ethane);
+  $("ych4").textContent=num(m.y_ch4_kg_per_kg_ethane);
+  $("yh2").textContent=num(m.y_h2_kg_per_kg_ethane);
+  $("q").textContent=num(m.heat_MJ_per_kg_ethane);
+
+  $("status").className="note "+(z.domain.inside?"good":"bad");
+  $("status").textContent=z.domain.inside
+    ? "Inside the Cantera training domain."
+    : "Extrapolation: "+z.domain.outside.map(d=>d.input).join(", ");
+  const src=z.source||{};
+  $("meta").textContent=`Training points: ${z.training_points}. Mechanism: ${src.mechanism||"unknown"}. Reactor basis: ${src.reactor_model||"see metadata"}.`;
+}
+
+for(const e of document.querySelectorAll("input"))e.addEventListener("input",render);
+render();
+try{
+  gp=await EthaneGPSurrogate.load("./surrogate.json");
+  render();
+}catch(err){
+  $("status").className="note bad";
+  $("status").innerHTML="No trained surrogate is committed yet. Run <code>cantera_sweep.py</code> then <code>train_gp.py</code>. "+err.message;
+}
+</script>
+</body>
+</html>
