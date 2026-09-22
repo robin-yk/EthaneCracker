@@ -174,7 +174,11 @@ The empirical baseline retains its original algebraic C/H/mass/energy residual c
 
 The downstream model uses the same equations for both reactor descriptions.
 
-Compression uses a four-stage ideal-gas shortcut to 32 bar. The compressed cracked gas then passes through a screening acetylene converter before cryogenic separation. AC-201 reduces acetylene to a 5 ppm target. Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane; hydrogen is withdrawn from the mechanism-predicted H2 stream. The 256-point Cantera training design contains more H2 than this stoichiometric requirement at every point (minimum H2/requirement ratio 15.5). The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
+Compression uses a four-stage ideal-gas shortcut to 32 bar. The compressed cracked gas then passes through a screening acetylene converter before cryogenic separation. This placement represents a front-end hydrogenation arrangement within the reduced process flowsheet. EPA ethylene-process descriptions place selective acetylene hydrogenation upstream of the ethylene/ethane splitter and report polymer-grade acetylene specifications of roughly 5–10 ppm; the present screening model uses a 5 ppm target.
+
+Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. The 90% value is a screening default consistent with reported high-selectivity Pd acetylene hydrogenation; it is not a plant-specific kinetic fit. Hydrogen is withdrawn from the mechanism-predicted H2 stream. The 256-point Cantera training design contains more H2 than this stoichiometric requirement at every point (minimum H2/requirement ratio 15.5). The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
+
+Process references for this block are the U.S. EPA *Industrial Process Profiles for Environmental Use: Chapter 5 — Basic Petrochemical Industry*, Olefins Production Process No. 8, and the palladium acetylene-hydrogenation study reporting ethylene selectivity around 90% (DOI: 10.1016/0304-5102(93)E0323-9).
 
 The cold-box calculation estimates refrigeration duty from the converter effluent flow, light-gas fraction, recovery, and Carnot-based work. The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
 
