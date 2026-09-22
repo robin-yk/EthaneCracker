@@ -77,7 +77,7 @@ jobs:
           BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --virtual-time-budget=30000             --screenshot=/tmp/workspace-1440.png http://127.0.0.1:8000/
           "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1920,1080 --virtual-time-budget=30000             --screenshot=/tmp/workspace-1920.png http://127.0.0.1:8000/
-          "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --virtual-time-budget=30000             --screenshot=/tmp/benchmarks-1440.png http://127.0.0.1:8000/?case=Chen%202024&T=950&tau=0.124&steam=0.2&P=1&n=1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars             --window-size=1440,900 --virtual-time-budget=30000             --screenshot=/tmp/benchmarks-1440.png "http://127.0.0.1:8000/?case=Chen%202024&T=950&tau=0.124&steam=0.2&P=1&n=1"
           mkdir -p ui-audit
           cp /tmp/workspace-1440.png /tmp/workspace-1920.png /tmp/benchmarks-1440.png ui-audit/
 
