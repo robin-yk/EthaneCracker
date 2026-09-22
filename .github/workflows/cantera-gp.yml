@@ -117,6 +117,31 @@ jobs:
             --seed 4242 \
             --output multiscale/data/aramco_holdout.csv
 
+      - name: Check acetylene-converter hydrogen supply
+        run: |
+          python - <<'PY'
+          import csv, math
+          MW_H2=2.016
+          MW_C2H2=26.038
+          SELECTIVITY=0.90
+          stoich=SELECTIVITY + 2*(1-SELECTIVITY)
+          minimum=float("inf")
+          where=None
+          for fn in ["multiscale/data/aramco_train.csv","multiscale/data/aramco_holdout.csv"]:
+              for i,row in enumerate(csv.DictReader(open(fn)), start=2):
+                  h2=float(row["y_h2_kg_per_kg_ethane"])
+                  a=float(row["y_c2h2_kg_per_kg_ethane"])
+                  if a <= 0:
+                      continue
+                  need=a/MW_C2H2*MW_H2*stoich
+                  ratio=h2/need
+                  if ratio < minimum:
+                      minimum=ratio
+                      where=(fn,i)
+          print("minimum mechanism H2 / AC-201 requirement =",minimum,"at",where)
+          assert math.isfinite(minimum) and minimum > 1.0
+          PY
+
       - name: Preserve raw Cantera design spaces
         uses: actions/upload-artifact@v4
         with:
