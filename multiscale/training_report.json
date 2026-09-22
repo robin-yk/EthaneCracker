@@ -1,0 +1,189 @@
+{
+  "schema": "ethane-cantera-gp-training-v3",
+  "training_points": 256,
+  "fit_points_internal": 205,
+  "tuning_points_internal": 51,
+  "seed": 2026,
+  "kernel_candidates_evaluated": 71,
+  "selected_length_scale": [
+    0.22147583379950864,
+    0.6609359006645784,
+    1.1363958962775582,
+    1.3228694228999762,
+    0.2596455266659022
+  ],
+  "selected_score": 0.028573325868961795,
+  "internal_tuning_metrics": {
+    "x_c2h6": {
+      "mae": 0.004969126456047988,
+      "rmse": 0.0084269092861793,
+      "rmse_over_range": 0.008715285061740618,
+      "r2": 0.999413926635014,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.33790000739827114
+    },
+    "s_c2h4_mol": {
+      "mae": 0.0032391138850702073,
+      "rmse": 0.006956144328306431,
+      "rmse_over_range": 0.023949760895188237,
+      "r2": 0.991241352176408,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.4896985179714437
+    },
+    "y_c2h4_kg_per_kg_ethane": {
+      "mae": 0.009650838717360404,
+      "rmse": 0.018620669266741316,
+      "rmse_over_range": 0.027790266264677194,
+      "r2": 0.9947533067796064,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.3340164600657282
+    },
+    "y_ch4_kg_per_kg_ethane": {
+      "mae": 0.0014318685790433029,
+      "rmse": 0.0037072362633377874,
+      "rmse_over_range": 0.03272241777586524,
+      "r2": 0.9871635182283407,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.30217183632999534
+    },
+    "y_h2_kg_per_kg_ethane": {
+      "mae": 0.0008642427193980012,
+      "rmse": 0.0019190997422802746,
+      "rmse_over_range": 0.03009677381516542,
+      "r2": 0.9923139976810833,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.3314617643159777
+    },
+    "y_c2h2_kg_per_kg_ethane": {
+      "mae": 0.0006786438194041309,
+      "rmse": 0.002503960493271089,
+      "rmse_over_range": 0.05163563727947678,
+      "r2": 0.9367021958292081,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.31811597689306165
+    },
+    "y_c2h6_kg_per_kg_ethane": {
+      "mae": 0.009949159358185128,
+      "rmse": 0.015807483910147933,
+      "rmse_over_range": 0.016348429027444756,
+      "r2": 0.9979377522246288,
+      "coverage_95": 0.9411764705882353,
+      "sigma_scale": 0.5674660448195343
+    },
+    "y_c3_kg_per_kg_ethane": {
+      "mae": 0.00022616282162961945,
+      "rmse": 0.0004559974031376879,
+      "rmse_over_range": 0.03125003061191925,
+      "r2": 0.9900981031139366,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.3521860151392623
+    },
+    "y_c4plus_kg_per_kg_ethane": {
+      "mae": 0.001976228281055458,
+      "rmse": 0.005206706605515507,
+      "rmse_over_range": 0.04148515038877481,
+      "r2": 0.9752023407945027,
+      "coverage_95": 0.9411764705882353,
+      "sigma_scale": 0.3596213056074419
+    },
+    "heat_MJ_per_kg_ethane": {
+      "mae": 0.05602914944701258,
+      "rmse": 0.11989310633747077,
+      "rmse_over_range": 0.02173950756936568,
+      "r2": 0.9958538026196548,
+      "coverage_95": 0.9215686274509803,
+      "sigma_scale": 0.3476407134336649
+    }
+  },
+  "source": {
+    "mechanism": "multiscale/mechanisms/aramcomech30/aramcomech30.yaml",
+    "mechanism_sha256": "695d32d6add874ded6cb61cfc12c9352d7861913eac02558eeba10203c6db22e",
+    "mechanism_species": 581,
+    "mechanism_reactions": 3037,
+    "mechanism_provenance": {
+      "mechanism_name": "AramcoMech 3.0",
+      "mechanism_release": 2018,
+      "official_source": "University of Galway Combustion Chemistry Centre mechanism downloads",
+      "reference": {
+        "title": "An experimental and chemical kinetic modeling study of 1,3-butadiene combustion: Ignition delay time and laminar flame speed measurements",
+        "authors": "Zhou et al.",
+        "journal": "Combustion and Flame 197 (2018) 423-438",
+        "doi": "10.1016/j.combustflame.2018.08.006"
+      },
+      "retrieved_utc": "2026-09-22T17:23:22.578971+00:00",
+      "cantera_version": "3.2.0",
+      "phase": "gas",
+      "species": 581,
+      "reactions": 3037,
+      "source_files": {
+        "mechanism": {
+          "url": "https://www.universityofgalway.ie/media/researchcentres/combustionchemistrycentre/files/mechanismdownloads/aramcomech30/AramcoMech3.0.MECH",
+          "filename": "AramcoMech3.0.MECH",
+          "bytes": 712601,
+          "sha256": "4c1bbcc0e9b7e5ef813628cc76f291acd202e7ed2976326090cf7a6292fadbd6"
+        },
+        "thermo": {
+          "url": "https://www.universityofgalway.ie/media/researchcentres/combustionchemistrycentre/files/mechanismdownloads/aramcomech30/ARAMCOMECH30.THERM",
+          "filename": "ARAMCOMECH30.THERM",
+          "bytes": 517253,
+          "sha256": "9782155c1d08213155e7278fac5c63258553c8836ca9ab4d78bd341b0f0c3187"
+        },
+        "transport": {
+          "url": "https://www.universityofgalway.ie/media/researchcentres/combustionchemistrycentre/files/mechanismdownloads/aramcomech30/AramcoMech3.0.TRAN",
+          "filename": "AramcoMech3.0.TRAN",
+          "bytes": 153424,
+          "sha256": "c3085f7e0ca6f830763aa2195888e63a897b76c16006074e8720d919a672b87a"
+        }
+      },
+      "yaml": {
+        "filename": "aramcomech30.yaml",
+        "bytes": 832582,
+        "sha256": "695d32d6add874ded6cb61cfc12c9352d7861913eac02558eeba10203c6db22e"
+      }
+    },
+    "phase": "gas",
+    "cantera_version": "3.2.0",
+    "python_version": "3.13.15",
+    "git_sha": "94fa08fd18d017324facf1c7635caa1a77678aba",
+    "points_requested": 256,
+    "points_succeeded": 256,
+    "points_failed": 0,
+    "segments": 20,
+    "workers": 4,
+    "seed": 42,
+    "inlet_temperature_c": 650.0,
+    "input_ranges": {
+      "temperature_c": [
+        750.0,
+        1000.0
+      ],
+      "residence_time_s": [
+        0.02,
+        1.0
+      ],
+      "steam_hc_kgkg": [
+        0.0,
+        0.7
+      ],
+      "pressure_bar": [
+        1.0,
+        5.0
+      ],
+      "ramp_exponent": [
+        0.45,
+        4.0
+      ]
+    },
+    "reactor_model": "prescribed-temperature Lagrangian PFR approximation",
+    "thermal_history": "T(f)=Tin+(Tout-Tin)*f**ramp_exponent",
+    "thermal_discretization": "segment edges uniform in normalized temperature progress",
+    "yield_basis": "kg species per kg ethane entering reactor",
+    "closure_max_abs": {
+      "carbon_residual": 4.329980818340573e-12,
+      "hydrogen_residual": 2.1593834085663435e-11,
+      "oxygen_residual": 4.343727079671366e-12,
+      "mass_residual": 1.5543122344752192e-15
+    },
+    "failures": []
+  }
+}

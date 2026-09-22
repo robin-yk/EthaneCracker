@@ -1,0 +1,270 @@
+name: Cantera AramcoMech GP
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Sweep/validation profile"
+        required: true
+        default: publication
+        type: choice
+        options:
+          - publication
+          - smoke
+  push:
+    branches:
+      - cantera-gp-v1
+      - main
+    paths:
+      - "index.html"
+      - "README.md"
+      - "multiscale/**"
+      - ".github/workflows/cantera-gp.yml"
+
+concurrency:
+  group: cantera-gp-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-surrogate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Select build profile
+        shell: bash
+        run: |
+          COMMIT_MSG="$(git log -1 --pretty=%B)"
+          if [[ ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
+            echo "TRAIN_POINTS=256" >> "$GITHUB_ENV"
+            echo "HOLDOUT_POINTS=64" >> "$GITHUB_ENV"
+            echo "SEGMENTS=20" >> "$GITHUB_ENV"
+            echo "MAX_NRMSE=0.08" >> "$GITHUB_ENV"
+            echo "MIN_R2=0.90" >> "$GITHUB_ENV"
+            echo "PROFILE=publication" >> "$GITHUB_ENV"
+          else
+            echo "TRAIN_POINTS=48" >> "$GITHUB_ENV"
+            echo "HOLDOUT_POINTS=16" >> "$GITHUB_ENV"
+            echo "SEGMENTS=20" >> "$GITHUB_ENV"
+            echo "MAX_NRMSE=0.25" >> "$GITHUB_ENV"
+            echo "MIN_R2=0.50" >> "$GITHUB_ENV"
+            echo "PROFILE=smoke" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install pinned solver environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r multiscale/requirements.txt
+          python - <<'PY'
+          import cantera as ct, numpy as np
+          print("Cantera", ct.__version__)
+          print("NumPy", np.__version__)
+          PY
+
+      - name: GP algebra smoke test
+        run: python multiscale/test_gp.py
+
+      - name: Fetch and convert official AramcoMech 3.0
+        run: |
+          python multiscale/prepare_aramco.py --force-download
+          python - <<'PY'
+          import cantera as ct, json
+          p="multiscale/mechanisms/aramcomech30/aramcomech30.yaml"
+          gas=ct.Solution(p,"gas")
+          print("AramcoMech gas:",gas.n_species,"species",gas.n_reactions,"reactions")
+          meta=json.load(open("multiscale/mechanisms/aramcomech30/aramcomech30.provenance.json"))
+          print("YAML SHA256",meta["yaml"]["sha256"])
+          assert "C2H6" in gas.species_names and "C2H4" in gas.species_names
+          PY
+
+      - name: Reactor discretization convergence
+        run: |
+          REF_SEGMENTS=$((SEGMENTS * 2))
+          python multiscale/check_segment_convergence.py \
+            --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
+            --phase gas \
+            --coarse "$SEGMENTS" \
+            --reference "$REF_SEGMENTS" \
+            --output multiscale/segment_convergence.json
+
+      - name: Generate AramcoMech training sweep
+        run: |
+          python multiscale/cantera_sweep.py \
+            --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
+            --phase gas \
+            --points "$TRAIN_POINTS" \
+            --segments "$SEGMENTS" \
+            --seed 42 \
+            --output multiscale/data/aramco_train.csv
+
+      - name: Generate independent AramcoMech holdout sweep
+        run: |
+          python multiscale/cantera_sweep.py \
+            --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
+            --phase gas \
+            --points "$HOLDOUT_POINTS" \
+            --segments "$SEGMENTS" \
+            --seed 4242 \
+            --output multiscale/data/aramco_holdout.csv
+
+      - name: Preserve raw Cantera design spaces
+        uses: actions/upload-artifact@v4
+        with:
+          name: aramco-cantera-${{ github.run_id }}
+          path: |
+            multiscale/data/aramco_train.csv
+            multiscale/data/aramco_train.meta.json
+            multiscale/data/aramco_holdout.csv
+            multiscale/data/aramco_holdout.meta.json
+            multiscale/segment_convergence.json
+          retention-days: 30
+
+      - name: Train browser GP
+        run: |
+          python multiscale/train_gp.py \
+            --input multiscale/data/aramco_train.csv \
+            --output multiscale/surrogate.json \
+            --report multiscale/training_report.json
+
+      - name: Independent holdout validation
+        run: |
+          python multiscale/validate_surrogate.py \
+            --model multiscale/surrogate.json \
+            --data multiscale/data/aramco_holdout.csv \
+            --output multiscale/validation.json \
+            --max-nrmse "$MAX_NRMSE" \
+            --min-r2 "$MIN_R2"
+
+      - name: Preserve surrogate validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aramco-gp-validation-${{ github.run_id }}
+          path: |
+            multiscale/surrogate.json
+            multiscale/training_report.json
+            multiscale/validation.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Quality-control elemental closure
+        run: |
+          python - <<'PY'
+          import csv, math
+          for fn in ["multiscale/data/aramco_train.csv","multiscale/data/aramco_holdout.csv"]:
+              rows=list(csv.DictReader(open(fn)))
+              for key in ["carbon_residual","hydrogen_residual","oxygen_residual","mass_residual"]:
+                  worst=max(abs(float(r[key])) for r in rows)
+                  print(fn,key,worst)
+                  assert math.isfinite(worst) and worst < 1e-8
+          PY
+
+      - name: Frontend JavaScript syntax gate
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html=Path("index.html").read_text(encoding="utf-8")
+          scripts=re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>",html,re.S|re.I)
+          if not scripts:
+              raise SystemExit("no inline script found")
+          Path("/tmp/ethane-root-inline.js").write_text("\n".join(scripts),encoding="utf-8")
+          print("inline scripts",len(scripts))
+          PY
+          node --check /tmp/ethane-root-inline.js
+
+      - name: Headless web smoke gate
+        run: |
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$BROWSER" --version
+          python -m http.server 8000 --bind 127.0.0.1 >/tmp/ethane-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=8000 \
+            --dump-dom http://127.0.0.1:8000/ > /tmp/ethane-dom.html
+          grep -q 'data-kinetics="aramco-gp"' /tmp/ethane-dom.html || {
+            echo "Root app did not reach the qualified Aramco-GP runtime state"
+            grep -o 'data-kinetics="[^"]*"' /tmp/ethane-dom.html || true
+            exit 1
+          }
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=8000 \
+            --dump-dom http://127.0.0.1:8000/multiscale/demo.html > /tmp/ethane-gp-dom.html
+          grep -q "Independent Cantera holdout validation" /tmp/ethane-gp-dom.html
+
+      - name: Write release manifest
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          names=[
+            "multiscale/data/aramco_train.csv",
+            "multiscale/data/aramco_train.meta.json",
+            "multiscale/data/aramco_holdout.csv",
+            "multiscale/data/aramco_holdout.meta.json",
+            "multiscale/surrogate.json",
+            "multiscale/training_report.json",
+            "multiscale/validation.json",
+            "multiscale/segment_convergence.json",
+          ]
+          def sha(p):
+              h=hashlib.sha256();h.update(Path(p).read_bytes());return h.hexdigest()
+          manifest={
+            "schema":"ethane-multiscale-release-v1",
+            "profile":os.environ["PROFILE"],
+            "git_sha":os.environ["GITHUB_SHA"],
+            "train_points":int(os.environ["TRAIN_POINTS"]),
+            "holdout_points":int(os.environ["HOLDOUT_POINTS"]),
+            "segments":int(os.environ["SEGMENTS"]),
+            "artifacts":{p:sha(p) for p in names},
+          }
+          Path("multiscale/release_manifest.json").write_text(json.dumps(manifest,indent=2))
+          PY
+
+      - name: Commit reproducible generated artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add multiscale/data/aramco_train.csv
+          git add multiscale/data/aramco_train.meta.json
+          git add multiscale/data/aramco_holdout.csv
+          git add multiscale/data/aramco_holdout.meta.json
+          git add multiscale/surrogate.json
+          git add multiscale/training_report.json
+          git add multiscale/validation.json
+          git add multiscale/segment_convergence.json
+          git add multiscale/release_manifest.json
+          if git diff --cached --quiet; then
+            echo "No generated changes."
+          else
+            git commit -m "Generate AramcoMech Cantera-GP artifacts [skip ci]"
+            git push origin HEAD:"${{ github.ref_name }}"
+          fi
+
+      - name: Summarize release evidence
+        run: |
+          python - <<'PY'
+          import json
+          v=json.load(open("multiscale/validation.json"))
+          s=json.load(open("multiscale/surrogate.json"))
+          src=s["source"]; prov=src.get("mechanism_provenance") or {}
+          print("PROFILE",json.load(open("multiscale/release_manifest.json"))["profile"])
+          print("MECHANISM",prov.get("mechanism_name"))
+          print("SPECIES",src.get("mechanism_species"),"REACTIONS",src.get("mechanism_reactions"))
+          print("TRAIN",s["training_points"],"HOLDOUT",v["validation_points"])
+          print("VALIDATION PASS",v["passed"])
+          for k in ["x_c2h6","s_c2h4_mol","y_c2h4_kg_per_kg_ethane","heat_MJ_per_kg_ethane"]:
+              print(k,v["outputs"][k])
+          PY

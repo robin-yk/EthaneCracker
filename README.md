@@ -1,43 +1,167 @@
-# Techno-economics of Ethane Cracker
+# Ethane cracker: AramcoMech/Cantera reactor chemistry with screening TEA
 
-A screening cost model for an ethane cracker. Single self-contained HTML file, no external dependencies.
+This repository calculates ethane-cracker economics and carbon intensity from reactor operating conditions. The default web model uses AramcoMech 3.0 chemistry solved with Cantera, compressed into a Gaussian-process surrogate, and passed into the existing process, TEA, LCA, sensitivity, and figure-generation code.
 
-**[robin-yk.github.io/Techno-economics](https://robin-yk.github.io/Techno-economics/)**
+The original empirical reactor model remains available as **empirical baseline**. It uses the same downstream process model, cost basis, LCA inventory, and plotting code. Switching the reactor model therefore isolates the effect of reactor chemistry.
 
-Degrees of freedom sit at the reactor and nowhere else. Coil outlet temperature, residence
-time, steam dilution, capacity and heating efficiency are set; conversion follows from
-first-order pyrolysis kinetics and selectivity falls as conversion climbs. The three
-downstream columns hold fixed product specifications (99.9 mol% ethylene, 99.5% cold box
-recovery) and re-solve, so reflux ratio is an output rather than an input.
+## Calculation chain
 
-| Tab | Contents |
-|---|---|
-| main | Everything interactive on one surface: headline cost, process flow with cost breakdown, the ladder, and the sensitivity tornado |
-| fired vs Joule | Both heating routes, the value bridge and the break-even power price |
-| carbon | Carbon intensity from the same inventory, by scope, with grid factor, tail gas fate and co-product handling |
-| balances | Carbon, hydrogen, mass and energy residuals; fixed specifications |
-| explained | Every figure on the page written out in plain English, with each term defined at first use |
-| cite | Reference for the paper this is based on, with BibTeX |
+[
+(T_{out},\tau,S/H,P,n)
+\rightarrow
+\text{reactor chemistry}
+\rightarrow
+\text{species yields and enthalpy}
+\rightarrow
+\text{recycle and separation loads}
+\rightarrow
+\text{CAPEX/OPEX}
+\rightarrow
+\text{cost and carbon}
+]
 
-Cost and carbon come from one inventory. Prices give the cost of ethylene; emission factors
-give the carbon intensity. Two results that follow from the same mass and energy balance.
+For the Aramco GP route, Cantera supplies ethane conversion, ethylene selectivity, C2H4, C2H6, CH4, H2, C2H2, C3 and C4+ yields, and reactor enthalpy rise. The plant model converts those outputs to fresh ethane demand, recycle, tail-gas fuel, compressor load, refrigeration load, coproduct flow, heating duty, cost of ethylene, and carbon intensity.
 
-Screening estimate, AACE Class 5, ±40%. The output to read is the accumulation, not the
-absolute figure. Known gaps are stated on the page: capital is correlation based, the
-byproduct split is uncalibrated, and dilution steam carries no counterpart cost.
+The browser starts in Aramco GP mode after the stored surrogate passes its provenance and validation checks. The empirical baseline remains one click away.
 
-## Citation
+## Current web model
 
-If the approach is useful, cite the paper it is based on. The tool is under active
-development; its results may change and should not be taken as ground truth.
+The root `index.html` contains:
 
-Mittal, A., Kwak, Y., Zheng, W., Ierapetritou, M., & Vlachos, D. G. (2025). Short contact
-time, high temperature, internally-heated ethane crackers. *Chemical Engineering Journal*,
-523, 168251. <https://doi.org/10.1016/j.cej.2025.168251>
+- fired and Joule heating cases;
+- coil outlet temperature, residence time, steam dilution, pressure, and heating-history controls;
+- ethane recycle;
+- four-stage compression;
+- cryogenic light-gas removal;
+- C2 splitter shortcut calculations;
+- TLE heat recovery;
+- capacity-scaled CAPEX;
+- OPEX and cost of ethylene;
+- cradle-to-gate carbon intensity;
+- fired/Joule power-price and grid-carbon crossovers;
+- sensitivity analysis;
+- baseline pinning and delta reporting;
+- journal-size SVG and 600 dpi PNG export.
 
----
+`multiscale/demo.html` isolates the reactor surrogate and reports mechanism provenance, GP uncertainty, and independent Cantera holdout metrics.
 
-`ethane-cracker-tea-lab.html` was an attempt to reconstruct the TEA in Mittal, Kwak et al.,
-*Chem. Eng. J.* 523 (2025) 168251. The published information is not sufficient to reproduce
-it, so the work stopped and the file is not linked from the site. The audit is in
-[`TEA_tool_selfcheck.md`](TEA_tool_selfcheck.md).
+## AramcoMech / Cantera build
+
+The GitHub Actions release workflow performs the full reactor build:
+
+1. install pinned Cantera and NumPy versions;
+2. download the official AramcoMech 3.0 Chemkin, thermodynamic, and transport files from the University of Galway;
+3. record SHA-256 hashes;
+4. convert the mechanism with Cantera `ck2yaml`;
+5. check reactor-segment convergence;
+6. generate independent training and holdout Latin-hypercube sweeps;
+7. train the Gaussian-process surrogate;
+8. evaluate the holdout set;
+9. check C/H/O and mass closure for every Cantera point;
+10. run JavaScript and headless-browser tests;
+11. write a release manifest with artifact hashes.
+
+The current publication build uses **256 training points, 64 independent holdout points, and 20 reactor segments**.
+
+## Independent holdout results
+
+| quantity | R² | RMSE / observed range |
+|---|---:|---:|
+| C2H6 conversion | 0.9991 | 0.0099 |
+| C2H4 selectivity | 0.9872 | 0.0229 |
+| C2H4 yield | 0.9979 | 0.0161 |
+| CH4 yield | 0.9724 | 0.0311 |
+| H2 yield | 0.9961 | 0.0197 |
+| C2H2 yield | 0.9680 | 0.0386 |
+| C3 lump | 0.9936 | 0.0215 |
+| C4+ lump | 0.9797 | 0.0316 |
+| enthalpy rise | 0.9980 | 0.0136 |
+
+These values compare GP predictions with a Cantera holdout design generated from a separate Latin-hypercube seed.
+
+## Reactor model
+
+Cantera advances a reacting fluid element through a prescribed temperature history,
+
+[
+T(f)=T_{in}+(T_{out}-T_{in})f^n,
+]
+
+with (f=t/\tau). The current design space is:
+
+| input | range |
+|---|---:|
+| outlet temperature | 750–1000 °C |
+| residence time | 0.02–1.0 s |
+| steam / hydrocarbon | 0–0.70 kg/kg |
+| pressure | 1–5 bar |
+| heating-ramp exponent | 0.45–4 |
+| inlet temperature | 650 °C |
+
+The heating exponent describes the imposed thermal history. Reactor-specific values require temperature histories from experiment or a higher-fidelity heat-transfer model.
+
+## Mechanism-to-process transformation
+
+Cantera yields use kg species per kg ethane entering the coil. The plant model scales them to one kg of ethylene product.
+
+[
+m_{coil,C2H6}=\frac{1}{Y_{C2H4}}
+]
+
+[
+m_{fresh,C2H6}=\frac{X}{Y_{C2H4}}
+]
+
+[
+m_{recycle,C2H6}=\frac{1-X}{Y_{C2H4}}
+]
+
+CH4 and H2 set tail-gas fuel. C2H2, C3, C4+ and unconverted C2H6 contribute to downstream flow and refrigeration load. Cantera enthalpy supplies the 650 °C-to-outlet reactor duty; the process model supplies upstream preheat and TLE recovery.
+
+## Numerical checks
+
+The publication workflow compares 20 and 40 reactor segments at five operating points. The 20-segment calculation stays within the declared convergence thresholds.
+
+Every raw Cantera training and holdout point records carbon, hydrogen, oxygen, and mass residuals. The workflow rejects a dataset if any absolute residual exceeds (10^{-8}).
+
+The browser stores the maximum raw Cantera closure residuals in the surrogate metadata and displays them in the balances figure.
+
+## Process and TEA scope
+
+The process layer uses screening correlations for the cold box, C2 splitter, capital scaling, and utility costs. Capital is reported as AACE Class 5.
+
+Current equations cover reactor chemistry, recycle, compression, refrigeration screening, C2 fractionation screening, TLE recovery, coproduct credits, cost, and LCA.
+
+Higher-fidelity extensions require radial reactor temperature gradients, furnace-side radiation, tube-wall conduction, pressure drop, coke-deposition kinetics, detailed quench chemistry, acetylene hydrogenation, rigorous multicomponent cryogenic thermodynamics, and vendor equipment design.
+
+## Experimental chemistry benchmark
+
+The GP validation above measures surrogate error relative to Cantera. Experimental mechanism fidelity is a separate validation layer.
+
+A directly relevant dataset is:
+
+S. J. Cassady, R. Choudhary, N. H. Pinkowski, J. Shao, D. F. Davidson, R. K. Hanson, “The thermal decomposition of ethane,” *Fuel* **268** (2020) 117409. DOI: 10.1016/j.fuel.2020.117409.
+
+The study reports C2H6, C2H4, CH4, and C2H2 time histories for 1–2% ethane in Ar over 1178–1527 K and 3.1–4.2 atm. The manuscript validation plan uses those measurements as the external kinetic benchmark.
+
+## Process reference
+
+Mittal, A., Kwak, Y., Zheng, W., Ierapetritou, M., & Vlachos, D. G. (2025). “Short contact time, high temperature, internally-heated ethane crackers.” *Chemical Engineering Journal* **523**, 168251. DOI: 10.1016/j.cej.2025.168251.
+
+The Aramco GP and empirical baseline share the downstream TEA so reactor-model effects can be compared on the same process and economic basis.
+
+## Reproduce
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r multiscale/requirements.txt
+
+python multiscale/prepare_aramco.py --force-download
+# Exact sweep, training, validation, and release commands:
+# .github/workflows/cantera-gp.yml
+
+python -m http.server 8000
+```
+
+Open `http://localhost:8000/`.
