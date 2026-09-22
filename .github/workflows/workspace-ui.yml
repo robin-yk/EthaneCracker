@@ -68,7 +68,7 @@ jobs:
           grep -q "menu-file" /tmp/root.html
           grep -q "Stream Properties" /tmp/root.html
           grep -q "ask.yeonsu@gmail.com" /tmp/root.html
-          grep -q "The reactor outlet composition sets the ethane recycle" /tmp/root.html
+          grep -q "AC-201 selectively hydrogenates acetylene" /tmp/root.html
           grep -q "pfdlines" /tmp/root.html
           if grep -q ">Empirical<" /tmp/root.html; then echo "Empirical control leaked into simplified UI"; exit 1; fi
           "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8000/benchmarks/ > /tmp/bench.html
