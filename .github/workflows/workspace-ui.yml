@@ -1,0 +1,67 @@
+name: Workspace UI regression
+
+on:
+  push:
+    branches:
+      - workspace-redesign-v1
+      - main
+    paths:
+      - "index.html"
+      - "engine.html"
+      - "benchmarks/**"
+      - ".github/workflows/workspace-ui.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          for src,out in [('index.html','/tmp/workspace.js'),('engine.html','/tmp/engine.js'),('benchmarks/index.html','/tmp/bench.js')]:
+              text=Path(src).read_text(encoding='utf-8')
+              scripts=re.findall(r'<script(?:\\s[^>]*)?>(.*?)</script>',text,re.S|re.I)
+              if not scripts:
+                  raise SystemExit(f'no script in {src}')
+              Path(out).write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/workspace.js
+          node --check /tmp/engine.js
+          node --check /tmp/bench.js
+
+      - name: Headless workspace and benchmark
+        run: |
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$BROWSER" --version
+          python -m http.server 8000 --bind 127.0.0.1 >/tmp/workspace-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8000/ > /tmp/root.html
+          grep -q 'data-app-status="ready"' /tmp/root.html
+          grep -q "Flowsheet - Main" /tmp/root.html
+          grep -q "Model Explorer" /tmp/root.html
+          grep -q "READY" /tmp/root.html
+          grep -q "Aramco GP" /tmp/root.html
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8000/benchmarks/ > /tmp/bench.html
+          grep -q 'data-benchmark-status="complete"' /tmp/bench.html
+          grep -q 'data-benchmark-count="3"' /tmp/bench.html
+
+      - name: Verify API passthrough
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('index.html').read_text(encoding='utf-8')
+          assert 'window.ethaneModel=api' in text
+          assert 'src="engine.html"' in text
+          print('workspace shell delegates to engine.html and preserves benchmark API')
+          PY
