@@ -1,0 +1,87 @@
+name: Literature benchmark replay
+
+on:
+  push:
+    branches:
+      - literature-benchmarks-v1
+      - main
+    paths:
+      - "index.html"
+      - "benchmarks/**"
+      - ".github/workflows/literature-benchmarks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JavaScript syntax checks
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          for src,out in [
+              ("index.html","/tmp/root.js"),
+              ("benchmarks/index.html","/tmp/bench.js"),
+          ]:
+              text=Path(src).read_text(encoding="utf-8")
+              scripts=re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>",text,re.S|re.I)
+              if not scripts:
+                  raise SystemExit(f"no inline script in {src}")
+              Path(out).write_text("\\n".join(scripts),encoding="utf-8")
+          PY
+          node --check /tmp/root.js
+          node --check /tmp/bench.js
+
+      - name: Run browser benchmark
+        run: |
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$BROWSER" --version
+          python -m http.server 8000 --bind 127.0.0.1 >/tmp/bench-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=30000 \
+            --dump-dom http://127.0.0.1:8000/benchmarks/ > /tmp/bench-dom.html
+          grep -q 'data-benchmark-status="complete"' /tmp/bench-dom.html
+          grep -q 'data-benchmark-count="3"' /tmp/bench-dom.html
+
+      - name: Extract machine-readable results
+        run: |
+          python - <<'PY'
+          import html, json, re
+          from pathlib import Path
+          dom=Path("/tmp/bench-dom.html").read_text(encoding="utf-8")
+          m=re.search(r'<pre class="machine" id="machine-results">(.*?)</pre>',dom,re.S)
+          if not m:
+              raise SystemExit("machine results block missing")
+          raw=html.unescape(m.group(1)).strip()
+          data=json.loads(raw)
+          if data.get("schema")!="ethane-literature-results-v1":
+              raise SystemExit("unexpected benchmark schema")
+          if len(data.get("cases",[]))!=3:
+              raise SystemExit("expected three benchmark cases")
+          for case in data["cases"]:
+              for metric in case["metrics"]:
+                  if metric["role"]=="test":
+                      vals=metric.get("model_range")
+                      if vals is None:
+                          vals=[metric.get("model")]
+                      if not all(isinstance(x,(int,float)) for x in vals):
+                          raise SystemExit(f"non-numeric test output: {case['id']} {metric['name']}")
+          Path("benchmarks/results.json").write_text(json.dumps(data,indent=2),encoding="utf-8")
+          print(json.dumps(data,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: literature-benchmark-results-${{ github.run_id }}
+          path: benchmarks/results.json
+          retention-days: 30
