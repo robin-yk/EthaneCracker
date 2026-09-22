@@ -1,4 +1,4 @@
-name: Cantera GP v1
+name: Cantera AramcoMech GP
 
 on:
   workflow_dispatch:
@@ -6,10 +6,7 @@ on:
     branches:
       - cantera-gp-v1
     paths:
-      - "multiscale/cantera_sweep.py"
-      - "multiscale/train_gp.py"
-      - "multiscale/test_gp.py"
-      - "multiscale/requirements.txt"
+      - "multiscale/**"
       - ".github/workflows/cantera-gp.yml"
   pull_request:
     branches:
@@ -24,7 +21,7 @@ permissions:
 jobs:
   build-surrogate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,53 +31,111 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install Cantera and numerical dependencies
+      - name: Install pinned solver environment
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "cantera==3.2.0" "numpy>=1.26"
+          python -m pip install -r multiscale/requirements.txt
+          python - <<'PY'
+          import cantera as ct, numpy as np
+          print("Cantera", ct.__version__)
+          print("NumPy", np.__version__)
+          PY
 
       - name: GP algebra smoke test
         run: python multiscale/test_gp.py
 
-      - name: Generate stock-Cantera smoke-test sweep
+      - name: Fetch and convert official AramcoMech 3.0
+        run: |
+          python multiscale/prepare_aramco.py --force-download
+          python - <<'PY'
+          import cantera as ct, json
+          p="multiscale/mechanisms/aramcomech30/aramcomech30.yaml"
+          gas=ct.Solution(p,"gas")
+          print("AramcoMech gas:",gas.n_species,"species",gas.n_reactions,"reactions")
+          meta=json.load(open("multiscale/mechanisms/aramcomech30/aramcomech30.provenance.json"))
+          print("YAML SHA256",meta["yaml"]["sha256"])
+          assert "C2H6" in gas.species_names and "C2H4" in gas.species_names
+          PY
+
+      - name: Generate AramcoMech training sweep
         run: |
           python multiscale/cantera_sweep.py \
-            --mechanism gri30.yaml \
-            --phase gri30 \
-            --points 128 \
-            --segments 40 \
+            --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
+            --phase gas \
+            --points 48 \
+            --segments 20 \
             --seed 42 \
-            --output multiscale/data/cantera_sweep.csv
+            --output multiscale/data/aramco_train.csv
+
+      - name: Generate independent AramcoMech holdout sweep
+        run: |
+          python multiscale/cantera_sweep.py \
+            --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
+            --phase gas \
+            --points 16 \
+            --segments 20 \
+            --seed 4242 \
+            --output multiscale/data/aramco_holdout.csv
 
       - name: Train browser GP
         run: |
           python multiscale/train_gp.py \
-            --input multiscale/data/cantera_sweep.csv \
-            --output multiscale/surrogate.json
+            --input multiscale/data/aramco_train.csv \
+            --output multiscale/surrogate.json \
+            --report multiscale/training_report.json
 
-      - name: Commit generated smoke-test artifacts
+      - name: Independent holdout validation
+        run: |
+          python multiscale/validate_surrogate.py \
+            --model multiscale/surrogate.json \
+            --data multiscale/data/aramco_holdout.csv \
+            --output multiscale/validation.json \
+            --max-nrmse 0.25 \
+            --min-r2 0.50
+
+      - name: Quality-control elemental closure
+        run: |
+          python - <<'PY'
+          import csv, math
+          for fn in ["multiscale/data/aramco_train.csv","multiscale/data/aramco_holdout.csv"]:
+              rows=list(csv.DictReader(open(fn)))
+              for key in ["carbon_residual","hydrogen_residual","oxygen_residual","mass_residual"]:
+                  worst=max(abs(float(r[key])) for r in rows)
+                  print(fn,key,worst)
+                  assert math.isfinite(worst) and worst < 1e-8
+          PY
+
+      - name: Commit reproducible generated artifacts
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add multiscale/data/cantera_sweep.csv
-          git add multiscale/data/cantera_sweep.meta.json
+          git add multiscale/data/aramco_train.csv
+          git add multiscale/data/aramco_train.meta.json
+          git add multiscale/data/aramco_holdout.csv
+          git add multiscale/data/aramco_holdout.meta.json
           git add multiscale/surrogate.json
+          git add multiscale/training_report.json
+          git add multiscale/validation.json
           if git diff --cached --quiet; then
             echo "No generated changes."
           else
-            git commit -m "Generate Cantera GP smoke-test surrogate [skip ci]"
+            git commit -m "Generate AramcoMech Cantera-GP artifacts [skip ci]"
             git push origin HEAD:cantera-gp-v1
           fi
 
-      - name: Summarize generated data
+      - name: Summarize release evidence
         run: |
           python - <<'PY'
-          import csv, json
-          rows=list(csv.DictReader(open("multiscale/data/cantera_sweep.csv")))
-          print("ROWS", len(rows))
-          for r in rows[:3]:
-              print({k:r[k] for k in ["temperature_c","residence_time_s","x_c2h6","s_c2h4_mol","heat_MJ_per_kg_ethane"]})
-          m=json.load(open("multiscale/surrogate.json"))
-          print("SURROGATE", m["schema"], "training_points", m["training_points"])
+          import json
+          t=json.load(open("multiscale/training_report.json"))
+          v=json.load(open("multiscale/validation.json"))
+          s=json.load(open("multiscale/surrogate.json"))
+          src=s["source"]
+          print("MECHANISM",src.get("mechanism_provenance",{}).get("mechanism_name"))
+          print("SPECIES",src.get("mechanism_species"),"REACTIONS",src.get("mechanism_reactions"))
+          print("TRAIN",s["training_points"],"HOLDOUT",v["validation_points"])
+          print("VALIDATION PASS",v["passed"])
+          for k in ["x_c2h6","s_c2h4_mol","y_c2h4_kg_per_kg_ethane","heat_MJ_per_kg_ethane"]:
+              print(k,v["outputs"][k])
           PY
