@@ -8,6 +8,7 @@ on:
       - main
     paths:
       - "index.html"
+      - "engine.html"
       - "benchmarks/index.html"
       - "benchmarks/literature.json"
       - ".github/workflows/literature-benchmarks.yml"
