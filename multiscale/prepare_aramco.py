@@ -36,7 +36,7 @@ REFERENCE = {
     ),
     "authors": "Zhou et al.",
     "journal": "Combustion and Flame 197 (2018) 423-438",
-    "doi": "10.1016/j.combustflame.2018.06.024",
+    "doi": "10.1016/j.combustflame.2018.08.006",
 }
 
 
