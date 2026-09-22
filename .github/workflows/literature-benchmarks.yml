@@ -7,12 +7,13 @@ on:
       - main
     paths:
       - "index.html"
-      - "benchmarks/**"
+      - "benchmarks/index.html"
+      - "benchmarks/literature.json"
       - ".github/workflows/literature-benchmarks.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   benchmark:
@@ -79,6 +80,18 @@ jobs:
           Path("benchmarks/results.json").write_text(json.dumps(data,indent=2),encoding="utf-8")
           print(json.dumps(data,indent=2))
           PY
+
+      - name: Commit benchmark result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/results.json
+          if git diff --cached --quiet; then
+            echo "Benchmark result unchanged."
+          else
+            git commit -m "Update literature benchmark results [skip ci]"
+            git push origin HEAD:"${GITHUB_REF_NAME}"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
