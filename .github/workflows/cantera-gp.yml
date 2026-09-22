@@ -2,18 +2,26 @@ name: Cantera AramcoMech GP
 
 on:
   workflow_dispatch:
+    inputs:
+      profile:
+        description: "Sweep/validation profile"
+        required: true
+        default: publication
+        type: choice
+        options:
+          - publication
+          - smoke
   push:
     branches:
       - cantera-gp-v1
-    paths:
-      - "multiscale/**"
-      - ".github/workflows/cantera-gp.yml"
-  pull_request:
-    branches:
       - main
     paths:
       - "multiscale/**"
       - ".github/workflows/cantera-gp.yml"
+
+concurrency:
+  group: cantera-gp-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -21,15 +29,34 @@ permissions:
 jobs:
   build-surrogate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: cantera-gp-v1
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
+      - name: Select build profile
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication" ]]; then
+            echo "TRAIN_POINTS=256" >> "$GITHUB_ENV"
+            echo "HOLDOUT_POINTS=64" >> "$GITHUB_ENV"
+            echo "SEGMENTS=40" >> "$GITHUB_ENV"
+            echo "MAX_NRMSE=0.08" >> "$GITHUB_ENV"
+            echo "MIN_R2=0.90" >> "$GITHUB_ENV"
+            echo "PROFILE=publication" >> "$GITHUB_ENV"
+          else
+            echo "TRAIN_POINTS=48" >> "$GITHUB_ENV"
+            echo "HOLDOUT_POINTS=16" >> "$GITHUB_ENV"
+            echo "SEGMENTS=20" >> "$GITHUB_ENV"
+            echo "MAX_NRMSE=0.25" >> "$GITHUB_ENV"
+            echo "MIN_R2=0.50" >> "$GITHUB_ENV"
+            echo "PROFILE=smoke" >> "$GITHUB_ENV"
+          fi
 
       - name: Install pinned solver environment
         run: |
@@ -62,8 +89,8 @@ jobs:
           python multiscale/cantera_sweep.py \
             --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
             --phase gas \
-            --points 48 \
-            --segments 20 \
+            --points "$TRAIN_POINTS" \
+            --segments "$SEGMENTS" \
             --seed 42 \
             --output multiscale/data/aramco_train.csv
 
@@ -72,8 +99,8 @@ jobs:
           python multiscale/cantera_sweep.py \
             --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
             --phase gas \
-            --points 16 \
-            --segments 20 \
+            --points "$HOLDOUT_POINTS" \
+            --segments "$SEGMENTS" \
             --seed 4242 \
             --output multiscale/data/aramco_holdout.csv
 
@@ -90,8 +117,8 @@ jobs:
             --model multiscale/surrogate.json \
             --data multiscale/data/aramco_holdout.csv \
             --output multiscale/validation.json \
-            --max-nrmse 0.25 \
-            --min-r2 0.50
+            --max-nrmse "$MAX_NRMSE" \
+            --min-r2 "$MIN_R2"
 
       - name: Quality-control elemental closure
         run: |
@@ -105,8 +132,35 @@ jobs:
                   assert math.isfinite(worst) and worst < 1e-8
           PY
 
+      - name: Write release manifest
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          names=[
+            "multiscale/data/aramco_train.csv",
+            "multiscale/data/aramco_train.meta.json",
+            "multiscale/data/aramco_holdout.csv",
+            "multiscale/data/aramco_holdout.meta.json",
+            "multiscale/surrogate.json",
+            "multiscale/training_report.json",
+            "multiscale/validation.json",
+          ]
+          def sha(p):
+              h=hashlib.sha256();h.update(Path(p).read_bytes());return h.hexdigest()
+          manifest={
+            "schema":"ethane-multiscale-release-v1",
+            "profile":os.environ["PROFILE"],
+            "git_sha":os.environ["GITHUB_SHA"],
+            "train_points":int(os.environ["TRAIN_POINTS"]),
+            "holdout_points":int(os.environ["HOLDOUT_POINTS"]),
+            "segments":int(os.environ["SEGMENTS"]),
+            "artifacts":{p:sha(p) for p in names},
+          }
+          Path("multiscale/release_manifest.json").write_text(json.dumps(manifest,indent=2))
+          PY
+
       - name: Commit reproducible generated artifacts
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -117,22 +171,23 @@ jobs:
           git add multiscale/surrogate.json
           git add multiscale/training_report.json
           git add multiscale/validation.json
+          git add multiscale/release_manifest.json
           if git diff --cached --quiet; then
             echo "No generated changes."
           else
             git commit -m "Generate AramcoMech Cantera-GP artifacts [skip ci]"
-            git push origin HEAD:cantera-gp-v1
+            git push origin HEAD:"${{ github.ref_name }}"
           fi
 
       - name: Summarize release evidence
         run: |
           python - <<'PY'
           import json
-          t=json.load(open("multiscale/training_report.json"))
           v=json.load(open("multiscale/validation.json"))
           s=json.load(open("multiscale/surrogate.json"))
-          src=s["source"]
-          print("MECHANISM",src.get("mechanism_provenance",{}).get("mechanism_name"))
+          src=s["source"]; prov=src.get("mechanism_provenance") or {}
+          print("PROFILE",json.load(open("multiscale/release_manifest.json"))["profile"])
+          print("MECHANISM",prov.get("mechanism_name"))
           print("SPECIES",src.get("mechanism_species"),"REACTIONS",src.get("mechanism_reactions"))
           print("TRAIN",s["training_points"],"HOLDOUT",v["validation_points"])
           print("VALIDATION PASS",v["passed"])
