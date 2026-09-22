@@ -99,7 +99,7 @@ details summary{cursor:pointer;font-size:11px;font-weight:bold}
 .propwin.open{display:block}.proptitle{height:22px;background:linear-gradient(90deg,#0a246a,#3a6ea5);color:#fff;font-weight:bold;padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
 .proptitle button{width:18px;height:17px;padding:0;background:var(--desk);border:1px outset #fff;font-size:10px}
 .propbody{padding:7px;background:var(--face)}.proptabs{display:flex;gap:2px;border-bottom:1px solid #888;margin-bottom:6px}
-.proptabs span{padding:3px 8px;border:1px solid #888;border-bottom:0;background:#d8d5cc;font-size:10px}.proptabs span.active{background:#fff;position:relative;top:1px}
+.proptabs button{padding:3px 8px;border:1px solid #888;border-bottom:0;background:#d8d5cc;font-size:10px}.proptabs button.active{background:#fff;position:relative;top:1px}
 .proptable{width:100%;border-collapse:collapse;background:#fff;border:1px inset #ddd}.proptable td{font-size:10px;padding:4px 5px;border-bottom:1px solid #ddd}.proptable td:first-child{color:#555;width:52%}
 .propfoot{display:flex;justify-content:flex-end;gap:4px;margin-top:7px}.propfoot button{font-size:10px;padding:3px 12px;background:var(--desk);border:2px outset #d4d0c8}
 .outputs{position:sticky;top:114px;background:var(--face)}
@@ -174,8 +174,12 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       <div class="tree">
         <div class="root">▣ Simulation</div>
         <div class="item sel" data-tree-view="workspace">Flowsheet</div>
-        <div class="item" data-tree-focus="reactor">Blocks / R-101 Reactor</div>
-        <div class="item" data-tree-focus="sep">Blocks / Separations</div>
+        <div class="item" data-tree-block="reactor">Blocks / R-101 Reactor</div>
+        <div class="item" data-tree-block="compressor">Blocks / C-101 Compressor</div>
+        <div class="item" data-tree-block="coldbox">Blocks / T-201 Cold Box</div>
+        <div class="item" data-tree-block="splitter">Blocks / T-301 C2 Splitter</div>
+        <div class="item" data-tree-stream="feed">Streams / FEED</div>
+        <div class="item" data-tree-stream="recycle">Streams / RECYCLE</div>
         <div class="item" data-tree-view="benchmarks">Literature Cases</div>
         <div class="item" data-tree-view="compare">Case Comparison</div>
         <div class="item" data-tree-view="model">Model Setup</div>
@@ -301,7 +305,7 @@ https://doi.org/10.1016/j.combustflame.2018.08.006</pre>
 <div class="propwin" id="propwin">
   <div class="proptitle"><span id="propTitle">Block Properties</span><button id="propClose">×</button></div>
   <div class="propbody">
-    <div class="proptabs"><span class="active">Results</span><span>Input</span><span>Setup</span></div>
+    <div class="proptabs"><button class="active" data-proptab="results">Results</button><button data-proptab="input">Input</button><button data-proptab="setup">Setup</button></div>
     <table class="proptable" id="propTable"></table>
     <div class="propfoot"><button id="propOK">OK</button></div>
   </div>
@@ -372,6 +376,9 @@ function bind(){
   $("csv").onclick=()=>download("ethane-case.csv",toCSV(result),"text/csv");
   document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.view));
   document.querySelectorAll("[data-tree-view]").forEach(x=>x.onclick=()=>show(x.dataset.treeView));
+  document.querySelectorAll("[data-tree-block]").forEach(x=>x.onclick=()=>{show("workspace");openBlock(x.dataset.treeBlock)});
+  document.querySelectorAll("[data-tree-stream]").forEach(x=>x.onclick=()=>{show("workspace");openStream(x.dataset.treeStream)});
+  document.querySelectorAll("[data-proptab]").forEach(x=>x.onclick=()=>{currentPropTab=x.dataset.proptab;renderBlockTab()});
 }
 function loadPreset(id){
   state={...presets[id]};render();show("workspace");
@@ -542,6 +549,7 @@ function updateWindowTitle(){
   const el=document.querySelector(".windowtitle .caption span:last-child");
   if(el)el.textContent="Ethane Cracker Simulator - ["+caseFileName()+"]";
 }
+let currentBlock="reactor", currentPropTab="results";
 const blockProps={
   reactor:()=>[
     ["Block","R-101 · CRACKER + TLE"],["Model","AramcoMech 3.0 / Cantera GP"],
@@ -569,12 +577,35 @@ const blockProps={
     ["Cost","$"+fmt(result.cost_usd_per_t,1)+"/t"],["Carbon",fmt(result.carbon_kgco2e_per_t,1)+" kgCO2e/t"]
   ]
 };
+const blockInputs={
+  reactor:()=>[["Outlet temperature",fmt(state.cot,1)+" °C"],["Pressure",fmt(state.pressure,2)+" bar"],["Residence time",fmt(state.tau,4)+" s"],["Steam / HC",fmt(state.dilution,3)+" kg/kg"],["Heating exponent",fmt(state.ramp,2)],["Heating route",state.mode==="JH"?"Joule":"Fired"]],
+  compressor:()=>[["Inlet basis","cracked gas"],["Stages","4"],["Discharge pressure","32 bar"],["Intercooling","enabled in shortcut"]],
+  coldbox:()=>[["Feed","compressed dry gas"],["Recovery target","99.5%"],["Duty model","temperature / light-fraction screening"]],
+  splitter:()=>[["Feed","C2 fraction"],["Ethylene purity","99.9 mol%"],["Method","Fenske-Underwood-Gilliland shortcut"]],
+  product:()=>[["Product","polymer-grade ethylene"],["Basis","1.000 kg"]]
+};
+const blockSetup={
+  reactor:()=>[["Chemistry","AramcoMech 3.0"],["Solver","Cantera offline → GP browser surrogate"],["GP training","256 points"],["Holdout","64 points"],["Reactor model","prescribed-temperature Lagrangian PFR"]],
+  compressor:()=>[["Thermodynamics","ideal-gas shortcut"],["Gamma","1.32"],["Efficiency","75%"],["Pressure ratio","distributed over 4 stages"]],
+  coldbox:()=>[["Model","Carnot-based refrigeration screening"],["Second-law efficiency","35%"],["Recovery","99.5%"]],
+  splitter:()=>[["Relative volatility","pressure-dependent shortcut"],["Stage estimate","FUG"],["Purity","99.9 mol%"]],
+  product:()=>[["Recovery","99.5%"],["Cost basis","USD/t ethylene"],["LCA basis","kg CO2e/t ethylene"]]
+};
+function renderBlockTab(){
+  const base=blockProps[currentBlock]();
+  $("propTitle").textContent=base[0][1];
+  let rows;
+  if(currentPropTab==="input")rows=blockInputs[currentBlock]();
+  else if(currentPropTab==="setup")rows=blockSetup[currentBlock]();
+  else rows=base.slice(1);
+  $("propTable").innerHTML=rows.map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
+  document.querySelectorAll("[data-proptab]").forEach(x=>x.classList.toggle("active",x.dataset.proptab===currentPropTab));
+}
 function openBlock(block){
   if(!result||!blockProps[block])return;
+  currentBlock=block;currentPropTab="results";
   document.querySelectorAll(".unit").forEach(x=>x.classList.toggle("selected",x.dataset.block===block));
-  const rows=blockProps[block]();
-  $("propTitle").textContent=rows[0][1];
-  $("propTable").innerHTML=rows.slice(1).map(([a,b])=>"<tr><td>"+a+"</td><td>"+b+"</td></tr>").join("");
+  renderBlockTab();
   $("propwin").classList.add("open");
 }
 function streamProps(id){
@@ -611,9 +642,9 @@ function runAction(a){
   if(a==="new")return loadPreset("default");
   if(a==="literature"||a==="benchmarks")return show("benchmarks");
   if(["workspace","compare","model","cite"].includes(a))return show(a);
-  if(a==="copyurl")return navigator.clipboard.writeText(location.href);
-  if(a==="exportjson")return download("ethane-case.json",JSON.stringify({state,result},null,2),"application/json");
-  if(a==="exportcsv")return download("ethane-case.csv",toCSV(result),"text/csv");
+  if(a==="copyurl"){navigator.clipboard.writeText(location.href);$("statusRun").textContent="SCENARIO URL COPIED";return}
+  if(a==="exportjson"){download("ethane-case.json",JSON.stringify({state,result},null,2),"application/json");$("statusRun").textContent="JSON EXPORTED";return}
+  if(a==="exportcsv"){download("ethane-case.csv",toCSV(result),"text/csv");$("statusRun").textContent="CSV EXPORTED";return}
   if(a==="run"){render();$("statusRun").textContent="READY · RECALCULATED";return}
   if(a==="pin"){pinned={...result};$("pin").textContent="Baseline pinned";render();return}
   if(a==="fired"){state.mode="CH";state.eff=60;render();return}
@@ -627,7 +658,7 @@ function runAction(a){
 }
 function bindMenusAndToolbar(){
   document.querySelectorAll("[data-menu]").forEach(b=>b.onclick=e=>{
-    e.stopPropagation();const id=b.dataset.menu,p=$("menu-"+id),was=p.classList.contains("open");closeMenus();if(!was){p.classList.add("open");b.classList.add("active")}
+    e.stopPropagation();const id=b.dataset.menu,p=$("menu-"+id),was=p.classList.contains("open");closeMenus();if(!was){p.style.left=b.offsetLeft+"px";p.classList.add("open");b.classList.add("active")}
   });
   document.querySelectorAll("[data-action]").forEach(b=>b.onclick=e=>{e.stopPropagation();runAction(b.dataset.action)});
   document.addEventListener("click",closeMenus);
