@@ -211,6 +211,9 @@ svg{display:block;width:100%;height:auto}
       <div class="seg"><button id="mCH" class="active">fired</button><button id="mJH">Joule</button></div>
       <span class="seglab">Selectivity</span>
       <div class="seg"><button id="selCalc" class="active">from kinetics</button><button id="selDirect">set directly</button></div>
+      <span class="seglab">Reactor model</span>
+      <div class="seg"><button id="kinEmp" class="active">empirical</button><button id="kinGP" disabled>Aramco GP</button></div>
+      <span class="wor" id="kinStatus">loading mechanism surrogate…</span>
       <label class="ck"><input type="checkbox" id="tTle" checked><span>TLE heat recovery</span></label>
     </div>
     <div class="knobs">
@@ -223,6 +226,12 @@ svg{display:block;width:100%;height:auto}
       <div class="knob"><div class="kh"><label>Steam dilution</label><span class="v" id="vDil"></span></div>
         <input type="range" id="sDil" min="0.15" max="0.70" step="0.01" value="0.35">
         <div class="band" id="bDil"></div><div class="ks" id="nDil"></div></div>
+      <div class="knob" id="pKnob" style="display:none"><div class="kh"><label>Reactor pressure</label><span class="v" id="vPress"></span></div>
+        <input type="range" id="sPress" min="1" max="5" step="0.05" value="1.5">
+        <div class="ks">Aramco-GP input · 1–5 bar</div></div>
+      <div class="knob" id="rampKnob" style="display:none"><div class="kh"><label>Heating-ramp exponent</label><span class="v" id="vRamp"></span></div>
+        <input type="range" id="sRamp" min="0.45" max="4" step="0.05" value="1">
+        <div class="ks">T(f)=T<sub>in</sub>+(T<sub>out</sub>−T<sub>in</sub>)f<sup>n</sup></div></div>
       <div class="knob"><div class="kh"><label>Capacity</label><span class="v" id="vCap"></span></div>
         <input type="range" id="sCap" min="150" max="1400" step="10" value="610">
         <div class="band" id="bCap"></div><div class="ks" id="nCap"></div></div>
@@ -501,27 +510,66 @@ const PUB={coo:680,ethane:1.19,netEnergy:14.7};
 
 /* ---------- state ---------- */
 const S={tab:'main',grid:0.36,ethaneUp:0.50,tailFate:'burn',alloc:'expansion',mode:'CH',cap:610,eff:60,selMode:'calc',sel:84,tle:true,
+         kinetics:'empirical',pressure:1.5,ramp:1.0,
          cot:850,tau:0.35,dilution:0.35,
          ethane:200,elec:0.07,gas:4,steam:9.8,lpg:550,ccf:0.10,labor:5};
 
+/* Browser GP mean evaluator. The full uncertainty calculation lives on the mechanism
+   page; the root TEA calls model() hundreds of times during scans, so this path evaluates
+   the posterior mean only. The artifact is loaded asynchronously after the first render. */
+function mechanismGP(p){
+  const m=app.gp;
+  if(!m||m.schema!=='ethane-cantera-shared-rbf-gp-v2') return null;
+  const raw=[p.cot,Math.log10(p.tau),p.dilution,p.pressure,p.ramp];
+  const x=raw.map((v,j)=>(v-m.x_min[j])/(m.x_max[j]-m.x_min[j]));
+  const k=new Array(m.x_train.length);
+  for(let i=0;i<m.x_train.length;i++){
+    let q=0;
+    for(let j=0;j<x.length;j++){
+      const z=(x[j]-m.x_train[i][j])/m.length_scale[j]; q+=z*z;
+    }
+    k[i]=Math.exp(-0.5*q);
+  }
+  const mean={};
+  for(let o=0;o<m.outputs.length;o++){
+    let z=0; for(let i=0;i<k.length;i++) z+=k[i]*m.alpha[i][o];
+    mean[m.outputs[o]]=m.y_mean[o]+m.y_std[o]*z;
+  }
+  const lo=m.domain_min||m.x_min, hi=m.domain_max||m.x_max, outside=[];
+  raw.forEach((v,j)=>{if(v<lo[j]||v>hi[j])outside.push(m.inputs[j]);});
+  const physical=[];
+  if(mean.x_c2h6<0||mean.x_c2h6>1)physical.push('conversion outside [0,1]');
+  if(mean.s_c2h4_mol<0||mean.s_c2h4_mol>1)physical.push('selectivity outside [0,1]');
+  return {mean,inside:outside.length===0,outside,physical,
+          qualified:outside.length===0&&physical.length===0};
+}
+
 /* ---------- model ---------- */
 function model(p){
-  /* 0. Kinetics. Conversion follows from temperature and residence time. */
-  const kRate=A_PRE*Math.exp(-EA/(8.314*(p.cot+273.15)));
-  /* No ceiling here. The exponential approaches 1 on its own; clamping it made the
-     whole model freeze once the clamp bound, with the slider still moving. The lower
-     guard only protects the division that follows. */
-  const X=Math.max(1e-4,1-Math.exp(-kRate*p.tau));
+  const flags=[];
+  const gp=(p.kinetics==='gp')?mechanismGP(p):null;
 
-  /* 0b. Selectivity falls as conversion climbs. At equal conversion, shorter
-     residence time at higher temperature wins: secondary reactions get less
-     time. Dilution lowers partial pressure and suppresses bimolecular paths. */
-  let SmolCalc=selBase(X,p.selAnchor)
-              +SEL_DIL*(p.dilution-0.35)
-              +SEL_TAU*Math.log(0.35/p.tau);
-  const SmolRaw=SmolCalc;
-  SmolCalc=Math.min(0.985,Math.max(0.55,SmolCalc));
-  const selClipped=(SmolCalc!==SmolRaw);
+  /* 0. Reactor chemistry. The empirical route preserves the original transparent
+     screening correlation. The mechanism route replaces conversion and kinetic
+     selectivity with the AramcoMech/Cantera GP posterior mean. */
+  let X,SmolCalc,SmolRaw,selClipped;
+  if(gp){
+    X=gp.mean.x_c2h6;
+    SmolCalc=gp.mean.s_c2h4_mol;
+    SmolRaw=SmolCalc;
+    selClipped=false;
+    if(!gp.inside) flags.push('Aramco GP extrapolation: '+gp.outside.join(', '));
+    gp.physical.forEach(x=>flags.push('Aramco GP '+x));
+  }else{
+    const kRate=A_PRE*Math.exp(-EA/(8.314*(p.cot+273.15)));
+    X=Math.max(1e-4,1-Math.exp(-kRate*p.tau));
+    SmolCalc=selBase(X,p.selAnchor)
+                +SEL_DIL*(p.dilution-0.35)
+                +SEL_TAU*Math.log(0.35/p.tau);
+    SmolRaw=SmolCalc;
+    SmolCalc=Math.min(0.985,Math.max(0.55,SmolCalc));
+    selClipped=(SmolCalc!==SmolRaw);
+  }
 
   /* 1. Close the carbon and hydrogen balances.
      The byproduct split depends on severity. Losing selectivity means running
@@ -544,10 +592,19 @@ function model(p){
            c3:kg(nC3*MW.C3),coke:kg(nCoke*MW.C)};
   const coil=y.ethane/X, recycle=coil-y.ethane, dilSteam=coil*p.dilution;
 
-  /* 2. Reactor duty */
-  const qRxn=n*H_RXN;
+  /* 2. Reactor duty. In the mechanism route, Cantera supplies the enthalpy rise
+     from the fixed 650 C radiant-section inlet to the requested outlet. The
+     existing Cp model supplies only the upstream 150→650 C preheat and the
+     sensible/reaction partition used by the screening heat-recovery model. */
   const qSens=(coil*CP_C2H6+dilSteam*CP_STEAM)*(p.cot-T_PREHEAT);
-  const qDemand=qRxn+qSens, qDeliver=qDemand/(p.eff/100);
+  let qRxn=n*H_RXN, qDemand=qRxn+qSens;
+  if(gp&&Number.isFinite(gp.mean.heat_MJ_per_kg_ethane)){
+    const qPre=(coil*CP_C2H6+dilSteam*CP_STEAM)*(650-T_PREHEAT);
+    const qMechanism=gp.mean.heat_MJ_per_kg_ethane*coil*1000;
+    qDemand=qPre+qMechanism;
+    qRxn=qDemand-qSens;
+  }
+  const qDeliver=qDemand/(p.eff/100);
   const tleSteam=p.tle?TLE_REC*qSens:0;
 
   /* 3. Tail gas. The furnace burns this before buying anything. */
@@ -625,7 +682,6 @@ function model(p){
   const netEnergy=(qDeliver-tleSteam+wComp+wRef+wSplit)*kJ2GJ;
   const elec_kWh=(wComp+wRef+wSplit+elecHeat)*kJ2GJ/GJ_per_kWh/1000;
 
-  const flags=[];
   if(X<VALID.X[0]||X>VALID.X[1])
     flags.push('conversion '+sig(X*100,3)+'% is outside the fitted range of '
       +sig(VALID.X[0]*100,2)+' to '+sig(VALID.X[1]*100,2)+'%');
@@ -640,7 +696,8 @@ function model(p){
 
   return {flags,selClipped,y,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,
     elecHeat,wComp,wRef,wSplit,tCold,qCold,lightFrac,nGas,alpha,nMin,nAct,rRatio,
-    qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc};
+    qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc,
+    reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp};
 }
 
 /* ---------- 렌더 ---------- */
@@ -1742,7 +1799,8 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{S.tab=b.datas
 /* A pinned baseline is what turns "the numbers moved" into "this is what your change did".
    It is also the output this model is best at: a difference cancels the errors common to
    both points, which the absolute level does not. */
-const app={baseline:null,baseRes:null,baseLca:null,unit:0};
+const app={baseline:null,baseRes:null,baseLca:null,unit:0,
+           gp:null,gpValidation:null,gpError:null};
 
 function snapshot(){
   const r=model(S);
@@ -1880,6 +1938,17 @@ function render(){
   $('selKnob').style.display=(S.selMode==='direct'?'':'none');
   $('selCalc').classList.toggle('active',S.selMode==='calc');
   $('selDirect').classList.toggle('active',S.selMode==='direct');
+  $('kinEmp').classList.toggle('active',S.kinetics==='empirical');
+  $('kinGP').classList.toggle('active',S.kinetics==='gp');
+  $('kinGP').disabled=!app.gp;
+  $('pKnob').style.display=S.kinetics==='gp'?'':'none';
+  $('rampKnob').style.display=S.kinetics==='gp'?'':'none';
+  $('vPress').textContent=sig(S.pressure,3)+' bar';
+  $('vRamp').textContent=sig(S.ramp,3);
+  const vgp=app.gpValidation;
+  $('kinStatus').textContent=app.gp
+    ? 'Aramco '+app.gp.training_points+' train · '+(vgp?vgp.validation_points+' holdout':'validation loading')
+    : (app.gpError?'mechanism unavailable':'loading mechanism surrogate…');
   $('vSel').textContent=sig(S.sel,3)+'%';
   band($('bSel'),70,96,VALID.sel[0],VALID.sel[1],S.sel);
   $('nSel').innerHTML='Feedstock <b>'+usd(r.L.floor+r.L.selLoss)+'</b>/t'+ex('sel',S.sel,'78 to 88%');
@@ -1998,6 +2067,7 @@ function dilScan(){
    until it lands. mode is deliberately not in the key: both modes are stored side by side,
    so including it would make each call evict the other and recompute both every render. */
 function robustOptimum(mode){
+  if(S.kinetics==='gp') return null;
   const key=[S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor].join('|');
   if(key===_robKey) return _robVal[mode]||(_robVal[mode]=robustScan(mode));
   clearTimeout(_robTimer);
@@ -2046,10 +2116,14 @@ $('mCH').onclick=()=>{S.mode='CH';S.eff=60;$('sEff').value=60;applyModeLimits();
 $('mJH').onclick=()=>{S.mode='JH';S.eff=95;$('sEff').value=95;applyModeLimits();render()};
 $('selCalc').onclick=()=>{S.selMode='calc';render()};
 $('selDirect').onclick=()=>{S.sel=model(S).Smass*100;$('sSel').value=S.sel;S.selMode='direct';render()};
+$('kinEmp').onclick=()=>{S.kinetics='empirical';render()};
+$('kinGP').onclick=()=>{if(app.gp){S.kinetics='gp';S.selMode='calc';render()}};
 $('tTle').onchange=e=>{S.tle=e.target.checked;render()};
 $('sCot').oninput=e=>{S.cot=+e.target.value;render()};
 $('sTau').oninput=e=>{S.tau=logMap(+e.target.value,0.05,1.5);render()};
 $('sDil').oninput=e=>{S.dilution=+e.target.value;render()};
+$('sPress').oninput=e=>{S.pressure=+e.target.value;render()};
+$('sRamp').oninput=e=>{S.ramp=+e.target.value;render()};
 $('sCap').oninput=e=>{S.cap=+e.target.value;render()};
 $('sEff').oninput=e=>{S.eff=+e.target.value;render()};
 $('sSel').oninput=e=>{S.sel=+e.target.value;render()};
@@ -2070,8 +2144,30 @@ $('sEthane').value=logInv(S.ethane,50,900);
 $('sElec').value=logInv(S.elec,0.008,0.30);
 $('sGas').value=logInv(S.gas,1,30);
 
+async function loadMechanismSurrogate(){
+  try{
+    const [mr,vr]=await Promise.all([
+      fetch('multiscale/surrogate.json',{cache:'no-store'}),
+      fetch('multiscale/validation.json',{cache:'no-store'})
+    ]);
+    if(!mr.ok) throw new Error('surrogate HTTP '+mr.status);
+    const m=await mr.json();
+    const v=vr.ok?await vr.json():null;
+    if(m.schema!=='ethane-cantera-shared-rbf-gp-v2') throw new Error('surrogate schema is '+m.schema);
+    const prov=m.source&&m.source.mechanism_provenance;
+    if(!prov||prov.mechanism_name!=='AramcoMech 3.0') throw new Error('qualified Aramco provenance missing');
+    if(v&&!v.passed) throw new Error('independent GP holdout did not pass');
+    app.gp=m; app.gpValidation=v; app.gpError=null;
+    S.kinetics='gp'; S.selMode='calc';
+  }catch(e){
+    app.gp=null; app.gpError=String(e&&e.message||e); S.kinetics='empirical';
+  }
+  render();
+}
+
 applyModeLimits();
 render();
+loadMechanismSurrogate();
 </script>
 </body>
 </html>
