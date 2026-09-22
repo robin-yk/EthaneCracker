@@ -146,7 +146,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
       <div class="menupop" id="menu-flowsheet"><button data-action="openreactor">R-101 Properties</button><button data-action="opencompressor">C-101 Properties</button><button data-action="opencoldbox">T-201 Properties</button><button data-action="opensplitter">T-301 Properties</button><hr><button data-action="streamfeed">FEED Stream</button><button data-action="streamrecycle">RECYCLE Stream</button></div>
       <div class="menupop" id="menu-run"><button data-action="run">Run / Refresh <span class="key">F5</span></button><button data-action="fired">Fired Heating</button><button data-action="joule">Joule Heating</button></div>
       <div class="menupop" id="menu-tools"><button data-action="pin">Pin Baseline</button><button data-action="compare">Compare Cases</button><button data-action="model">Model Validation</button></div>
-      <div class="menupop" id="menu-help"><button data-action="model">About Model</button><button data-action="cite">Citation</button><button data-action="benchmarks">Literature Benchmarks</button></div>
+      <div class="menupop" id="menu-help"><button data-action="model">About Model</button><button data-action="cite">Citation</button><button data-action="benchmarks">Literature Benchmarks</button><hr><button data-action="contact">Contact Yeonsu <span class="key">ask.yeonsu@gmail.com</span></button></div>
     </div>
     <div class="toolbar">
       <button class="tool" id="tbNew" title="New case">▧</button><button class="tool" id="tbOpen" title="Open literature cases">▤</button><button class="tool" id="tbSave" title="Copy scenario URL">💾</button>
@@ -429,7 +429,7 @@ function render(){
   $("uRef").textContent="light-gas removal";
   $("uSplit").textContent=fmt(result.splitter_kwh_per_t,0)+" kWh/t";
   $("uCap").textContent=fmt(result.annual_product_kt,0)+" kt/y actual";
-  $("scope").textContent="Reactor chemistry → species inventory → recycle → compressor/cold-box/splitter loads → CAPEX/OPEX/LCA. Current downstream separations remain screening correlations.";
+  $("scope").textContent="The reactor outlet composition sets the ethane recycle and the amount of gas each downstream unit has to handle. Compression, refrigeration, and C₂-splitter duties are estimated from those flows, and the same inventory is used for cost and carbon calculations. The separation models are screening correlations.";
   $("oCost").textContent="$"+fmt(result.cost_usd_per_t,0)+" / t";
   $("oCarbon").textContent=fmt(result.carbon_kgco2e_per_t,0)+" kg/t";
   $("oEnergy").textContent=fmt(result.reactor_useful_heat_gj_per_t,1)+" GJ/t";
@@ -678,6 +678,17 @@ function runAction(a){
   if(a==="opensplitter")return openBlock("splitter");
   if(a==="streamfeed")return openStream("feed");
   if(a==="streamrecycle")return openStream("recycle");
+  if(a==="contact"){
+    const w=window.open("","yeonsuContact","width=420,height=220,resizable=yes");
+    if(w){
+      w.document.write('<!doctype html><title>Contact Yeonsu</title><style>body{font:12px Tahoma,Arial;background:#d4d0c8;margin:0;color:#111}.t{background:linear-gradient(90deg,#0a246a,#3a6ea5);color:white;font-weight:bold;padding:5px 7px}.b{padding:18px}.mail{font:14px Consolas,monospace;background:white;border:2px inset #eee;padding:12px;margin:10px 0}.btn{display:inline-block;color:#111;text-decoration:none;background:#d4d0c8;border:2px outset #ddd;padding:5px 12px}</style><div class="t">Ethane Cracker Simulator - Contact</div><div class="b"><b>Yeonsu Kwak</b><div class="mail">ask.yeonsu@gmail.com</div><a class="btn" href="mailto:ask.yeonsu@gmail.com?subject=Ethane%20Cracker%20Simulator">Write email</a></div>');
+      w.document.close();
+    }else{
+      location.href="mailto:ask.yeonsu@gmail.com?subject=Ethane%20Cracker%20Simulator";
+    }
+    $("statusRun").textContent="CONTACT · ask.yeonsu@gmail.com";
+    return;
+  }
 }
 function bindMenusAndToolbar(){
   document.querySelectorAll("[data-menu]").forEach(b=>b.onclick=e=>{
