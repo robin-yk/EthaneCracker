@@ -2207,9 +2207,12 @@ async function loadMechanismSurrogate(){
     if(!prov||prov.mechanism_name!=='AramcoMech 3.0') throw new Error('qualified Aramco provenance missing');
     if(v&&!v.passed) throw new Error('independent GP holdout did not pass');
     app.gp=m; app.gpValidation=v; app.gpError=null;
+    document.body.dataset.kinetics='aramco-gp';
     S.kinetics='gp'; S.selMode='calc';
   }catch(e){
-    app.gp=null; app.gpError=String(e&&e.message||e); S.kinetics='empirical';
+    app.gp=null; app.gpError=String(e&&e.message||e);
+    document.body.dataset.kinetics='empirical';
+    S.kinetics='empirical';
   }
   render();
 }
