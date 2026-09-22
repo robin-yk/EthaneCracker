@@ -1,0 +1,51 @@
+name: Frontend publication gate
+
+on:
+  push:
+    branches:
+      - webpaper-ui-v1
+      - cantera-gp-v1
+      - main
+    paths:
+      - "index.html"
+      - "multiscale/demo.html"
+      - "multiscale/gp_runtime.js"
+      - ".github/workflows/frontend.yml"
+
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check inline JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html=Path("index.html").read_text(encoding="utf-8")
+          scripts=re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>",html,re.S|re.I)
+          if not scripts:
+              raise SystemExit("no inline scripts found")
+          Path("/tmp/index-inline.js").write_text("\n".join(scripts),encoding="utf-8")
+          print("inline scripts",len(scripts))
+          PY
+          node --check /tmp/index-inline.js
+          node --check multiscale/gp_runtime.js
+
+      - name: Headless render
+        run: |
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$BROWSER" --version
+          python -m http.server 8000 --bind 127.0.0.1 >/tmp/http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          sleep 1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=5000 --dump-dom http://127.0.0.1:8000/ > /tmp/index-dom.html
+          grep -q "model evidence" /tmp/index-dom.html
+          grep -q "Model provenance" /tmp/index-dom.html || grep -q "Mechanism provenance" /tmp/index-dom.html
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu \
+            --virtual-time-budget=5000 --dump-dom http://127.0.0.1:8000/multiscale/demo.html > /tmp/demo-dom.html
+          grep -q "Independent Cantera holdout validation" /tmp/demo-dom.html
