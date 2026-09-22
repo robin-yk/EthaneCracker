@@ -2,14 +2,15 @@
 
 /*
  * Zero-dependency browser runtime for surrogate.json produced by train_gp.py.
- * Mean prediction is exact for the exported shared-kernel GP. Predictive sigma
- * is the GP posterior standard deviation in each output's original units.
+ * The runtime exposes raw GP means and calibrated posterior uncertainty. It never
+ * silently clips chemically impossible predictions; physical violations are returned
+ * as warnings so the UI / TEA layer can block or flag them.
  */
 
 export class EthaneGPSurrogate {
   constructor(model) {
     this.m = model;
-    if (model.schema !== "ethane-cantera-shared-rbf-gp-v1") {
+    if (model.schema !== "ethane-cantera-shared-rbf-gp-v2") {
       throw new Error("Unsupported surrogate schema: " + model.schema);
     }
   }
@@ -21,9 +22,11 @@ export class EthaneGPSurrogate {
   }
 
   _rawVector(p) {
+    const tau = Number(p.residence_time_s);
+    if (!(tau > 0)) throw new Error("residence_time_s must be > 0");
     return [
       Number(p.temperature_c),
-      Math.log10(Number(p.residence_time_s)),
+      Math.log10(tau),
       Number(p.steam_hc_kgkg),
       Number(p.pressure_bar),
       Number(p.ramp_exponent),
@@ -36,18 +39,39 @@ export class EthaneGPSurrogate {
 
   domain(p) {
     const raw = this._rawVector(p);
+    const lo = this.m.domain_min || this.m.x_min;
+    const hi = this.m.domain_max || this.m.x_max;
     const outside = [];
     raw.forEach((v, j) => {
-      if (v < this.m.x_min[j] || v > this.m.x_max[j]) {
+      if (v < lo[j] || v > hi[j]) {
         outside.push({
           input: this.m.inputs[j],
           value: v,
-          min: this.m.x_min[j],
-          max: this.m.x_max[j],
+          min: lo[j],
+          max: hi[j],
         });
       }
     });
     return { inside: outside.length === 0, outside };
+  }
+
+  _physicalWarnings(mean) {
+    const w = [];
+    const bounded01 = ["x_c2h6", "s_c2h4_mol"];
+    for (const k of bounded01) {
+      if (k in mean && (mean[k] < 0 || mean[k] > 1)) {
+        w.push(`${k}=${mean[k]} is outside [0,1]`);
+      }
+    }
+    for (const [k, v] of Object.entries(mean)) {
+      if (k.startsWith("y_") && k.endsWith("_kg_per_kg_ethane") && v < -1e-8) {
+        w.push(`${k}=${v} is negative`);
+      }
+    }
+    if ("heat_MJ_per_kg_ethane" in mean && !Number.isFinite(mean.heat_MJ_per_kg_ethane)) {
+      w.push("heat prediction is non-finite");
+    }
+    return w;
   }
 
   predict(p) {
@@ -74,7 +98,6 @@ export class EthaneGPSurrogate {
       out[this.m.outputs[o]] = this.m.y_mean[o] + this.m.y_std[o] * z;
     }
 
-    // k(x,x)=1 for the unit-amplitude RBF prior.
     let quad = 0;
     for (let i = 0; i < n; i++) {
       let row = 0;
@@ -85,14 +108,19 @@ export class EthaneGPSurrogate {
     const sigmaStd = Math.sqrt(Math.max(0, 1 - quad));
     const sigma = {};
     for (let o = 0; o < this.m.outputs.length; o++) {
-      sigma[this.m.outputs[o]] = sigmaStd * this.m.y_std[o];
+      const scale = this.m.sigma_scale ? this.m.sigma_scale[o] : 1;
+      sigma[this.m.outputs[o]] = sigmaStd * this.m.y_std[o] * scale;
     }
 
+    const domain = this.domain(p);
+    const physicalWarnings = this._physicalWarnings(out);
     return {
       mean: out,
       sigma,
       standardized_sigma: sigmaStd,
-      domain: this.domain(p),
+      domain,
+      physical_warnings: physicalWarnings,
+      qualified: domain.inside && physicalWarnings.length === 0,
       training_points: this.m.training_points,
       source: this.m.source,
     };
