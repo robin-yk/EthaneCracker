@@ -413,7 +413,7 @@ const logMap=(v,lo,hi)=>lo*Math.pow(hi/lo,v/1000);
 const logInv=(x,lo,hi)=>1000*Math.log(x/lo)/Math.log(hi/lo);
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 /* ---------- constants ---------- */
-const MW={C2H6:30.07,C2H4:28.05,CH4:16.04,H2:2.016,C3:42.08,C:12.011};
+const MW={C2H6:30.07,C2H4:28.05,CH4:16.04,H2:2.016,C2H2:26.038,C3:42.08,C4:56.11,C:12.011};
 const FLOOR_RATIO=MW.C2H6/MW.C2H4;   // 1.0719 kg C2H6 per kg C2H4, analytic floor
 const P_DISCH=32, RECOVERY=0.995, PURITY=0.999;
 /* First-order ethane pyrolysis. Ea from Froment. The pre-exponential is not an
@@ -581,21 +581,54 @@ function model(p){
      harder, and harder running sends the lost carbon to methane and coke, not
      to C3+. A fixed split lets poor selectivity earn LPG credit that cancels
      the feedstock loss, which is not physical. */
-  const Smol=p.selMode==='calc'?SmolCalc:(p.sel/100)*MW.C2H6/MW.C2H4;
-  const Smass=Smol*MW.C2H4/MW.C2H6;
-  const loss=1-Smol;                           // 몰 기준 손실률
-  const fCH4=Math.min(0.80,0.45+0.35*(loss/0.30));
-  const fCoke=Math.min(0.25,0.08+0.15*(loss/0.30));
-  const fC3=Math.max(0.02,1-fCH4-fCoke);
-  const rest=2*loss;                           // 잔여 탄소, mol C / mol C2H6 전환
-  const nCH4=fCH4*rest, nC3=fC3*rest/3, nCoke=fCoke*rest;
-  /* From the hydrogen balance: 4*Smol + 4m + 6p + 2h = 6 */
-  const nH2=3-2*Smol-rest*(2*fCH4+fC3);
-  const n=1000/(Smol*MW.C2H4);                 // mol C2H6 전환 / kg C2H4
-  const kg=m=>n*m/1000;
-  const y={ethane:kg(MW.C2H6),ch4:kg(nCH4*MW.CH4),h2:kg(nH2*MW.H2),
-           c3:kg(nC3*MW.C3),coke:kg(nCoke*MW.C)};
-  const coil=y.ethane/X, recycle=coil-y.ethane, dilSteam=coil*p.dilution;
+  const useMechanismSpecies=!!(gp&&p.selMode==='calc'
+    &&Number.isFinite(gp.mean.y_c2h4_kg_per_kg_ethane)
+    &&gp.mean.y_c2h4_kg_per_kg_ethane>1e-8);
+  let Smol,Smass,n,y,coil,recycle,dilSteam;
+  let nCH4=0,nC3=0,nCoke=0,nH2=0;
+
+  if(useMechanismSpecies){
+    /* Cantera yields are kg species per kg ethane entering the coil. Scale them
+       directly to one kg ethylene product. Detailed chemistry therefore controls
+       fresh feed, recycle, fuel gas, acetylene, C3/C4+ coproducts and downstream load. */
+    const ye=gp.mean.y_c2h4_kg_per_kg_ethane;
+    coil=1/ye;
+    const fresh=X*coil;
+    recycle=Math.max(0,coil-fresh);
+    dilSteam=coil*p.dilution;
+    y={
+      ethane:fresh,
+      ch4:(gp.mean.y_ch4_kg_per_kg_ethane||0)*coil,
+      h2:(gp.mean.y_h2_kg_per_kg_ethane||0)*coil,
+      c2h2:(gp.mean.y_c2h2_kg_per_kg_ethane||0)*coil,
+      c3:(gp.mean.y_c3_kg_per_kg_ethane||0)*coil,
+      c4plus:(gp.mean.y_c4plus_kg_per_kg_ethane||0)*coil,
+      coke:0
+    };
+    /* Derive selectivity from conversion and ethylene mass yield so the plant model
+       cannot use mutually inconsistent GP predictions for X, S and product yield. */
+    Smol=ye*MW.C2H6/(Math.max(X,1e-12)*MW.C2H4);
+    Smass=ye/Math.max(X,1e-12);
+    n=fresh*1000/MW.C2H6;
+    if(Number.isFinite(gp.mean.s_c2h4_mol)&&Math.abs(Smol-gp.mean.s_c2h4_mol)>0.01)
+      flags.push('GP chemistry consistency: derived and direct ethylene selectivity differ by '
+        +sig(Math.abs(Smol-gp.mean.s_c2h4_mol)*100,3)+' percentage points');
+  }else{
+    Smol=p.selMode==='calc'?SmolCalc:(p.sel/100)*MW.C2H6/MW.C2H4;
+    Smass=Smol*MW.C2H4/MW.C2H6;
+    const loss=1-Smol;
+    const fCH4=Math.min(0.80,0.45+0.35*(loss/0.30));
+    const fCoke=Math.min(0.25,0.08+0.15*(loss/0.30));
+    const fC3=Math.max(0.02,1-fCH4-fCoke);
+    const rest=2*loss;
+    nCH4=fCH4*rest; nC3=fC3*rest/3; nCoke=fCoke*rest;
+    nH2=3-2*Smol-rest*(2*fCH4+fC3);
+    n=1000/(Smol*MW.C2H4);
+    const kg=m=>n*m/1000;
+    y={ethane:kg(MW.C2H6),ch4:kg(nCH4*MW.CH4),h2:kg(nH2*MW.H2),
+       c2h2:0,c3:kg(nC3*MW.C3),c4plus:0,coke:kg(nCoke*MW.C)};
+    coil=y.ethane/X; recycle=coil-y.ethane; dilSteam=coil*p.dilution;
+  }
 
   /* 2. Reactor duty. In the mechanism route, Cantera supplies the enthalpy rise
      from the fixed 650 C radiant-section inlet to the requested outlet. The
@@ -620,8 +653,9 @@ function model(p){
 
   /* 4. Compressor. Specification fixed. */
   const mol={c2h4:1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
-             h2:y.h2*1000/MW.H2,c3:y.c3*1000/MW.C3};
-  const nGas=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c3;
+             h2:y.h2*1000/MW.H2,c2h2:(y.c2h2||0)*1000/MW.C2H2,
+             c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4};
+  const nGas=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c2h2+mol.c3+mol.c4plus;
   const gam=1.32,st=4,rSt=Math.pow(P_DISCH/1.5,1/st);
   const wComp=st*(gam/(gam-1))*8.314*313*(Math.pow(rSt,(gam-1)/gam)-1)/0.75*nGas/1000;
 
@@ -629,7 +663,7 @@ function model(p){
   const lightFrac=(mol.ch4+mol.h2)/nGas;
   const tCold=-100-40*Math.log10(0.01/(1-RECOVERY))-160*(lightFrac-0.40);
   const mCold=coil-y.coke;
-  const qCold=mCold*2.2*(30-tCold)+(1+recycle+y.c3)*350;
+  const qCold=mCold*2.2*(30-tCold)+(1+recycle+(y.c2h2||0)+y.c3+(y.c4plus||0))*350;
   const lv=[[-40,.55],[-100,.30],[tCold,.15]];
   let wRef=0; for(const[T,fr]of lv){const Tk=T+273.15;
     wRef+=qCold*fr/Math.max(.05,ETA2*Tk/(T_AMB-Tk));}
@@ -670,19 +704,29 @@ function model(p){
   L.elecProc = (wComp+wRef+wSplit)*kJ2GJ*eGJ;
   L.steamCr  = -tleSteam*kJ2GJ*p.steam;
   L.gasCr    = -gasSell*kJ2GJ*p.gas;
-  L.lpgCr    = -y.c3*p.lpg;
+  L.lpgCr    = -(y.c3+(y.c4plus||0))*p.lpg;
   L.dilSteam = qDSG*kJ2GJ*(p.steam*(p.grade===undefined?STEAM_GRADE:p.grade)+CW_REJECT);
   L.capital  = toc*1e6*p.ccf/prod;
   L.om       = (toc*1e6*0.075+p.labor*1e6)/prod;
   const coo=Object.values(L).reduce((a,b)=>a+b,0);
 
   /* 10. Balance residuals */
-  const cIn=2, cOut=2*Smol+nCH4+3*nC3+nCoke;
-  const hIn=6, hOut=4*Smol+4*nCH4+6*nC3+2*nH2;
-  const mIn=y.ethane, mOut=1+y.ch4+y.h2+y.c3+y.coke;
   const eIn=qDeliver, eOut=qDemand+qDeliver*(1-p.eff/100);
-  const bal={carbon:(cOut-cIn)/cIn,hydrogen:(hOut-hIn)/hIn,
-             mass:(mOut-mIn)/mIn,energy:(eOut-eIn)/eIn};
+  let bal,balanceBasis;
+  if(useMechanismSpecies){
+    /* Every raw Cantera row is release-gated for elemental/mass closure in CI.
+       The GP interpolates selected outlet coordinates and does not algebraically
+       enforce C/H closure at an arbitrary browser point, so no fake residual is printed. */
+    bal={carbon:NaN,hydrogen:NaN,mass:NaN,energy:(eOut-eIn)/eIn};
+    balanceBasis='raw Cantera sweep closure release-gated; GP point closure not algebraically constrained';
+  }else{
+    const cIn=2, cOut=2*Smol+nCH4+3*nC3+nCoke;
+    const hIn=6, hOut=4*Smol+4*nCH4+6*nC3+2*nH2;
+    const mIn=y.ethane, mOut=1+y.ch4+y.h2+y.c3+y.coke;
+    bal={carbon:(cOut-cIn)/cIn,hydrogen:(hOut-hIn)/hIn,
+         mass:(mOut-mIn)/mIn,energy:(eOut-eIn)/eIn};
+    balanceBasis='closed lumped empirical chemistry';
+  }
 
   const netEnergy=(qDeliver-tleSteam+wComp+wRef+wSplit)*kJ2GJ;
   const elec_kWh=(wComp+wRef+wSplit+elecHeat)*kJ2GJ/GJ_per_kWh/1000;
@@ -702,7 +746,7 @@ function model(p){
   return {flags,selClipped,y,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,
     elecHeat,wComp,wRef,wSplit,tCold,qCold,lightFrac,nGas,alpha,nMin,nAct,rRatio,
     qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc,
-    reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp};
+    reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp,useMechanismSpecies,balanceBasis};
 }
 
 /* ---------- 렌더 ---------- */
@@ -985,7 +1029,7 @@ function costTable(r){
       sig((r.wComp+r.wRef+r.wSplit)*kJ2GJ/GJ_per_kWh/1000,3)+' kWh/kg'],
     ['HP steam recovered',r.L.steamCr,sig(r.tleSteam*kJ2GJ,3)+' GJ/t'],
     ['Tail gas sold',r.L.gasCr,sig(r.gasSell*kJ2GJ,3)+' GJ/t'],
-    ['LPG credit',r.L.lpgCr,sig(r.y.c3,3)+' kg/kg'],
+    ['C3+ coproduct credit',r.L.lpgCr,sig(r.y.c3+(r.y.c4plus||0),3)+' kg/kg'],
     ['Capital charge',r.L.capital,'TOC $'+sig(r.toc,4)+' M at CCF '+sig(S.ccf,2)],
     ['O&amp;M and labour',r.L.om,'On-stream '+pctS(r.osf*100)]
   ];
