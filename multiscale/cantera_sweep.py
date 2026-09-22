@@ -153,11 +153,13 @@ def simulate_case(
     h_in = float(gas.enthalpy_mass)
     y = gas.Y.copy()
 
-    # Reuse one ReactorNet per operating point. The imposed temperature is updated
-    # between integration intervals, then the reactor/integrator state is synchronized.
-    # This is materially faster for large detailed mechanisms than constructing a new
-    # CVODE system for every temperature segment.
-    dt = residence_time_s / segments
+    # Reuse one ReactorNet per operating point. Segment edges are uniform in
+    # normalized temperature progress u=f**n rather than uniform in time. This
+    # concentrates integration intervals where dT/dt is large (early for n<1,
+    # late for n>1) and removes the large discretization error of a uniform-time
+    # grid for strongly front- or back-loaded heating histories.
+    u_edges = np.linspace(0.0, 1.0, segments + 1)
+    f_edges = u_edges ** (1.0 / ramp_exponent)
     gas.TPY = tin_k, p_pa, y
     reactor = ct.IdealGasConstPressureReactor(
         gas, energy="off", clone=False, name="pfr-fluid-element"
@@ -166,13 +168,14 @@ def simulate_case(
     net.rtol = 1e-8
     net.atol = 1e-15
     for i in range(segments):
-        f = (i + 0.5) / segments
-        t_k = tin_k + (tout_k - tin_k) * (f**ramp_exponent)
+        f0, f1 = float(f_edges[i]), float(f_edges[i + 1])
+        f_mid = 0.5 * (f0 + f1)
+        t_k = tin_k + (tout_k - tin_k) * (f_mid**ramp_exponent)
         y = reactor.phase.Y.copy()
         gas.TPY = t_k, p_pa, y
         reactor.syncState()
         net.reinitialize()
-        net.advance((i + 1) * dt)
+        net.advance(residence_time_s * f1)
     y = reactor.phase.Y.copy()
 
     gas.TPY = tout_k, p_pa, y
@@ -337,6 +340,7 @@ def main() -> None:
         "input_ranges": INPUT_RANGES,
         "reactor_model": "prescribed-temperature Lagrangian PFR approximation",
         "thermal_history": "T(f)=Tin+(Tout-Tin)*f**ramp_exponent",
+        "thermal_discretization": "segment edges uniform in normalized temperature progress",
         "yield_basis": "kg species per kg ethane entering reactor",
         "failures": failures,
     }
