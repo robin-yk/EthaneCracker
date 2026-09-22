@@ -73,18 +73,20 @@ details summary{cursor:pointer;font-size:11px;font-weight:bold}
 .speciesrow .name{font:10px var(--mono);color:#333}
 .bar{height:10px;background:#fff;border:1px solid #aaa;position:relative}.bar i{display:block;height:100%;background:repeating-linear-gradient(90deg,#008080 0 4px,#0b8f8f 4px 8px)}
 .speciesrow .num{font:10px var(--mono);text-align:right}
-.flow{padding:23px 18px 24px;display:grid;grid-template-columns:repeat(5,1fr);gap:25px;background-color:#fff;background-image:linear-gradient(#e5e5e5 1px,transparent 1px),linear-gradient(90deg,#e5e5e5 1px,transparent 1px);background-size:12px 12px;min-height:220px;align-items:center}
-.unit{border:2px outset #d4d0c8;padding:0;min-height:98px;position:relative;background:#f4f1e7;box-shadow:2px 2px 0 rgba(0,0,0,.14);cursor:pointer;user-select:none}
-.unit.selected{outline:2px solid #ff9800;outline-offset:1px}
-.unit:after,.unit:before{display:none}
-.unit h4{font-size:10px;margin:0 0 7px;padding:3px 5px;background:#0a246a;color:#fff;font-weight:bold}.unit:nth-child(2) h4{background:#3a6ea5}.unit:nth-child(3) h4{background:#008080}.unit:nth-child(4) h4{background:#8a5b25}.unit:nth-child(5) h4{background:#246c39}
-.unit .u{font:10px var(--mono);color:#333;margin:4px 6px}
-.scope{padding:6px 8px;border-top:1px solid #aaa;background:#efefea;font-size:10px;color:#555}
+.flowwrap{position:relative;min-height:270px;background-color:#fff;background-image:linear-gradient(#e5e5e5 1px,transparent 1px),linear-gradient(90deg,#e5e5e5 1px,transparent 1px);background-size:12px 12px;overflow:hidden}
+.pfdlines{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
+.flow{position:relative;z-index:3;padding:48px 30px 42px;display:grid;grid-template-columns:repeat(5,1fr);gap:28px;min-height:270px;align-items:center;background:transparent}
+.unit{position:relative;min-width:0;text-align:center;cursor:pointer;user-select:none;padding:0 3px}
+.unit.selected .equipbox{outline:2px solid #ff9800;outline-offset:2px}
+.equipbox{width:72px;height:72px;margin:0 auto 5px;background:#fff;display:grid;place-items:center}
+.equipbox svg{width:72px;height:72px;overflow:visible}
+.equipname{font:700 10px var(--mono);line-height:1.15;color:#111}
+.equipname span{font-weight:400;font-size:9px;color:#444}
+.unit .u{display:inline-block;font:9px var(--mono);line-height:1.25;color:#333;margin-top:4px;padding:2px 4px;background:#fff;border:1px solid #aaa;max-width:145px}
+.scope{padding:7px 8px;border-top:1px solid #aaa;background:#efefea;font-size:9.5px;line-height:1.45;color:#444}
 .streamtag{position:absolute;background:#fff;border:1px solid #777;padding:1px 4px;font:9px var(--mono);z-index:6;white-space:nowrap;cursor:pointer}
 .streamtag:hover{background:#fff8c5}
-.flowwrap{position:relative;background:#fff}
-.pfdlines{position:absolute;inset:0;z-index:1;width:100%;height:100%;pointer-events:none}
-.flow{position:relative;z-index:2}
+.st-feed{left:4px;top:113px}.st-energy{left:7%;top:8px}.st-tail{left:48%;top:8px}.st-recycle{left:43%;bottom:7px}.st-product{right:4px;top:113px}.st-c3{left:69%;bottom:7px}
 .slate{border-bottom:1px solid #888;background:#fff}
 .slatehead{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:#dedbd0;border-bottom:1px solid #aaa}
 .slatehead b{font-size:10px}.slatehead span{font:9px var(--mono);color:#555}
@@ -94,7 +96,6 @@ details summary{cursor:pointer;font-size:11px;font-weight:bold}
 .slateitem{font:9px var(--mono);display:flex;justify-content:space-between;gap:6px;cursor:pointer;padding:1px 2px}.slateitem:hover{background:#fff8c5}.slateitem span:first-child:before{content:"";display:inline-block;width:8px;height:8px;margin-right:4px;background:var(--sw);border:1px solid #777;vertical-align:-1px}
 .streamwin{position:fixed;z-index:81;width:300px;left:24px;bottom:34px;background:var(--desk);border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.25);display:none}
 .streamwin.open{display:block}
-.st-feed{left:6px;top:92px}.st-energy{left:16%;top:18px}.st-recycle{left:49%;bottom:8px}.st-product{right:4px;top:92px}.st-c3{right:14%;bottom:8px}
 .propwin{position:fixed;z-index:80;width:315px;right:24px;bottom:34px;background:var(--desk);border:2px outset #d4d0c8;box-shadow:3px 3px 0 rgba(0,0,0,.25);display:none}
 .propwin.open{display:block}.proptitle{height:22px;background:linear-gradient(90deg,#0a246a,#3a6ea5);color:#fff;font-weight:bold;padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
 .proptitle button{width:18px;height:17px;padding:0;background:var(--desk);border:1px outset #fff;font-size:10px}
@@ -220,28 +221,55 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
         <div class="big"><div class="k">C₂H₄ selectivity</div><div class="n" id="rS">—</div><div class="s">mass basis</div></div>
         <div class="big"><div class="k">C₂H₄ yield</div><div class="n" id="rY">—</div><div class="s">kg/kg coil ethane</div></div>
       </div>
+      <div class="slatehead"><b>PLANT MATERIAL BASIS</b><span>kg / kg C2H4 product</span></div>
       <div class="species" id="species"></div>
       <div class="flowwrap">
-        <svg class="pfdlines" viewBox="0 0 1000 280" preserveAspectRatio="none" aria-hidden="true">
-          <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#4e6f8e"/></marker><marker id="arrg" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#246c39"/></marker></defs>
-          <path d="M5 140 H95" fill="none" stroke="#4e6f8e" stroke-width="2" marker-end="url(#arr)"/>
-          <path d="M180 140 H285 M370 140 H475 M560 140 H665 M750 140 H945" fill="none" stroke="#4e6f8e" stroke-width="2" marker-end="url(#arr)"/>
-          <path d="M715 180 V242 H135 V180" fill="none" stroke="#246c39" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arrg)"/>
-          <path d="M520 100 V42 H600" fill="none" stroke="#8a5b25" stroke-width="2" marker-end="url(#arr)"/>
-          <path d="M715 180 V222 H820" fill="none" stroke="#8a5b25" stroke-width="2" marker-end="url(#arr)"/>
-          <path d="M135 100 V40" fill="none" stroke="#c57718" stroke-width="2" marker-end="url(#arr)"/>
+        <svg class="pfdlines" viewBox="0 0 1000 270" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#355f86"/></marker>
+            <marker id="arrg" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#28733b"/></marker>
+            <marker id="arro" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9a6123"/></marker>
+          </defs>
+          <path d="M0 122 H72" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
+          <path d="M128 122 H272 M328 122 H472 M528 122 H672 M728 122 H872 M928 122 H1000" fill="none" stroke="#355f86" stroke-width="2.5" marker-end="url(#arr)"/>
+          <path d="M700 154 V235 H120" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrg)"/>
+          <path d="M120 235 V154" fill="none" stroke="#28733b" stroke-width="2.5" stroke-dasharray="6 4"/>
+          <path d="M500 90 V30" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
+          <path d="M700 154 V224 H790" fill="none" stroke="#9a6123" stroke-width="2.5" marker-end="url(#arro)"/>
+          <path d="M100 90 V30" fill="none" stroke="#c57718" stroke-width="2.5" marker-end="url(#arro)"/>
         </svg>
-        <span class="streamtag st-feed" data-stream="feed">FEED: C2H6 + STEAM</span>
-        <span class="streamtag st-energy" data-stream="energy">FUEL / POWER</span>
-        <span class="streamtag st-recycle" data-stream="recycle">RECYCLE C2H6</span>
-        <span class="streamtag st-product" data-stream="product">C2H4 PRODUCT</span>
-        <span class="streamtag st-c3" data-stream="c3">C3+</span>
+        <span class="streamtag st-feed" data-stream="feed">S-101 FEED</span>
+        <span class="streamtag st-energy" data-stream="energy">Q-101 FUEL / POWER</span>
+        <span class="streamtag st-tail" data-stream="tail">S-203 H2 / CH4</span>
+        <span class="streamtag st-recycle" data-stream="recycle">S-302 C2H6 RECYCLE</span>
+        <span class="streamtag st-product" data-stream="product">S-401 C2H4</span>
+        <span class="streamtag st-c3" data-stream="c3">S-303 C3+</span>
         <div class="flow" id="flowsheet">
-          <div class="unit" data-block="reactor"><h4>R-101 · CRACKER + TLE</h4><div class="u" id="uReactor">—</div><div class="u" id="uFeed">—</div></div>
-          <div class="unit" data-block="compressor"><h4>C-101 · COMPRESSION</h4><div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div></div>
-          <div class="unit" data-block="coldbox"><h4>T-201 · COLD BOX</h4><div class="u" id="uCold">—</div><div class="u" id="uRef">—</div></div>
-          <div class="unit" data-block="splitter"><h4>T-301 · C2 SPLITTER</h4><div class="u" id="uSplit">—</div><div class="u">99.9 mol% product</div></div>
-          <div class="unit" data-block="product"><h4>P-401 · ETHYLENE</h4><div class="u">1.000 kg basis</div><div class="u" id="uCap">—</div></div>
+          <div class="unit" data-block="reactor">
+            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="10" y="12" width="52" height="48" fill="#fff7e8" stroke="#0a246a" stroke-width="2"/><path d="M18 49 C25 38,25 33,18 23 M30 49 C37 38,37 33,30 23 M42 49 C49 38,49 33,42 23" fill="none" stroke="#c57718" stroke-width="2"/><path d="M10 55 H62" stroke="#0a246a" stroke-width="2"/></svg></div>
+            <div class="equipname">R-101<br><span>CRACKER + TLE</span></div>
+            <div class="u" id="uReactor">—</div><div class="u" id="uFeed">—</div>
+          </div>
+          <div class="unit" data-block="compressor">
+            <div class="equipbox"><svg viewBox="0 0 72 72"><circle cx="36" cy="36" r="25" fill="#eef6ff" stroke="#3a6ea5" stroke-width="2"/><path d="M23 24 L52 36 L23 48 Z" fill="#3a6ea5"/><line x1="8" y1="36" x2="20" y2="36" stroke="#3a6ea5" stroke-width="2"/><line x1="52" y1="36" x2="64" y2="36" stroke="#3a6ea5" stroke-width="2"/></svg></div>
+            <div class="equipname">C-101<br><span>COMPRESSOR</span></div>
+            <div class="u" id="uComp">—</div><div class="u">4 stages · 32 bar</div>
+          </div>
+          <div class="unit" data-block="coldbox">
+            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="13" y="10" width="46" height="52" fill="#eefbfb" stroke="#008080" stroke-width="2"/><path d="M36 18 V54 M20 36 H52 M24 24 L48 48 M48 24 L24 48" stroke="#008080" stroke-width="1.6"/><circle cx="36" cy="36" r="5" fill="#fff" stroke="#008080"/></svg></div>
+            <div class="equipname">T-201<br><span>COLD BOX</span></div>
+            <div class="u" id="uCold">—</div><div class="u" id="uRef">—</div>
+          </div>
+          <div class="unit" data-block="splitter">
+            <div class="equipbox"><svg viewBox="0 0 72 72"><rect x="26" y="6" width="20" height="60" rx="9" fill="#fff8ed" stroke="#8a5b25" stroke-width="2"/><path d="M27 19 H45 M27 29 H45 M27 39 H45 M27 49 H45" stroke="#8a5b25" stroke-width="1.5"/><line x1="16" y1="36" x2="26" y2="36" stroke="#8a5b25" stroke-width="2"/><line x1="46" y1="15" x2="60" y2="15" stroke="#8a5b25" stroke-width="2"/><line x1="46" y1="57" x2="60" y2="57" stroke="#8a5b25" stroke-width="2"/></svg></div>
+            <div class="equipname">T-301<br><span>C2 SPLITTER</span></div>
+            <div class="u" id="uSplit">—</div><div class="u">99.9 mol% C2H4</div>
+          </div>
+          <div class="unit" data-block="product">
+            <div class="equipbox"><svg viewBox="0 0 72 72"><circle cx="28" cy="36" r="18" fill="#eff9f0" stroke="#246c39" stroke-width="2"/><path d="M20 36 H54 M45 27 L55 36 L45 45" fill="none" stroke="#246c39" stroke-width="3"/></svg></div>
+            <div class="equipname">P-401<br><span>ETHYLENE</span></div>
+            <div class="u">1.000 kg basis</div><div class="u" id="uCap">—</div>
+          </div>
         </div>
       </div>
       <div class="scope" id="scope">—</div>
@@ -321,6 +349,7 @@ https://doi.org/10.1016/j.combustflame.2018.08.006</pre>
 "use strict";
 const $=id=>document.getElementById(id);
 const frame=$("engineFrame");
+const UI_AUDIT=new URLSearchParams(location.search).get("uiAudit")==="1";
 const tauFromSlider=v=>0.02*Math.pow(50,v/1000);
 const tauToSlider=t=>1000*Math.log(t/0.02)/Math.log(50);
 const fmt=(x,n=3)=>Number.isFinite(x)?Number(x).toLocaleString("en-US",{maximumFractionDigits:n}):"—";
@@ -638,7 +667,8 @@ function streamProps(id){
     energy:[["Stream","FUEL / POWER"],["Heating mode",state.mode==="JH"?"Joule":"Fired"],["Heater input",fmt(result.heater_input_gj_per_t,3)+" GJ/t"],["Purchased gas",fmt(result.purchased_natural_gas_gj_per_t,3)+" GJ/t"]],
     recycle:[["Stream","RECYCLE C2H6"],["Ethane recycle",fmt(result.recycle_ethane_kg_per_kg,4)+" kg/kg C2H4"],["Single-pass conversion",pct(result.conversion)]],
     product:[["Stream","C2H4 PRODUCT"],["Basis","1.000 kg C2H4"],["Purity","99.9 mol%"],["Plant output",fmt(result.annual_product_kt,1)+" kt/y"],["Cost","$"+fmt(result.cost_usd_per_t,1)+"/t"]],
-    c3:[["Stream","C3+ COPRODUCT"],["C3",fmt(result.c3_kg_per_kg,5)+" kg/kg C2H4"],["C4+",fmt(result.c4plus_kg_per_kg,5)+" kg/kg C2H4"],["Cantera C3 yield",fmt(g.y_c3_kg_per_kg_ethane||0,5)+" kg/kg coil C2H6"]]
+    c3:[["Stream","C3+ COPRODUCT"],["C3",fmt(result.c3_kg_per_kg,5)+" kg/kg C2H4"],["C4+",fmt(result.c4plus_kg_per_kg,5)+" kg/kg C2H4"],["Cantera C3 yield",fmt(g.y_c3_kg_per_kg_ethane||0,5)+" kg/kg coil C2H6"]],
+    tail:[["Stream","H2 / CH4 TAIL GAS"],["CH4",fmt(result.ch4_kg_per_kg,5)+" kg/kg C2H4"],["H2",fmt(result.h2_kg_per_kg,5)+" kg/kg C2H4"],["Disposition",state.mode==="CH"?"burned before purchased gas":"available as coproduct / fuel"]]
   };
   return map[id]||[];
 }
@@ -700,6 +730,50 @@ function bindMenusAndToolbar(){
   $("tbRun").onclick=()=>runAction("run");$("tbPin").onclick=()=>runAction("pin");$("tbExport").onclick=()=>runAction("exportjson");
   document.addEventListener("keydown",e=>{if(e.key==="F5"){e.preventDefault();runAction("run")} if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="n"){e.preventDefault();runAction("new")}});
 }
+async function runUIAudit(){
+  const checks=[];
+  const ok=(name,cond)=>{checks.push([name,!!cond]);if(!cond)throw new Error("UI audit failed: "+name)};
+  try{
+    document.querySelectorAll("nav button").forEach(b=>ok("nav "+b.textContent,typeof b.onclick==="function"));
+    document.querySelectorAll(".quick button").forEach(b=>ok("quick "+b.textContent,typeof b.onclick==="function"));
+    document.querySelectorAll(".toolbar button").forEach(b=>ok("toolbar "+b.title,typeof b.onclick==="function"));
+    document.querySelectorAll(".menupop button").forEach(b=>ok("menu "+b.textContent.trim(),typeof b.onclick==="function"));
+    document.querySelectorAll(".tree .item").forEach(b=>ok("tree "+b.textContent.trim(),typeof b.onclick==="function"));
+    document.querySelectorAll("[data-proptab]").forEach(b=>ok("prop tab "+b.textContent,typeof b.onclick==="function"));
+
+    show("benchmarks");ok("benchmarks view",document.querySelector("#view-benchmarks").classList.contains("active"));
+    show("compare");ok("compare view",document.querySelector("#view-compare").classList.contains("active"));
+    show("workspace");
+
+    loadPreset("chen");ok("Chen load",state.name==="Chen 2024"&&document.querySelector(".windowtitle").textContent.includes("Chen_2024.bkp"));
+    openBlock("reactor");ok("reactor properties",$("propwin").classList.contains("open"));
+    currentPropTab="input";renderBlockTab();ok("reactor input tab",$("propTable").textContent.includes("Outlet temperature"));
+    currentPropTab="setup";renderBlockTab();ok("reactor setup tab",$("propTable").textContent.includes("AramcoMech 3.0"));
+    $("propClose").click();
+
+    openStream("feed");ok("feed properties",$("streamwin").classList.contains("open")&&$("streamTable").textContent.includes("Fresh C2H6"));
+    $("streamClose").click();
+
+    runAction("joule");ok("Joule action",state.mode==="JH");
+    runAction("fired");ok("Fired action",state.mode==="CH");
+    runAction("pin");ok("pin baseline",!!pinned);
+
+    const helpButton=document.querySelector('[data-menu="help"]');helpButton.click();
+    ok("Help menu",$("menu-help").classList.contains("open"));closeMenus();
+
+    const oldOpen=window.open;let contactRendered=false;
+    window.open=()=>({document:{write:()=>{contactRendered=true},close:()=>{}}});
+    runAction("contact");window.open=oldOpen;ok("contact action",contactRendered);
+
+    loadPreset("default");show("workspace");
+    document.body.dataset.controlAudit="pass";
+    document.body.dataset.controlAuditCount=String(checks.length);
+  }catch(e){
+    document.body.dataset.controlAudit="fail";
+    document.body.dataset.controlAuditError=String(e&&e.message||e);
+    throw e;
+  }
+}
 async function init(){
   qState();bind();bindFlowsheet();bindMenusAndToolbar();fillCompare();
   try{
@@ -713,6 +787,7 @@ async function init(){
     document.body.dataset.kinetics="aramco-gp";
     $("live").textContent="Aramco GP ready · 256 train / 64 holdout";$("live").className="live good";
     render();benchmarkSummary();modelMeta();
+    if(UI_AUDIT)await runUIAudit();
   }catch(e){
     document.body.dataset.appStatus="error";
     document.body.dataset.kinetics="unavailable";
