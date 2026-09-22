@@ -52,24 +52,26 @@ async function modelApi(){
 }
 
 function solveTau(api,base,target){
-  let best=null;
-  for(let i=0;i<=220;i++){
-    const f=i/220;
-    const tau=0.02*Math.pow(1/0.02,f);
-    const r=api.evaluate({...base,residence_time_s:undefined,tau});
-    const e=Math.abs(r.fresh_ethane_kg_per_kg-target)/target;
-    if(!best||e<best.error)best={tau,error:e,result:r};
-  }
-  let lo=Math.max(0.02,best.tau/1.35),hi=Math.min(1,best.tau*1.35);
-  for(let j=0;j<5;j++){
-    let local=best;
-    for(let i=0;i<=40;i++){
-      const tau=lo+(hi-lo)*i/40;
-      const r=api.evaluate({...base,tau});
-      const e=Math.abs(r.fresh_ethane_kg_per_kg-target)/target;
-      if(e<local.error)local={tau,error:e,result:r};
+  const at=tau=>{
+    const result=api.evaluate({...base,tau});
+    return {tau,result,d:result.fresh_ethane_kg_per_kg-target,
+      error:Math.abs(result.fresh_ethane_kg_per_kg-target)/target};
+  };
+  let lo=at(0.02),hi=at(1.0),best=lo.error<hi.error?lo:hi;
+  if(lo.d===0)return lo;
+  if(hi.d===0)return hi;
+  if(lo.d*hi.d<0){
+    for(let i=0;i<34;i++){
+      const mid=at(Math.sqrt(lo.tau*hi.tau));
+      if(mid.error<best.error)best=mid;
+      if(lo.d*mid.d<=0)hi=mid; else lo=mid;
     }
-    best=local; const span=(hi-lo)/8; lo=Math.max(0.02,best.tau-span); hi=Math.min(1,best.tau+span);
+    return best;
+  }
+  for(let i=1;i<72;i++){
+    const tau=0.02*Math.pow(50,i/71);
+    const q=at(tau);
+    if(q.error<best.error)best=q;
   }
   return best;
 }
