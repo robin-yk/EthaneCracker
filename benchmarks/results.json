@@ -20,12 +20,12 @@
       },
       "inferred": {
         "residence_time_s": [
-          0.10601599455918632,
-          0.14283347111493666
+          0.1013181130228225,
+          0.13188727262768263
         ],
         "ethane_outlet_fit": [
-          0.15099999999837144,
-          0.15099999999886346
+          0.15099999999818486,
+          0.15100000000024857
         ]
       },
       "facts": [
@@ -39,7 +39,7 @@
         ],
         [
           "inferred residence",
-          "0.106\u20130.143 s"
+          "0.101\u20130.132 s"
         ],
         [
           "published MSP",
@@ -51,8 +51,8 @@
           "name": "dry C2H6 mole fraction",
           "published": 0.151,
           "model_range": [
-            0.15099999999837144,
-            0.15099999999886346
+            0.15099999999818486,
+            0.15100000000024857
           ],
           "unit": "mol/mol",
           "role": "fit",
@@ -62,8 +62,8 @@
           "name": "dry C2H4 mole fraction",
           "published": 0.377,
           "model_range": [
-            0.3706659170531491,
-            0.3844881304826847
+            0.37192065838703814,
+            0.3846920246248066
           ],
           "unit": "mol/mol",
           "role": "test",
@@ -73,8 +73,8 @@
           "name": "dry H2 mole fraction",
           "published": 0.407,
           "model_range": [
-            0.3961584411254294,
-            0.4123930688306883
+            0.3986514645661389,
+            0.41173901292917026
           ],
           "unit": "mol/mol",
           "role": "test",
@@ -84,8 +84,8 @@
           "name": "dry CH4 mole fraction",
           "published": 0.033,
           "model_range": [
-            0.03532413810047869,
-            0.05953309521870749
+            0.0355843656039592,
+            0.05639666696084573
           ],
           "unit": "mol/mol",
           "role": "test",
@@ -95,8 +95,8 @@
           "name": "fresh ethane",
           "published": 1.1083123425692694,
           "model_range": [
-            1.2476491250569772,
-            1.2717594828371905
+            1.1852100585796788,
+            1.218925677287082
           ],
           "unit": "kg/kg",
           "role": "test",
@@ -106,8 +106,8 @@
           "name": "high-temperature reactor heat",
           "published": 5.248866498740553,
           "model_range": [
-            7.791429587985109,
-            7.828403215752417
+            7.603469553665991,
+            7.682577277246803
           ],
           "unit": "GJ/t",
           "role": "test",
@@ -117,8 +117,8 @@
           "name": "compressor work",
           "published": 370.2770780856423,
           "model_range": [
-            299.43107520681116,
-            309.24433695827605
+            296.9534594595629,
+            306.6914716399739
           ],
           "unit": "kWh/t",
           "role": "test",
@@ -128,8 +128,8 @@
           "name": "MSP / web cost",
           "published": 832,
           "model_range": [
-            418.77857293113107,
-            433.07933814836605
+            407.603260467137,
+            416.68338904733184
           ],
           "unit": "USD/t",
           "role": "context",
@@ -139,8 +139,8 @@
           "name": "TCM / web annual OPEX",
           "published": 496,
           "model_range": [
-            163.5676571210943,
-            175.362813838165
+            159.78465665956801,
+            168.47454662924815
           ],
           "unit": "MUSD/y",
           "role": "context",
@@ -154,8 +154,7 @@
         "MSP and annual manufacturing cost are shown as economic context because the paper uses a 20-year discounted cash-flow MSP calculation."
       ],
       "model_flags": [
-        "GP chemistry consistency: derived and direct ethylene selectivity differ by 4.33 percentage points",
-        "selectivity 77.8% is outside the industrial band of 78 to 88%"
+        "GP chemistry consistency: derived and direct ethylene selectivity differ by 2.24 percentage points"
       ]
     },
     {
@@ -172,9 +171,9 @@
         "steam_hc": 0.33
       },
       "inferred": {
-        "accepted_points": 15,
+        "accepted_points": 17,
         "residence_time_s": [
-          0.6008997310576563,
+          0.6660769363162808,
           1
         ]
       },
@@ -185,7 +184,7 @@
         ],
         [
           "accepted states",
-          "15"
+          "17"
         ],
         [
           "published heat",
@@ -201,8 +200,8 @@
           "name": "fresh ethane",
           "published": 1.3222722700835265,
           "model_range": [
-            1.3179440481955451,
-            1.322272270087638
+            1.320778992913291,
+            1.322272270088681
           ],
           "unit": "kg/kg",
           "role": "fit",
@@ -212,8 +211,8 @@
           "name": "C3+ coproduct",
           "published": 0.13764813923995278,
           "model_range": [
-            0.11450499133867269,
-            0.13034681281808902
+            0.11368890416398221,
+            0.12156854563660037
           ],
           "unit": "kg/kg",
           "role": "test",
@@ -223,8 +222,8 @@
           "name": "combustion heat",
           "published": 17.2,
           "model_range": [
-            17.496008313741,
-            18.43233900993471
+            17.508623616876363,
+            18.382548172591342
           ],
           "unit": "GJ/t",
           "role": "test",
@@ -234,8 +233,8 @@
           "name": "on-site GHG",
           "published": 442,
           "model_range": [
-            442.1114749167938,
-            507.0273099078922
+            443.3970862478373,
+            512.7077626415678
           ],
           "unit": "kgCO2e/t",
           "role": "test",
@@ -245,8 +244,8 @@
           "name": "LCOE / web cost",
           "published": 746,
           "model_range": [
-            364.6947776567607,
-            387.10963966424055
+            370.5735763086508,
+            390.1002507595259
           ],
           "unit": "USD/t",
           "role": "context",
@@ -256,8 +255,8 @@
           "name": "WTG GHG / web carbon",
           "published": 869,
           "model_range": [
-            1082.6038235488106,
-            1182.7569855744348
+            1087.1015026883192,
+            1197.0222481147118
           ],
           "unit": "kgCO2e/t",
           "role": "context",
@@ -267,7 +266,7 @@
       "central": {
         "temperature_c": 880,
         "pressure_bar": 5,
-        "residence_time_s": 1
+        "residence_time_s": 0.9853243080115631
       },
       "notes": [
         "The paper reports steam ratio and plant inventory but no single reactor temperature/residence-time/pressure triplet in the main article.",
@@ -275,7 +274,7 @@
         "The 17.2 GJ/t combustion-energy value is the paper's model-validation quantity and includes heat from imported natural gas plus hydrogen/methane purge gas."
       ],
       "model_flags": [
-        "selectivity 75.4% is outside the industrial band of 78 to 88%"
+        "selectivity 75.2% is outside the industrial band of 78 to 88%"
       ]
     },
     {
@@ -312,7 +311,7 @@
         ],
         "reactor_volume_m3": 14.597655701831037,
         "ramp_exponent": 0.45,
-        "conversion_fit_error_pct": 43.051702418832235,
+        "conversion_fit_error_pct": 46.529190204303944,
         "conversion_target_reached": false
       },
       "facts": [
@@ -337,92 +336,92 @@
         {
           "name": "single-pass conversion",
           "published": 0.6849566815437123,
-          "model": 0.3900711693076049,
+          "model": 0.3662518843711499,
           "unit": "fraction",
           "role": "test",
           "note": "published conversion remains outside the GP thermal-history domain",
-          "rel_error_pct": -43.051702418832235
+          "rel_error_pct": -46.529190204303944
         },
         {
           "name": "fresh ethane",
           "published": 1.3310713819652877,
-          "model": 1.1768769643048316,
+          "model": 1.16881714178095,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": -11.584233554236034
+          "rel_error_pct": -12.1897474758096
         },
         {
           "name": "recycle ethane",
           "published": 0.6006476575753621,
-          "model": 1.8408026191440299,
+          "model": 2.023093214065006,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": 206.4696242344153
+          "rel_error_pct": 236.8186304482795
         },
         {
           "name": "outlet C2H4 mass fraction",
           "published": 0.3995,
-          "model": 0.25412689194791005,
+          "model": 0.24026908798729418,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": -36.38876296673091
+          "rel_error_pct": -39.85754994060221
         },
         {
           "name": "outlet CH4 mass fraction",
           "published": 0.034,
-          "model": 0.010019222124392128,
+          "model": 0.008896683713389664,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": -70.5316996341408
+          "rel_error_pct": -73.83328319591277
         },
         {
           "name": "outlet H2 mass fraction",
           "published": 0.0309,
-          "model": 0.018677869996259065,
+          "model": 0.017624531890070377,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": -39.553818782333124
+          "rel_error_pct": -42.962679967409784
         },
         {
           "name": "outlet C3 mass fraction",
           "published": 0.0476,
-          "model": 0.00397350634844814,
+          "model": 0.003620428226095644,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": -91.65229758729383
+          "rel_error_pct": -92.39405834853855
         },
         {
           "name": "outlet C4+ mass fraction",
           "published": 0.0161,
-          "model": 0.009216625578483684,
+          "model": 0.008082227515059392,
           "unit": "kg/kg",
           "role": "test",
           "note": "",
-          "rel_error_pct": -42.75387839451128
+          "rel_error_pct": -49.79982909900999
         },
         {
           "name": "CAPEX / web TOC",
           "published": 357.38,
-          "model": 509.0795175737352,
+          "model": 526.7564775908052,
           "unit": "MUSD",
           "role": "context",
           "note": "paper CAPEX and web TOC use different estimating structures",
-          "rel_error_pct": 42.44767966135072
+          "rel_error_pct": 47.39394414651216
         },
         {
           "name": "OPEX / web annual OPEX",
           "published": 195.65,
-          "model": 171.60970858098233,
+          "model": 179.82626450176102,
           "unit": "MUSD/y",
           "role": "context",
           "note": "utility and overhead definitions differ",
-          "rel_error_pct": -12.28739658523776
+          "rel_error_pct": -8.087776896621001
         }
       ],
       "notes": [
@@ -431,8 +430,7 @@
         "The web surrogate uses a 650 \u00b0C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 \u00b0C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
       ],
       "model_flags": [
-        "GP chemistry consistency: derived and direct ethylene selectivity differ by 1.04 percentage points",
-        "conversion 39.0% is outside the fitted range of 45 to 85%"
+        "conversion 36.6% is outside the fitted range of 45 to 85%"
       ]
     }
   ]
