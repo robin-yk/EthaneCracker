@@ -1,6 +1,6 @@
 {
   "mechanism": "multiscale/mechanisms/aramcomech30/aramcomech30.yaml",
-  "mechanism_sha256": "3d22f3079965257aaa7e0ae237dd04f0828574f5da5997540b0edce907049a39",
+  "mechanism_sha256": "f7f8faa3abeb507bceecfcf9ffec578d0a6223829dd00c29e3a1934150d3cb0d",
   "mechanism_species": 581,
   "mechanism_reactions": 3037,
   "mechanism_provenance": {
@@ -13,7 +13,7 @@
       "journal": "Combustion and Flame 197 (2018) 423-438",
       "doi": "10.1016/j.combustflame.2018.08.006"
     },
-    "retrieved_utc": "2026-09-23T00:27:44.403847+00:00",
+    "retrieved_utc": "2026-09-23T02:49:05.454840+00:00",
     "cantera_version": "3.2.0",
     "phase": "gas",
     "species": 581,
@@ -41,15 +41,17 @@
     "yaml": {
       "filename": "aramcomech30.yaml",
       "bytes": 832582,
-      "sha256": "3d22f3079965257aaa7e0ae237dd04f0828574f5da5997540b0edce907049a39"
+      "sha256": "f7f8faa3abeb507bceecfcf9ffec578d0a6223829dd00c29e3a1934150d3cb0d"
     }
   },
   "phase": "gas",
   "cantera_version": "3.2.0",
   "python_version": "3.13.15",
-  "git_sha": "028b2313be3b451b04008d3e1f9850a7920b7b5a",
-  "points_requested": 64,
-  "points_succeeded": 64,
+  "git_sha": "cc0fbc84defa06858f3a81a9dc590f14d5e143e3",
+  "points_requested": 24,
+  "broad_points_requested": 24,
+  "targeted_points_requested": 0,
+  "points_succeeded": 24,
   "points_failed": 0,
   "segments": 20,
   "workers": 4,
@@ -62,7 +64,7 @@
     ],
     "residence_time_s": [
       0.02,
-      1.0
+      1.5
     ],
     "steam_hc_kgkg": [
       0.0,
@@ -77,15 +79,17 @@
       4.0
     ]
   },
+  "targeted_input_ranges": null,
+  "sampling_design": "broad Latin hypercube",
   "reactor_model": "prescribed-temperature Lagrangian PFR approximation",
   "thermal_history": "T(f)=Tin+(Tout-Tin)*f**ramp_exponent",
   "thermal_discretization": "segment edges uniform in normalized temperature progress",
   "yield_basis": "kg species per kg ethane entering reactor",
   "closure_max_abs": {
-    "carbon_residual": 1.6371348721122558e-12,
-    "hydrogen_residual": 8.519759245504097e-12,
-    "oxygen_residual": 1.745568520011194e-12,
-    "mass_residual": 1.1102230246251565e-15
+    "carbon_residual": 1.4026557693114228e-12,
+    "hydrogen_residual": 6.782015211131406e-12,
+    "oxygen_residual": 1.5586796426265102e-12,
+    "mass_residual": 1.5543122344752192e-15
   },
   "failures": []
 }
