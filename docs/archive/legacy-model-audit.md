@@ -1,3 +1,5 @@
+> Historical audit of `ethane-cracker-tea-lab.html`. Numerical values and findings refer to that earlier model. Current methods and results are in [paper/](../../paper/).
+
 # Ethane Cracker TEA Lab — 업로드 전 셀프체크
 
 대상: `ethanecrackertealab.html` (998줄, 단일 파일, 외부 의존성 없음)
