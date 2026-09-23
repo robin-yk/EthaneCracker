@@ -1,8 +1,8 @@
-# Ethane Cracking TEA
+# EthaneCracker
 
-A browser model for the cost and carbon intensity of fired and Joule-heated ethane cracking. AramcoMech 3.0 reaction chemistry is solved in Cantera and evaluated in the browser through a Gaussian-process surrogate.
+Reaction kinetics, process calculations, and economics of ethane cracking. AramcoMech 3.0 reaction chemistry is solved in Cantera and evaluated in the browser through a Gaussian-process surrogate.
 
-[Simulator](https://robin-yk.github.io/TEA-EthaneCracking/) · [Literature comparison](https://robin-yk.github.io/TEA-EthaneCracking/benchmarks/) · [TEA uncertainty](https://robin-yk.github.io/TEA-EthaneCracking/uncertainty/)
+[Simulator](https://robin-yk.github.io/EthaneCracker/) · [Literature comparison](https://robin-yk.github.io/EthaneCracker/benchmarks/) · [TEA uncertainty](https://robin-yk.github.io/EthaneCracker/uncertainty/)
 
 ## Model
 
