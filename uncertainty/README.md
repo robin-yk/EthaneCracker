@@ -1,23 +1,23 @@
-# Literature calibration and paired TEA uncertainty
+# TEA calibration and uncertainty
 
 Open `uncertainty/index.html` through a local HTTP server, or follow **Model → Literature calibration & uncertainty** in the simulator. The saved result can be inspected immediately; Recalculate runs the same engine and exports JSON.
 
-This is a conditional calibration of a screening process model against published process-simulation outputs. It does not identify physical equipment efficiencies uniquely, establish experimental accuracy, or validate the financial boundaries of the compared papers. The default simulator remains unchanged unless research parameters are explicitly passed to the API.
+Published utility values are used to estimate effective fired efficiency and a compression-duty multiplier. Heat recovery and capital vary over specified ranges. Results are conditional on the process equations, parameter ranges and discrepancy scales below.
 
-## Evidence and boundary audit
+## Literature inputs
 
 | Evidence | Use | Boundary and source |
 |---|---|---|
 | Chen 2024, residual ethane 15.1 mol% | Reconstruct residence time | Two discrete pressure alternatives, 1 and 4.5 bar, reflect inconsistent source descriptions. Both receive equal prior weight. |
-| Chen, C101 power 29.4 MW / ethylene 79.4 t/h | Fit an effective compression multiplier | Table 2 identifies electricity to C101. Source compressor discharge is approximately 30 bar; this engine uses 32 bar and a fixed 1.5 bar suction. The multiplier absorbs flow, equipment and boundary differences; it is not an inferred isentropic efficiency. |
+| Chen, C101 power 29.4 MW / ethylene 79.4 t/h | Fit an effective compression multiplier | Table 2 identifies electricity to C101. Source compressor discharge is approximately 30 bar; this engine uses 32 bar and a fixed 1.5 bar suction. The fitted multiplier scales compressor duty and includes differences in flow and equipment assumptions. |
 | Shin 2025, fresh ethane / ethylene inventory | Reconstruct missing operating states | Scan 800–900 °C in 5 °C steps and 1–5 bar in 0.5 bar steps. Infer residence time on 0.02–1.5 s and retain states within 0.5% of reported fresh-feed demand. Equal prior weight on retained discrete states is an assumption. |
-| Shin, total combustion energy 17.2 GJ/t | Fit effective fired efficiency | Includes imported natural gas and purge fuel. Compare to engine total heater input, not purchased natural gas alone. |
+| Shin, total combustion energy 17.2 GJ/t | Fit effective fired efficiency | Includes imported natural gas and purge fuel. The corresponding model quantity is total heater input. |
 | Other species, feed and emissions outputs | Held-out output checks | Excluded from utility calibration. They are outputs of the same studies and can share modeling assumptions. |
-| Chen reactor duty | Boundary-difference diagnostic | The source reports high-temperature fuel-gas duty; the engine comparator is the Cantera enthalpy rise from 650 °C. Do not fit this difference by changing heat recovery. |
-| Reported MSP, manufacturing cost and CAPEX | Excluded from likelihood | Discounted MSP versus screening cost, purchased versus installed equipment, and overhead definitions have not been reconciled. No capital posterior is claimed. |
+| Chen reactor duty | Boundary-difference diagnostic | The source reports high-temperature fuel-gas duty; the engine comparator is the Cantera enthalpy rise from 650 °C. Retained as a comparison quantity. |
+| Reported MSP, manufacturing cost and CAPEX | Excluded from likelihood | The studies use different financial periods, equipment-cost definitions and overheads. Capital retains its specified distribution. |
 | Wang 2026 | Excluded | The benchmark records incompatible reactor inlet temperature, inlet composition and kinetic history. |
 
-Sources: [Chen et al., DOI 10.1039/D3GC03858K](https://doi.org/10.1039/D3GC03858K), [author institution copy](https://udspace.udel.edu/server/api/core/bitstreams/918f00c2-5f7d-40b8-9a1b-939585b06019/content); [Shin et al., DOI 10.1039/D4GC04538F](https://doi.org/10.1039/D4GC04538F). The existing machine-readable transcription is `benchmarks/literature.json`. Chen's power and heat-duty definitions were checked in Tables 1–2 and section 3.3. Shin's combustion-energy value is confirmed in indexed publisher text; the other inventory entries are inherited from the repository transcription. They have not all been independently re-extracted in this change.
+Sources: [Chen et al., DOI 10.1039/D3GC03858K](https://doi.org/10.1039/D3GC03858K), [author institution copy](https://udspace.udel.edu/server/api/core/bitstreams/918f00c2-5f7d-40b8-9a1b-939585b06019/content); [Shin et al., DOI 10.1039/D4GC04538F](https://doi.org/10.1039/D4GC04538F). Values and source notes are stored in `benchmarks/literature.json`. Chen utility definitions were checked against Tables 1–2 and section 3.3; Shin combustion energy was checked against publisher text. Other inventory values use the repository transcription.
 
 ## Inverse calculation
 
@@ -36,21 +36,21 @@ Each one-dimensional parameter integral uses 161 evenly spaced nodes and trapezo
 | Joule efficiency | Separate 90%, 95%, 98% cases | None |
 | Joule furnace capital multiplier | Separate 0.7, 1.0, 1.3 cases | None; scales furnace contribution only |
 
-**All bounds and distribution shapes above are analyst assumptions.** They are not reported confidence intervals or universal engineering bounds. Gaussian σ is tested at 5%, 10% and 20% of each reported utility value. It represents an assumed aggregate mismatch, including model and boundary differences. It is not an estimated measurement standard deviation. Explicit GP posterior uncertainty, correlated study errors, price uncertainty, structural model averaging and operating-condition optimization are outside this calculation.
+The ranges and distributions are specified for this analysis. Gaussian σ is set to 5%, 10% or 20% of each reported utility value to represent model–literature discrepancy. GP posterior error, correlations between studies, prices and operating conditions are held fixed in this propagation.
 
-The compression multiplier preserves the existing compressor physics and scales its duty. Fired efficiency scales total heater demand through `Qin = Quseful/(eff/100)`. No non-identifiable heat-recovery or capital parameter is squeezed into a narrow posterior using the same two observations. Boundary mass is recorded to help detect truncation by prior limits.
+The compression multiplier preserves the existing compressor physics and scales its duty. Fired efficiency scales total heater demand through `Qin = Quseful/(eff/100)`. Heat recovery and capital retain their input distributions. Probability mass near each parameter bound is recorded.
 
 ## Paired propagation
 
-Draw the calibrated parameters and shared heat recovery/capital parameters with a fixed random seed (20260923), 512 draws per scenario. Use each draw for both heating routes at the same 850 °C, 0.35 s, dilution 0.35, 1.5 bar, ramp exponent 1, and 610 kt/y capacity. Gas costs $4/GJ; the reference electricity price is $0.07/kWh. These are explicit reference assumptions rather than current market prices.
+Draw the calibrated parameters and shared heat recovery/capital parameters with a fixed random seed (20260923), 512 draws per scenario. Use each draw for both heating routes at the same 850 °C, 0.35 s, dilution 0.35, 1.5 bar, ramp exponent 1, and 610 kt/y capacity. Gas costs $4/GJ; the reference electricity price is $0.07/kWh. These prices are fixed calculation inputs.
 
-For each pair, report absolute cost distributions and `ΔC = C_Joule − C_fired`. Under this engine, cost is affine in electricity price. Two API endpoint evaluations per route determine the exact crossing; direct evaluations at that crossing are regression-tested. Negative crossings are retained. Empirical cheaper-draw fractions describe this conditional distribution. Monte Carlo Wilson intervals are recorded so a zero count does not imply a mathematically zero probability.
+For each pair, report absolute cost distributions and `ΔC = C_Joule − C_fired`. Under this engine, cost is affine in electricity price. Two API endpoint evaluations per route determine the exact crossing; direct evaluations at that crossing are regression-tested. Negative crossings are retained. Empirical cheaper-draw fractions describe this conditional distribution. Wilson intervals quantify sampling uncertainty in the cheaper-draw fraction.
 
-Shared compression, separation, heat-recovery credit and capital cancel in the difference when chemistry and furnace factors are identical. They still change absolute costs. This cancellation is a structural assumption of this comparison. A Joule-specific furnace multiplier tests one source of differential capital cost. Power electronics, electrode replacement, route-specific labor, changed operating conditions and different steam-export requirements have not been separately designed or calibrated.
+Shared compression, separation, heat-recovery credit and capital cancel in the difference when chemistry and furnace factors are identical. They still change absolute costs. The Joule furnace multiplier varies furnace capital. Power electronics, electrode replacement and route-specific labor have no separate cost terms; operating conditions and steam-export assumptions are shared.
 
 The reference case burns surplus tail gas without a sale credit. At equal furnace factors its crossing is `electricity_price* = 0.0036 × gas_price × purchased_fired_gas / Joule_heater_input`, with both energy quantities in GJ/t. For the sell-surplus option at the purchased-gas price, this reduces to `0.0036 × gas_price × Joule_efficiency / fired_efficiency`. Regression tests check both identities against direct API evaluations.
 
-Held-out intervals include parameter variation only. They are not posterior predictive intervals with added observation/model-discrepancy noise. The dashboard displays failures as well as agreements. A successful software test never converts a failed literature comparison into a validation success.
+Comparison intervals contain propagated parameter variation. Observation noise and discrepancy noise are excluded from those intervals. Each table reports whether the published value falls within the calculated range.
 
 ## Reproduce
 
@@ -64,4 +64,4 @@ node uncertainty/check-results.mjs
 
 Python is used only to serve the repository. `CHROMIUM_EXECUTABLE_PATH` optionally selects an installed Chromium. The runner executes live-engine regressions and records SHA256 hashes of the engine, source data, GP artifact and analysis code in `results.json`. `node uncertainty/run.mjs --check-only` runs just the live-engine checks. The existing browser fuzz suite continues to cover heating-efficiency rejection and GP-domain boundaries.
 
-The approach is related to computer-model calibration: [Kennedy & O'Hagan (2001), DOI 10.1111/1467-9868.00294](https://doi.org/10.1111/1467-9868.00294). This implementation uses explicit discrete quadrature and assumed scalar discrepancy scales; it does not implement the full Kennedy–O'Hagan discrepancy GP.
+The approach is related to computer-model calibration: [Kennedy & O'Hagan (2001), DOI 10.1111/1467-9868.00294](https://doi.org/10.1111/1467-9868.00294). This implementation uses discrete quadrature and specified scalar discrepancy scales.

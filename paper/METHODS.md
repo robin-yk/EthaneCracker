@@ -169,7 +169,7 @@ The downstream model uses the same equations for both reactor descriptions.
 
 Compression uses a four-stage ideal-gas shortcut to 32 bar. The compressed cracked gas then passes through a screening acetylene converter before cryogenic separation. This placement represents a front-end hydrogenation arrangement within the reduced process flowsheet. EPA ethylene-process descriptions place selective acetylene hydrogenation upstream of the ethylene/ethane splitter and report polymer-grade acetylene specifications of roughly 5–10 ppm; the present screening model uses a 5 ppm product target, conservatively assigning all residual acetylene to recovered ethylene. Converter-outlet C2 ppm is reported separately.
 
-Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. The 90% value is a screening default consistent with reported high-selectivity Pd acetylene hydrogenation; it is not a plant-specific kinetic fit. Hydrogen is withdrawn from the mechanism-predicted H2 stream. The 640-point Cantera training design contains more H2 than this stoichiometric requirement at every point. The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
+Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. The 90% selectivity is a fixed input based on reported Pd acetylene hydrogenation. Hydrogen is withdrawn from the mechanism-predicted H2 stream. The 640-point Cantera training design contains more H2 than this stoichiometric requirement at every point. The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
 
 Process references for this block are the U.S. EPA *Industrial Process Profiles for Environmental Use: Chapter 5 — Basic Petrochemical Industry*, Olefins Production Process No. 8, and the palladium acetylene-hydrogenation study reporting ethylene selectivity around 90% (DOI: 10.1016/0304-5102(93)E0323-9).
 
@@ -201,7 +201,7 @@ These envelopes are screening inputs. Reactor-specific thermal histories require
 
 Surrogate holdout validation measures GP fidelity to Cantera.
 
-Experimental chemistry validation uses an external ethane-pyrolysis dataset. The selected reference is:
+The planned experimental comparison uses the following ethane-pyrolysis dataset:
 
 S. J. Cassady, R. Choudhary, N. H. Pinkowski, J. Shao, D. F. Davidson, R. K. Hanson, “The thermal decomposition of ethane,” *Fuel* **268** (2020) 117409. DOI: 10.1016/j.fuel.2020.117409.
 
