@@ -1,0 +1,5834 @@
+{
+  "schema": "ethane-inverse-calibration-v1",
+  "config": {
+    "seed": 20260923,
+    "draws": 512,
+    "gridPoints": 161,
+    "relativeDiscrepancy": [
+      0.05,
+      0.1,
+      0.2
+    ],
+    "priors": {
+      "firedEfficiency": [
+        45,
+        85
+      ],
+      "compressionFactor": [
+        0.5,
+        2
+      ]
+    },
+    "scenarios": {
+      "heatRecovery": [
+        0.5,
+        0.9
+      ],
+      "capitalFactor": [
+        0.7,
+        1.5
+      ],
+      "jouleEfficiency": [
+        90,
+        95,
+        98
+      ],
+      "jouleFurnaceFactor": [
+        0.7,
+        1,
+        1.3
+      ]
+    },
+    "reference": {
+      "kinetics": "gp",
+      "mode": "CH",
+      "eff": 60,
+      "cot": 850,
+      "tau": 0.35,
+      "dilution": 0.35,
+      "pressure": 1.5,
+      "ramp": 1,
+      "cap": 610,
+      "ethane": 200,
+      "elec": 0.07,
+      "gas": 4,
+      "grid": 0.36,
+      "ethaneUp": 0.5,
+      "lpg": 550,
+      "steam": 9.8,
+      "ccf": 0.1,
+      "labor": 5,
+      "tle": true,
+      "compressionFactor": 1,
+      "heatRecovery": 0.7,
+      "capitalFactor": 1,
+      "jouleFurnaceFactor": 1
+    }
+  },
+  "interpretation": "Conditional model calibration against published process simulations. Priors and discrepancy scales are analyst assumptions; intervals are not experimental confidence intervals.",
+  "data_roles": {
+    "conditioning": [
+      "Chen residual ethane",
+      "Shin fresh ethane demand"
+    ],
+    "calibration": [
+      "Chen compressor power",
+      "Shin total combustion energy"
+    ],
+    "held_out": "Other outputs from the same studies, not independent-study validation",
+    "excluded": [
+      "MSP versus screening cost: different financial boundaries",
+      "Equipment cost versus installed TOC: different capital boundaries",
+      "Wang: reactor-inlet and kinetic-model mismatch"
+    ]
+  },
+  "identifiability": {
+    "firedEfficiency": "effective heat-demand-to-combustion ratio conditional on reconstructed states",
+    "compressionFactor": "effective compressor-duty multiplier; not a measured isentropic efficiency",
+    "heatRecovery": "not updated by these observations",
+    "capitalFactor": "not updated by these observations",
+    "jouleFurnaceFactor": "scenario only; no Joule equipment cost observation"
+  },
+  "evidence": {
+    "chen_pressure_scenarios": [
+      1,
+      4.5
+    ],
+    "chen_tau_range": [
+      0.10131811302271951,
+      0.13188727262464636
+    ],
+    "shin_accepted_states": 43,
+    "shin_tau_range": [
+      0.6660769363018824,
+      1.5
+    ],
+    "compressor_kwh_per_t": 370.2770780856423,
+    "combustion_gj_per_t": 17.2
+  },
+  "analyses": [
+    {
+      "relative_discrepancy_sigma": 0.05,
+      "compression": {
+        "parameter_q025_q50_q975": [
+          1.1,
+          1.23125,
+          1.353125
+        ],
+        "fitted_prediction_q025_q50_q975": [
+          334.48538625775916,
+          371.19182432454363,
+          406.3661999234667
+        ],
+        "edge_mass": 2.4797524268005206e-32
+      },
+      "fired_efficiency": {
+        "parameter_q025_q50_q975": [
+          56.75,
+          62.75,
+          70.25
+        ],
+        "fitted_prediction_q025_q50_q975": [
+          15.42591455043257,
+          17.113015692950416,
+          18.809919598050318
+        ],
+        "edge_mass": 3.2882077036302156e-8
+      },
+      "heldout": [
+        {
+          "name": "Shin on-site GHG (kgCO2e/t)",
+          "observed": 442,
+          "prediction_q025_q50_q975": [
+            352.5415275588412,
+            432.5688493345994,
+            528.9502007229653
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Shin C3+ (kg/kg ethylene)",
+          "observed": 0.13764813923995278,
+          "prediction_q025_q50_q975": [
+            0.11139793876754779,
+            0.11844901924938378,
+            0.12697519239360927
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen dry C2H4 (mol/mol)",
+          "observed": 0.377,
+          "prediction_q025_q50_q975": [
+            0.37192065838659205,
+            0.3846920246247592,
+            0.3846920246247592
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Chen dry H2 (mol/mol)",
+          "observed": 0.407,
+          "prediction_q025_q50_q975": [
+            0.39865146456526074,
+            0.41173901292914505,
+            0.41173901292914505
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Chen dry CH4 (mol/mol)",
+          "observed": 0.033,
+          "prediction_q025_q50_q975": [
+            0.03558436560394205,
+            0.03558436560394205,
+            0.05639666695997221
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen fresh ethane (kg/kg ethylene)",
+          "observed": 1.1083123425692694,
+          "prediction_q025_q50_q975": [
+            1.1852100585800607,
+            1.1852100585800607,
+            1.2189256772847263
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen reactor duty: boundary differs (GJ/t)",
+          "observed": 5.248866498740553,
+          "prediction_q025_q50_q975": [
+            7.603469553668617,
+            7.603469553668617,
+            7.682577277249419
+          ],
+          "inside_parameter_interval": false
+        }
+      ],
+      "scenarios": [
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            667.0708604175022,
+            725.1795624874062,
+            786.0414898796407
+          ],
+          "delta_cost_q025_q50_q975": [
+            189.71686703424888,
+            199.46150371158444,
+            211.4681803934658
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.02089700900802588,
+            0.023682509356488905,
+            0.02594767214776621
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.998046875,
+              "monte_carlo_wilson95": [
+                0.9890207217875786,
+                0.9996551422384568
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.14453125,
+              "monte_carlo_wilson95": [
+                0.11671916196910034,
+                0.1776376723338863
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            676.2595565064598,
+            737.3417989876822,
+            803.4613997477484
+          ],
+          "delta_cost_q025_q50_q975": [
+            203.1133472490364,
+            212.16158585138908,
+            222.57491437654255
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.018318021201413428,
+            0.020735999999999994,
+            0.02283700440528634
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.748046875,
+              "monte_carlo_wilson95": [
+                0.708690155530044,
+                0.7837091963574323
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            684.7953832902477,
+            750.7038258897719,
+            820.4688658020863
+          ],
+          "delta_cost_q025_q50_q975": [
+            214.3279882586312,
+            224.9325918969314,
+            236.18802303341522
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.015157052253236672,
+            0.01774745009447549,
+            0.020232960546547156
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.982421875,
+              "monte_carlo_wilson95": [
+                0.9669335150663072,
+                0.9907250669510681
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.037109375,
+              "monte_carlo_wilson95": [
+                0.023883775518618283,
+                0.05722924497483138
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            651.2043463733007,
+            709.3130484432048,
+            770.1749758354393
+          ],
+          "delta_cost_q025_q50_q975": [
+            173.85035299004755,
+            183.59498966738306,
+            195.6016663492644
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.022057953952916202,
+            0.02499820432073829,
+            0.027389209489308772
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.5,
+              "monte_carlo_wilson95": [
+                0.45685206921855254,
+                0.5431479307814475
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            660.3930424622586,
+            721.4752849434808,
+            787.5948857035471
+          ],
+          "delta_cost_q025_q50_q975": [
+            187.24683320483507,
+            196.2950718071877,
+            206.70840033234128
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.019335689045936397,
+            0.02188799999999999,
+            0.024105726872246682
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.935546875,
+              "monte_carlo_wilson95": [
+                0.9108659024588607,
+                0.9537408335325349
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.001953125,
+              "monte_carlo_wilson95": [
+                0.0003448577615433879,
+                0.010979278212421435
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            668.9288692460465,
+            734.8373118455705,
+            804.6023517578849
+          ],
+          "delta_cost_q025_q50_q975": [
+            198.46147421442976,
+            209.06607785273002,
+            220.32150898921378
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01599911071174982,
+            0.018733419544168566,
+            0.02135701391024422
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.998046875,
+              "monte_carlo_wilson95": [
+                0.9890207217875786,
+                0.9996551422384568
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.1640625,
+              "monte_carlo_wilson95": [
+                0.1345083063408278,
+                0.19862013047298374
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            642.4615733285367,
+            700.5702753984408,
+            761.4322027906753
+          ],
+          "delta_cost_q025_q50_q975": [
+            165.10757994528342,
+            174.85221662261898,
+            186.85889330450033
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.022754520919850404,
+            0.025787621299287924,
+            0.028254131894234313
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.72265625,
+              "monte_carlo_wilson95": [
+                0.6823289804919743,
+                0.7596672881314297
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            651.6502694174944,
+            712.7325118987168,
+            778.852112658783
+          ],
+          "delta_cost_q025_q50_q975": [
+            178.50406016007094,
+            187.55229876242362,
+            197.96562728757715
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01994628975265018,
+            0.022579199999999994,
+            0.024866960352422897
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.974609375,
+              "monte_carlo_wilson95": [
+                0.957047339266801,
+                0.9851026017462444
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.005859375,
+              "monte_carlo_wilson95": [
+                0.001994675792186148,
+                0.01708378068394366
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            463.2209185839351,
+            525.7493282274094,
+            592.6920291888802
+          ],
+          "joule_cost_q025_q50_q975": [
+            660.1860962012823,
+            726.0945388008065,
+            795.8595787131208
+          ],
+          "delta_cost_q025_q50_q975": [
+            189.71870116966568,
+            200.32330480796594,
+            211.5787359444497
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01650434578685771,
+            0.01932500121398442,
+            0.022031445928462463
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.306640625,
+              "monte_carlo_wilson95": [
+                0.2682635992076081,
+                0.3478975359352253
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "relative_discrepancy_sigma": 0.1,
+      "compression": {
+        "parameter_q025_q50_q975": [
+          0.9875,
+          1.23125,
+          1.475
+        ],
+        "fitted_prediction_q025_q50_q975": [
+          297.10736315159124,
+          371.19182432454363,
+          443.57423006782966
+        ],
+        "edge_mass": 4.862690421802889e-10
+      },
+      "fired_efficiency": {
+        "parameter_q025_q50_q975": [
+          52.75,
+          63.75,
+          79
+        ],
+        "fitted_prediction_q025_q50_q975": [
+          13.652236340689814,
+          16.869516007915,
+          20.254083750875733
+        ],
+        "edge_mass": 0.0002555274222362852
+      },
+      "heldout": [
+        {
+          "name": "Shin on-site GHG (kgCO2e/t)",
+          "observed": 442,
+          "prediction_q025_q50_q975": [
+            337.13590189493516,
+            418.7234010142107,
+            609.7496099588981
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Shin C3+ (kg/kg ethylene)",
+          "observed": 0.13764813923995278,
+          "prediction_q025_q50_q975": [
+            0.11139793876754779,
+            0.11844901924938378,
+            0.12697519239360927
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen dry C2H4 (mol/mol)",
+          "observed": 0.377,
+          "prediction_q025_q50_q975": [
+            0.37192065838659205,
+            0.3846920246247592,
+            0.3846920246247592
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Chen dry H2 (mol/mol)",
+          "observed": 0.407,
+          "prediction_q025_q50_q975": [
+            0.39865146456526074,
+            0.41173901292914505,
+            0.41173901292914505
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Chen dry CH4 (mol/mol)",
+          "observed": 0.033,
+          "prediction_q025_q50_q975": [
+            0.03558436560394205,
+            0.03558436560394205,
+            0.05639666695997221
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen fresh ethane (kg/kg ethylene)",
+          "observed": 1.1083123425692694,
+          "prediction_q025_q50_q975": [
+            1.1852100585800607,
+            1.1852100585800607,
+            1.2189256772847263
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen reactor duty: boundary differs (GJ/t)",
+          "observed": 5.248866498740553,
+          "prediction_q025_q50_q975": [
+            7.603469553668617,
+            7.603469553668617,
+            7.682577277249419
+          ],
+          "inside_parameter_interval": false
+        }
+      ],
+      "scenarios": [
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            664.3716617806003,
+            724.8239106784112,
+            786.349818427506
+          ],
+          "delta_cost_q025_q50_q975": [
+            183.88115503292954,
+            200.16062136466968,
+            220.58125347228764
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.018780950012927938,
+            0.023518307401686825,
+            0.027302726668495383
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.943359375,
+              "monte_carlo_wilson95": [
+                0.9198386034432552,
+                0.9602767735524703
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.240234375,
+              "monte_carlo_wilson95": [
+                0.20525031502031144,
+                0.2790873715857173
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            673.8794870378983,
+            738.014722487129,
+            803.2185001477578
+          ],
+          "delta_cost_q025_q50_q975": [
+            196.64900042147258,
+            212.87033331955135,
+            231.47773158243047
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01625078369905956,
+            0.020490118577075108,
+            0.024338028169014092
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.5859375,
+              "monte_carlo_wilson95": [
+                0.5427868716650044,
+                0.6278081793826251
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.00390625,
+              "monte_carlo_wilson95": [
+                0.0010718890803937042,
+                0.014129407144653612
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            682.801513261189,
+            750.2934815491938,
+            819.2415935558322
+          ],
+          "delta_cost_q025_q50_q975": [
+            207.97102522464212,
+            225.984602904533,
+            244.10496213960153
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.013318736016289084,
+            0.017506038844783616,
+            0.021709049753034306
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.87890625,
+              "monte_carlo_wilson95": [
+                0.8477906572251386,
+                0.9043784314848646
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.12109375,
+              "monte_carlo_wilson95": [
+                0.09562156851513533,
+                0.15220934277486142
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            648.5051477363991,
+            708.9573966342099,
+            770.4833043833046
+          ],
+          "delta_cost_q025_q50_q975": [
+            168.01464098872816,
+            184.29410732046836,
+            204.7147394280862
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.019824336124757272,
+            0.02482488003511386,
+            0.028819544816745125
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.96875,
+              "monte_carlo_wilson95": [
+                0.949843944586105,
+                0.9806745156736928
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.470703125,
+              "monte_carlo_wilson95": [
+                0.42784694681943425,
+                0.5139956494143284
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0.00390625,
+              "monte_carlo_wilson95": [
+                0.0010718890803937042,
+                0.014129407144653612
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            658.0129729936971,
+            722.1482084429276,
+            787.3519861035563
+          ],
+          "delta_cost_q025_q50_q975": [
+            180.7824863772712,
+            197.00381927535,
+            215.6112175382292
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.017153605015673975,
+            0.021628458498023723,
+            0.02569014084507043
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.787109375,
+              "monte_carlo_wilson95": [
+                0.7495813388571557,
+                0.8203612180519704
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.0546875,
+              "monte_carlo_wilson95": [
+                0.03810443399268623,
+                0.07790302876050585
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            666.9349992169876,
+            734.4269675049923,
+            803.3750795116309
+          ],
+          "delta_cost_q025_q50_q975": [
+            192.10451118044068,
+            210.11808886033168,
+            228.23844809540026
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.014058665794971805,
+            0.018478596558382694,
+            0.022915108072647322
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.923828125,
+              "monte_carlo_wilson95": [
+                0.8975633728664404,
+                0.9437804016184602
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.25390625,
+              "monte_carlo_wilson95": [
+                0.21813441226903335,
+                0.2933433960945728
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.001953125,
+              "monte_carlo_wilson95": [
+                0.0003448577615433879,
+                0.010979278212421435
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            639.7623746916349,
+            700.2146235894456,
+            761.7405313385404
+          ],
+          "delta_cost_q025_q50_q975": [
+            159.27186794396408,
+            175.55133427570422,
+            195.97196638332213
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.02045036779185487,
+            0.02560882361517009,
+            0.029729635705694975
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.994140625,
+              "monte_carlo_wilson95": [
+                0.9829162193160564,
+                0.9980053242078138
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.580078125,
+              "monte_carlo_wilson95": [
+                0.536886647224361,
+                0.6220769230700212
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0.013671875,
+              "monte_carlo_wilson95": [
+                0.00663809699225049,
+                0.027949000488209277
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            649.2701999489329,
+            713.4054353981636,
+            778.6092130587923
+          ],
+          "delta_cost_q025_q50_q975": [
+            172.03971333250712,
+            188.26104623058586,
+            206.86844449346506
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01769529780564263,
+            0.022311462450592894,
+            0.026501408450704235
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.87890625,
+              "monte_carlo_wilson95": [
+                0.8477906572251386,
+                0.9043784314848646
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.111328125,
+              "monte_carlo_wilson95": [
+                0.08692533695448657,
+                0.14151977308009775
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            455.3511254289624,
+            526.3963600873251,
+            593.2780406369336
+          ],
+          "joule_cost_q025_q50_q975": [
+            658.1922261722235,
+            725.6841944602281,
+            794.6323064668668
+          ],
+          "delta_cost_q025_q50_q975": [
+            183.3617381356766,
+            201.37531581556755,
+            219.49567505063612
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.014502623662181443,
+            0.019062131186542153,
+            0.023638743064415137
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.94921875,
+              "monte_carlo_wilson95": [
+                0.9266340388165454,
+                0.9651128189324275
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.34765625,
+              "monte_carlo_wilson95": [
+                0.3076787445961294,
+                0.38990275581943623
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.001953125,
+              "monte_carlo_wilson95": [
+                0.0003448577615433879,
+                0.010979278212421435
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "relative_discrepancy_sigma": 0.2,
+      "compression": {
+        "parameter_q025_q50_q975": [
+          0.753125,
+          1.23125,
+          1.709375
+        ],
+        "fitted_prediction_q025_q50_q975": [
+          226.42701283797163,
+          371.19182432454363,
+          513.1726971286815
+        ],
+        "edge_mass": 0.00015280644070107864
+      },
+      "fired_efficiency": {
+        "parameter_q025_q50_q975": [
+          48,
+          65,
+          83.5
+        ],
+        "fitted_prediction_q025_q50_q975": [
+          12.871966123518789,
+          16.53608403354205,
+          22.33678628776933
+        ],
+        "edge_mass": 0.002540949810116462
+      },
+      "heldout": [
+        {
+          "name": "Shin on-site GHG (kgCO2e/t)",
+          "observed": 442,
+          "prediction_q025_q50_q975": [
+            331.06137288597307,
+            400.3058484427957,
+            726.2631001231164
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Shin C3+ (kg/kg ethylene)",
+          "observed": 0.13764813923995278,
+          "prediction_q025_q50_q975": [
+            0.11139793876754779,
+            0.11844901924938378,
+            0.12697519239360927
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen dry C2H4 (mol/mol)",
+          "observed": 0.377,
+          "prediction_q025_q50_q975": [
+            0.37192065838659205,
+            0.3846920246247592,
+            0.3846920246247592
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Chen dry H2 (mol/mol)",
+          "observed": 0.407,
+          "prediction_q025_q50_q975": [
+            0.39865146456526074,
+            0.41173901292914505,
+            0.41173901292914505
+          ],
+          "inside_parameter_interval": true
+        },
+        {
+          "name": "Chen dry CH4 (mol/mol)",
+          "observed": 0.033,
+          "prediction_q025_q50_q975": [
+            0.03558436560394205,
+            0.03558436560394205,
+            0.05639666695997221
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen fresh ethane (kg/kg ethylene)",
+          "observed": 1.1083123425692694,
+          "prediction_q025_q50_q975": [
+            1.1852100585800607,
+            1.1852100585800607,
+            1.2189256772847263
+          ],
+          "inside_parameter_interval": false
+        },
+        {
+          "name": "Chen reactor duty: boundary differs (GJ/t)",
+          "observed": 5.248866498740553,
+          "prediction_q025_q50_q975": [
+            7.603469553668617,
+            7.603469553668617,
+            7.682577277249419
+          ],
+          "inside_parameter_interval": false
+        }
+      ],
+      "scenarios": [
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            657.4634584641612,
+            725.1088052957566,
+            794.1135772372461
+          ],
+          "delta_cost_q025_q50_q975": [
+            173.97477384335576,
+            201.11824466288346,
+            223.70516372141674
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01805557687859958,
+            0.023267803052782764,
+            0.029602992105165926
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.859375,
+              "monte_carlo_wilson95": [
+                0.8265802029933285,
+                0.8868172832058498
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.318359375,
+              "monte_carlo_wilson95": [
+                0.27948925344749265,
+                0.35993484320183566
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0.009765625,
+              "monte_carlo_wilson95": [
+                0.004178301706740387,
+                0.0226544752715544
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            666.802325143685,
+            737.6528304589565,
+            810.5955798531762
+          ],
+          "delta_cost_q025_q50_q975": [
+            186.38363670008732,
+            214.25460571830553,
+            234.82034819173896
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.015474626865671642,
+            0.020250000000000004,
+            0.026721649484536095
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.53125,
+              "monte_carlo_wilson95": [
+                0.4879530781828059,
+                0.5740814858345139
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.087890625,
+              "monte_carlo_wilson95": [
+                0.06633416349299796,
+                0.11558502352859647
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 90,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            675.9568914923257,
+            750.2229369212212,
+            826.7603121862173
+          ],
+          "delta_cost_q025_q50_q975": [
+            197.80602738867083,
+            227.7489349011518,
+            248.3885546024964
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.012324084235924519,
+            0.017110280813889787,
+            0.024069366072229134
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.7890625,
+              "monte_carlo_wilson95": [
+                0.7516376331702349,
+                0.8221820839899737
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.22265625,
+              "monte_carlo_wilson95": [
+                0.18876064847541066,
+                0.2606825958708756
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.00390625,
+              "monte_carlo_wilson95": [
+                0.0010718890803937042,
+                0.014129407144653612
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            641.59694441996,
+            709.2422912515552,
+            778.2470631930446
+          ],
+          "delta_cost_q025_q50_q975": [
+            158.10825979915438,
+            185.25173061868207,
+            207.83864967721547
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01905866448296621,
+            0.024560458777937357,
+            0.03124760277767514
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.935546875,
+              "monte_carlo_wilson95": [
+                0.9108659024588607,
+                0.9537408335325349
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.443359375,
+              "monte_carlo_wilson95": [
+                0.40090891546148705,
+                0.4866534372571207
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0.068359375,
+              "monte_carlo_wilson95": [
+                0.049560084346737546,
+                0.09358750016403199
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            650.9358110994835,
+            721.786316414755,
+            794.7290658089748
+          ],
+          "delta_cost_q025_q50_q975": [
+            170.51712265588594,
+            198.3880916741042,
+            218.9538341475377
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.016334328358208947,
+            0.021374999999999995,
+            0.028206185567010315
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.640625,
+              "monte_carlo_wilson95": [
+                0.5981582836545346,
+                0.6809972544234048
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.150390625,
+              "monte_carlo_wilson95": [
+                0.12203768918306243,
+                0.1839506258731717
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0.001953125,
+              "monte_carlo_wilson95": [
+                0.0003448577615433879,
+                0.010979278212421435
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 95,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            660.0903774481243,
+            734.3564228770199,
+            810.8937981420161
+          ],
+          "delta_cost_q025_q50_q975": [
+            181.93951334446945,
+            211.8824208569505,
+            232.5220405582951
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.013008755582364766,
+            0.018060851970216996,
+            0.02540655307624186
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.8515625,
+              "monte_carlo_wilson95": [
+                0.8181518841641706,
+                0.8797369610306778
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.328125,
+              "monte_carlo_wilson95": [
+                0.2888661900437334,
+                0.3699437078610074
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.033203125,
+              "monte_carlo_wilson95": [
+                0.02083204403601061,
+                0.052526655955274074
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 0.7,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            632.8541713751958,
+            700.4995182067912,
+            769.5042901482805
+          ],
+          "delta_cost_q025_q50_q975": [
+            149.3654867543903,
+            176.508957573918,
+            199.09587663245134
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.0196605170455862,
+            0.025336052213030123,
+            0.03223436918118067
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.962890625,
+              "monte_carlo_wilson95": [
+                0.9427707550251686,
+                0.9761162244813818
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.529296875,
+              "monte_carlo_wilson95": [
+                0.4860043505856716,
+                0.5721530531805658
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0.109375,
+              "monte_carlo_wilson95": [
+                0.08519361224096271,
+                0.13937433754253914
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 1,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            642.1930380547195,
+            713.043543369991,
+            785.9862927642107
+          ],
+          "delta_cost_q025_q50_q975": [
+            161.77434961112186,
+            189.64531862934007,
+            210.21106110277356
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01685014925373134,
+            0.022049999999999997,
+            0.02909690721649486
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.71875,
+              "monte_carlo_wilson95": [
+                0.6782873773691943,
+                0.7559545707520446
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.232421875,
+              "monte_carlo_wilson95": [
+                0.19791074746675325,
+                0.2709182981349455
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0.00390625,
+              "monte_carlo_wilson95": [
+                0.0010718890803937042,
+                0.014129407144653612
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        },
+        {
+          "joule_efficiency_percent": 98,
+          "joule_furnace_factor": 1.3,
+          "fired_cost_q025_q50_q975": [
+            446.0153746960039,
+            526.857549342136,
+            603.0043412807406
+          ],
+          "joule_cost_q025_q50_q975": [
+            651.3476044033603,
+            725.6136498322558,
+            802.1510250972519
+          ],
+          "delta_cost_q025_q50_q975": [
+            173.19674029970537,
+            203.13964781218635,
+            223.77926751353095
+          ],
+          "breakeven_electricity_q025_q50_q975": [
+            0.01341955839022892,
+            0.018631194664013324,
+            0.0262088652786495
+          ],
+          "conditional_joule_cheaper_fraction": 0,
+          "monte_carlo_standard_error": 0,
+          "monte_carlo_wilson95": [
+            0,
+            0.007446975722882332
+          ],
+          "electricity_sweep": [
+            {
+              "usd_per_kwh": 0,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.005,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.01,
+              "conditional_fraction": 1,
+              "monte_carlo_wilson95": [
+                0.9925530242771178,
+                1
+              ]
+            },
+            {
+              "usd_per_kwh": 0.015,
+              "conditional_fraction": 0.880859375,
+              "monte_carlo_wilson95": [
+                0.8499237357408241,
+                0.9061225132202616
+              ]
+            },
+            {
+              "usd_per_kwh": 0.02,
+              "conditional_fraction": 0.369140625,
+              "monte_carlo_wilson95": [
+                0.3284597565372906,
+                0.4117705066401825
+              ]
+            },
+            {
+              "usd_per_kwh": 0.025,
+              "conditional_fraction": 0.05859375,
+              "monte_carlo_wilson95": [
+                0.041348371769937636,
+                0.08241341148541943
+              ]
+            },
+            {
+              "usd_per_kwh": 0.03,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.035,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.04,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.045,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.05,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.055,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.06,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.065,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.07,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.075,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.08,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.085,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.09,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.095,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            },
+            {
+              "usd_per_kwh": 0.1,
+              "conditional_fraction": 0,
+              "monte_carlo_wilson95": [
+                0,
+                0.007446975722882332
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "source_commit": "520db6c8e360532517063957060fd6d4aed0b3c3",
+    "source_sha256": {
+      "engine.html": "beb91980226a9d0594eeb1d488e018e48ec1d9a478b408f907c97489fa67fe94",
+      "benchmarks/literature.json": "6b315f21549287856f87a98a9f1a3b09fd14efe274a4785dada036483c840193",
+      "multiscale/surrogate.json": "9c614f09e87b85224c7ad4fd2501c84635ad949facde2e8e32da060298fa10c7",
+      "uncertainty/analysis.mjs": "4f2ab05f3c94ec68b37d56d0a0ca3baba4f3c84665bac0ffae81d6ed5826682e"
+    },
+    "source_audit": "See uncertainty/README.md. Source values are process-simulation outputs; likelihood discrepancy is analyst-selected."
+  },
+  "regressions": {
+    "checks": 36,
+    "passed": true
+  }
+}
