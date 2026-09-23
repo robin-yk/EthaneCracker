@@ -338,7 +338,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
     <div class="modelcard"><h3>Chemistry</h3><dl id="chemMeta"></dl></div>
     <div class="modelcard"><h3>Surrogate validation</h3><dl id="gpMeta"></dl></div>
     <div class="modelcard"><h3>Process layer</h3><dl><dt>Compression</dt><dd>4-stage shortcut</dd><dt>AC-201</dt><dd>5 ppm C₂H₂ · 90% C₂H₄ selectivity</dd><dt>Cold box</dt><dd>Carnot-screening duty</dd><dt>C₂ splitter</dt><dd>FUG shortcut</dd><dt>TLE</dt><dd>heat-recovery credit</dd><dt>Capital</dt><dd>AACE Class 5</dd></dl></div>
-    <div class="modelcard"><h3>Current reactor scope</h3><dl><dt>Tout</dt><dd>750–1000 °C</dd><dt>τ</dt><dd>0.02–1.5 s</dd><dt>Steam/HC</dt><dd>0–0.70 kg/kg</dd><dt>Pressure</dt><dd>1–5 bar</dd><dt>Heating exponent</dt><dd>0.45–4</dd><dt>Tin</dt><dd>650 °C</dd></dl></div>
+    <div class="modelcard"><h3>Declared GP domain</h3><dl><dt>Tout</dt><dd>750–1000 °C</dd><dt>τ (GP domain)</dt><dd id="gpTauScope">Loading…</dd><dt>τ (selectable)</dt><dd>0.02–1.5 s</dd><dt>Steam/HC</dt><dd>0–0.70 kg/kg</dd><dt>Pressure</dt><dd>1–5 bar</dd><dt>Heating exponent</dt><dd>0.45–4</dd><dt>Tin</dt><dd>650 °C</dd></dl></div>
   </div>
 </section>
 
@@ -608,14 +608,30 @@ function benchmarkSummary(){
   }));
   $("benchTable").innerHTML=tr.join("");
 }
+function gpMetadata(){
+  try{return api&&typeof api.metadata==="function"?api.metadata():{}}catch(_){return {}}
+}
 function modelMeta(){
-  const e=frame.contentWindow;
-  let gp=null,val=null;
-  try{gp=e.eval("app.gp");val=e.eval("app.gpValidation")}catch(_){}
-  const prov=gp&&gp.source&&gp.source.mechanism_provenance||{};
-  $("chemMeta").innerHTML=[["Mechanism",prov.mechanism_name||"AramcoMech 3.0"],["Cantera",gp&&gp.source&&gp.source.cantera_version||"3.2"],["Species",gp&&gp.source&&gp.source.mechanism_species||"—"],["Reactions",gp&&gp.source&&gp.source.mechanism_reactions||"—"],["Training points",gp&&gp.training_points||256]].map(([a,b])=>'<dt>'+a+'</dt><dd>'+b+'</dd>').join("");
-  const out=val&&val.outputs||{};
-  $("gpMeta").innerHTML=[["Holdout points",val&&val.validation_points||64],["Conversion R²",out.x_c2h6?fmt(out.x_c2h6.r2,4):"0.9991"],["Selectivity R²",out.s_c2h4_mol?fmt(out.s_c2h4_mol.r2,4):"0.9872"],["C₂H₄ yield R²",out.y_c2h4_kg_per_kg_ethane?fmt(out.y_c2h4_kg_per_kg_ethane.r2,4):"0.9979"],["Enthalpy R²",out.heat_MJ_per_kg_ethane?fmt(out.heat_MJ_per_kg_ethane.r2,4):"0.9980"]].map(([a,b])=>'<dt>'+a+'</dt><dd>'+b+'</dd>').join("");
+  const m=gpMetadata(),src=m.source||{},prov=src.mechanism_provenance||{};
+  const tauDomain=src.input_ranges&&src.input_ranges.residence_time_s;
+  $("gpTauScope").textContent=tauDomain?tauDomain.map(x=>fmt(x,2)).join("–")+" s":"Unavailable";
+  $("chemMeta").innerHTML=[
+    ["Mechanism",prov.mechanism_name||"AramcoMech 3.0"],
+    ["Cantera",src.cantera_version||"—"],
+    ["Species",src.mechanism_species||"—"],
+    ["Reactions",src.mechanism_reactions||"—"],
+    ["Training points",m.training_points||"—"],
+    ["Design",src.sampling_design||"Latin hypercube"]
+  ].map(([a,b])=>'<dt>'+a+'</dt><dd>'+b+'</dd>').join("");
+  const val=m.validation||{},out=val.outputs||{};
+  $("gpMeta").innerHTML=[
+    ["Holdout points",m.validation_points||"—"],
+    ["Conversion R²",out.x_c2h6?fmt(out.x_c2h6.r2,4):"—"],
+    ["Selectivity R²",out.s_c2h4_mol?fmt(out.s_c2h4_mol.r2,4):"—"],
+    ["C₂H₄ yield R²",out.y_c2h4_kg_per_kg_ethane?fmt(out.y_c2h4_kg_per_kg_ethane.r2,4):"—"],
+    ["C₂H₂ yield R²",out.y_c2h2_kg_per_kg_ethane?fmt(out.y_c2h2_kg_per_kg_ethane.r2,4):"—"],
+    ["Enthalpy R²",out.heat_MJ_per_kg_ethane?fmt(out.heat_MJ_per_kg_ethane.r2,4):"—"]
+  ].map(([a,b])=>'<dt>'+a+'</dt><dd>'+b+'</dd>').join("");
 }
 function download(name,text,type){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);
@@ -684,7 +700,7 @@ const blockInputs={
   product:()=>[["Product","polymer-grade ethylene"],["Basis","1.000 kg"]]
 };
 const blockSetup={
-  reactor:()=>[["Chemistry","AramcoMech 3.0"],["Solver","Cantera offline → GP browser surrogate"],["GP training","256 points"],["Holdout","64 points"],["Reactor model","prescribed-temperature Lagrangian PFR"]],
+  reactor:()=>{const m=gpMetadata();return [["Chemistry","AramcoMech 3.0"],["Solver","Cantera offline → GP browser surrogate"],["GP training",(m.training_points||"—")+" points"],["Holdout",(m.validation_points||"—")+" points"],["Reactor model","prescribed-temperature Lagrangian PFR"]]},
   compressor:()=>[["Thermodynamics","ideal-gas shortcut"],["Gamma","1.32"],["Efficiency","75%"],["Pressure ratio","distributed over 4 stages"]],
   converter:()=>[["Configuration","front-end screening block"],["Selectivity","90% to ethylene"],["Residual target","5 ppm"],["Capital","included in recovery-section anchor"],["Cooling / green oil","not separately costed in v1"]],
   coldbox:()=>[["Model","Carnot-based refrigeration screening"],["Second-law efficiency","35%"],["Recovery","99.5%"]],
@@ -881,7 +897,9 @@ async function init(){
     window.ethaneModel=api;
     document.body.dataset.appStatus="ready";
     document.body.dataset.kinetics="aramco-gp";
-    $("live").textContent="Aramco GP ready · 256 train / 64 holdout";$("live").className="live good";
+    const meta=gpMetadata();
+    $("live").textContent="Aramco GP ready · "+(meta.training_points||"—")+" train / "+(meta.validation_points||"—")+" holdout";
+    $("live").className="live good";
     render();benchmarkSummary();modelMeta();
     if(UI_AUDIT)await runUIAudit();
   }catch(e){

@@ -86,12 +86,16 @@ def main():
     ap.add_argument("--max-nrmse",type=float,default=0.08)
     ap.add_argument("--min-r2",type=float,default=0.90)
     ap.add_argument("--min-coverage",type=float,default=0.80)
+    ap.add_argument("--min-residence-time",type=float,default=None,
+                    help="Validate only holdout rows strictly above this residence time (s)")
     args=ap.parse_args()
 
     model=json.loads(Path(args.model).read_text())
     if model["schema"]!="ethane-cantera-shared-rbf-gp-v3":
         raise SystemExit("validation expects GP schema v3")
     rows=load_rows(Path(args.data))
+    if args.min_residence_time is not None:
+        rows=[r for r in rows if float(r["residence_time_s"])>args.min_residence_time]
     if not rows: raise SystemExit("validation dataset is empty")
     outputs=model["outputs"]
     truth=np.array([[float(r[k]) for k in outputs] for r in rows],float)

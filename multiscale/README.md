@@ -38,7 +38,7 @@ The browser evaluates the stored surrogate. Cantera runs when the design space i
 | input | range |
 |---|---:|
 | outlet temperature | 750–1000 °C |
-| residence time | 0.02–1.0 s |
+| residence time | 0.02–1.5 s |
 | steam / hydrocarbon | 0–0.70 kg/kg |
 | pressure | 1–5 bar |
 | heating-ramp exponent | 0.45–4 |
@@ -57,7 +57,7 @@ The root TEA scales the species yields from kg per kg coil ethane to kg per kg e
 
 ## Publication build
 
-The current release configuration uses 256 training points, 64 independent holdout points, and 20 reactor segments.
+The current release configuration uses 640 training points (512 broad + 128 high-severity points), 128 independent holdout points, and 20 reactor segments.
 
 Holdout metrics are stored in `validation.json`. Raw training and holdout datasets remain in `multiscale/data/`. The workflow regenerates all files from the official AramcoMech source distribution.
 
@@ -72,3 +72,5 @@ python multiscale/prepare_aramco.py --force-download
 ```
 
 Use `.github/workflows/cantera-gp.yml` as the exact reference for sweep, training, validation, and release commands.
+
+Stored release hashes and both holdout checks run in PR regression CI. Main-site edits reuse this checked-in release. Generate a new production release explicitly with the Cantera workflow’s publication profile; development generation branches retain their push triggers.

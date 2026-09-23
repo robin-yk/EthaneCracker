@@ -124,6 +124,38 @@ async function waitApi(){
     if(maxTau<1.49)fail("tau-slider","max slider reaches only "+maxTau+" s while model/industrial envelope uses 1.5 s");
   }
 
+  // The expanded Cantera training and holdout domain covers the full slider range.
+  const gp=await (await fetch('../multiscale/surrogate.json')).json();
+  const tauIndex=gp.inputs.indexOf('log10_residence_time_s');
+  const tauMax=10**gp.domain_max[tauIndex];
+  check("gp-domain",approx(tauMax,1.5),"declared GP upper limit changed; review scope regression");
+  for(const tau of [1,1.25,1.5,1.500001,2]){
+    const r=api.evaluate({...base,tau});
+    const extrapolated=r.flags.some(x=>/Aramco GP extrapolation:.*log10_residence_time_s/.test(x));
+    check("gp-tau-"+tau,extrapolated===(tau>tauMax),"incorrect residence-time extrapolation flag");
+  }
+  check("gp-scope-label",d.getElementById("gpTauScope")?.textContent==="0.02–1.5 s",
+    "GP residence-time domain is missing or overstated");
+  check("tau-ui-warning",!/Aramco GP extrapolation:.*log10_residence_time_s/.test(d.getElementById("qual").textContent),
+    "slider at 1.5 s incorrectly displays a GP extrapolation warning");
+
+  // Both the shell passthrough and direct engine API must reject invalid efficiencies.
+  const engineApi=d.getElementById("engineFrame").contentWindow.ethaneModel;
+  for(const [apiName,target] of [["shell",api],["engine",engineApi]]){
+    for(const mode of ["CH","JH"]){
+      for(const eff of [0,-1,100.01,NaN,Infinity,-Infinity,undefined,null,"invalid"]){
+        let error=null;
+        try{target.evaluate({...base,mode,eff})}catch(e){error=e}
+        check(apiName+"-eff-"+mode+"-"+String(eff),error?.name==="RangeError"&&/eff/.test(error.message),
+          "invalid efficiency must raise an efficiency RangeError");
+      }
+      for(const eff of [0.01,60,95,100]){
+        const p={...base,mode,eff};
+        validate(apiName+"-valid-eff-"+mode+"-"+eff,p,target.evaluate(p));
+      }
+    }
+  }
+
   // Bad URL inputs should be sanitized by the shell before evaluation.
   const bad=document.createElement("iframe");
   bad.src="../?model=aramco&heat=fired&T=99999&tau=0&steam=-1&P=0&n=0&cap=0&ethane=-200&elec=-1&gas=-4&grid=-2&case=Chaos";

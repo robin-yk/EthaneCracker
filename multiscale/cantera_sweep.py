@@ -36,8 +36,19 @@ import numpy as np
 
 INPUT_RANGES = {
     "temperature_c": (750.0, 1000.0),
-    "residence_time_s": (0.02, 1.00),  # sampled log-uniform
+    "residence_time_s": (0.02, 1.50),  # sampled log-uniform
     "steam_hc_kgkg": (0.0, 0.70),
+    "pressure_bar": (1.0, 5.0),
+    "ramp_exponent": (0.45, 4.0),
+}
+
+TARGETED_RANGES = {
+    # Secondary chemistry becomes most important at high severity. These points
+    # deliberately densify the hot / long-residence / lower-dilution region
+    # without replacing the broad five-dimensional design.
+    "temperature_c": (900.0, 1000.0),
+    "residence_time_s": (0.20, 1.50),  # sampled log-uniform
+    "steam_hc_kgkg": (0.0, 0.40),
     "pressure_bar": (1.0, 5.0),
     "ramp_exponent": (0.45, 4.0),
 }
@@ -63,24 +74,27 @@ def latin_hypercube(n: int, d: int, rng: np.random.Generator) -> np.ndarray:
     return x
 
 
-def scale_samples(unit: np.ndarray) -> list[dict[str, float]]:
+def scale_samples(
+    unit: np.ndarray,
+    ranges: dict[str, tuple[float, float]] = INPUT_RANGES,
+) -> list[dict[str, float]]:
     rows: list[dict[str, float]] = []
     for u in unit:
-        t = INPUT_RANGES["temperature_c"][0] + u[0] * (
-            INPUT_RANGES["temperature_c"][1] - INPUT_RANGES["temperature_c"][0]
+        t = ranges["temperature_c"][0] + u[0] * (
+            ranges["temperature_c"][1] - ranges["temperature_c"][0]
         )
-        log_tau = math.log10(INPUT_RANGES["residence_time_s"][0]) + u[1] * (
-            math.log10(INPUT_RANGES["residence_time_s"][1])
-            - math.log10(INPUT_RANGES["residence_time_s"][0])
+        log_tau = math.log10(ranges["residence_time_s"][0]) + u[1] * (
+            math.log10(ranges["residence_time_s"][1])
+            - math.log10(ranges["residence_time_s"][0])
         )
-        steam = INPUT_RANGES["steam_hc_kgkg"][0] + u[2] * (
-            INPUT_RANGES["steam_hc_kgkg"][1] - INPUT_RANGES["steam_hc_kgkg"][0]
+        steam = ranges["steam_hc_kgkg"][0] + u[2] * (
+            ranges["steam_hc_kgkg"][1] - ranges["steam_hc_kgkg"][0]
         )
-        p = INPUT_RANGES["pressure_bar"][0] + u[3] * (
-            INPUT_RANGES["pressure_bar"][1] - INPUT_RANGES["pressure_bar"][0]
+        p = ranges["pressure_bar"][0] + u[3] * (
+            ranges["pressure_bar"][1] - ranges["pressure_bar"][0]
         )
-        ramp = INPUT_RANGES["ramp_exponent"][0] + u[4] * (
-            INPUT_RANGES["ramp_exponent"][1] - INPUT_RANGES["ramp_exponent"][0]
+        ramp = ranges["ramp_exponent"][0] + u[4] * (
+            ranges["ramp_exponent"][1] - ranges["ramp_exponent"][0]
         )
         rows.append(
             dict(
@@ -257,7 +271,14 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mechanism", default="gri30.yaml")
     ap.add_argument("--phase", default="gri30")
-    ap.add_argument("--points", type=int, default=256)
+    ap.add_argument(
+        "--points", type=int, default=256,
+        help="broad Latin-hypercube points spanning the full design domain",
+    )
+    ap.add_argument(
+        "--targeted-points", type=int, default=0,
+        help="additional high-severity Latin-hypercube points",
+    )
     ap.add_argument("--segments", type=int, default=40)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--inlet-temperature-c", type=float, default=650.0)
@@ -270,7 +291,17 @@ def main() -> None:
 
     gas = ct.Solution(args.mechanism, args.phase)
     rng = np.random.default_rng(args.seed)
-    cases = scale_samples(latin_hypercube(args.points, 5, rng))
+    broad_cases = scale_samples(latin_hypercube(args.points, 5, rng), INPUT_RANGES)
+    targeted_cases = []
+    if args.targeted_points:
+        # Separate deterministic stream: changing the targeted count never moves
+        # the broad LHS points.
+        trng = np.random.default_rng(args.seed + 100003)
+        targeted_cases = scale_samples(
+            latin_hypercube(args.targeted_points, 5, trng), TARGETED_RANGES
+        )
+    cases = broad_cases + targeted_cases
+    total_points = len(cases)
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -278,7 +309,11 @@ def main() -> None:
     rows = []
     failures = []
     workers = args.workers if args.workers > 0 else min(4, os.cpu_count() or 1)
-    print(f"running {args.points} cases with {workers} worker(s)")
+    print(
+        f"running {total_points} cases "
+        f"({len(broad_cases)} broad + {len(targeted_cases)} targeted) "
+        f"with {workers} worker(s)"
+    )
 
     if workers == 1:
         _init_worker(args.mechanism, args.phase, args.inlet_temperature_c, args.segments)
@@ -298,8 +333,8 @@ def main() -> None:
                 rows.append(result["row"])
             else:
                 failures.append({"case": i, **result["case"], "error": result["error"]})
-            if i % max(1, args.points // 20) == 0 or i == args.points:
-                print(f"{i}/{args.points} cases; {len(failures)} failed")
+            if i % max(1, total_points // 20) == 0 or i == total_points:
+                print(f"{i}/{total_points} cases; {len(failures)} failed")
     finally:
         if pool is not None:
             pool.shutdown()
@@ -339,7 +374,9 @@ def main() -> None:
         "cantera_version": ct.__version__,
         "python_version": platform.python_version(),
         "git_sha": os.getenv("GITHUB_SHA"),
-        "points_requested": args.points,
+        "points_requested": total_points,
+        "broad_points_requested": args.points,
+        "targeted_points_requested": args.targeted_points,
         "points_succeeded": len(rows),
         "points_failed": len(failures),
         "segments": args.segments,
@@ -347,6 +384,11 @@ def main() -> None:
         "seed": args.seed,
         "inlet_temperature_c": args.inlet_temperature_c,
         "input_ranges": INPUT_RANGES,
+        "targeted_input_ranges": TARGETED_RANGES if args.targeted_points else None,
+        "sampling_design": (
+            "broad Latin hypercube + high-severity targeted Latin hypercube"
+            if args.targeted_points else "broad Latin hypercube"
+        ),
         "reactor_model": "prescribed-temperature Lagrangian PFR approximation",
         "thermal_history": "T(f)=Tin+(Tout-Tin)*f**ramp_exponent",
         "thermal_discretization": "segment edges uniform in normalized temperature progress",
