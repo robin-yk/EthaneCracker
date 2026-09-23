@@ -72,3 +72,5 @@ python multiscale/prepare_aramco.py --force-download
 ```
 
 Use `.github/workflows/cantera-gp.yml` as the exact reference for sweep, training, validation, and release commands.
+
+Stored release hashes and both holdout checks run in PR regression CI. Main-site edits reuse this checked-in release. Generate a new production release explicitly with the Cantera workflow’s publication profile; development generation branches retain their push triggers.

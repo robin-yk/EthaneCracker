@@ -5,6 +5,7 @@ on:
     paths:
       - "index.html"
       - "engine.html"
+      - "benchmarks/**"
       - "qa/**"
       - "uncertainty/**"
       - "multiscale/**"
@@ -35,6 +36,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate stored GP release
+        run: |
+          python -m pip install "numpy>=1.26"
+          python multiscale/check_release.py
+          OPENBLAS_NUM_THREADS=1 python multiscale/validate_surrogate.py --output /tmp/gp-validation.json
+          OPENBLAS_NUM_THREADS=1 python multiscale/validate_surrogate.py --min-residence-time 1.0 --output /tmp/gp-long-validation.json
 
       - name: JavaScript syntax
         run: |

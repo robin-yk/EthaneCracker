@@ -62,21 +62,21 @@ The GitHub Actions release workflow performs the full reactor build:
 10. run JavaScript and headless-browser tests;
 11. write a release manifest with artifact hashes.
 
-The current publication build uses **256 training points, 64 independent holdout points, and 20 reactor segments**.
+The current publication build uses **640 training points, 128 independent holdout points, and 20 reactor segments**.
 
 ## Independent holdout results
 
 | quantity | R² | RMSE / observed range |
 |---|---:|---:|
-| C2H6 conversion | 0.9991 | 0.0099 |
-| C2H4 selectivity | 0.9872 | 0.0229 |
-| C2H4 yield | 0.9979 | 0.0161 |
-| CH4 yield | 0.9724 | 0.0311 |
-| H2 yield | 0.9961 | 0.0197 |
-| C2H2 yield | 0.9680 | 0.0386 |
-| C3 lump | 0.9936 | 0.0215 |
-| C4+ lump | 0.9797 | 0.0316 |
-| enthalpy rise | 0.9980 | 0.0136 |
+| C2H6 conversion | 0.9997 | 0.0059 |
+| C2H4 selectivity | 0.9993 | 0.0039 |
+| C2H4 yield | 0.9994 | 0.0085 |
+| CH4 yield | 0.9996 | 0.0026 |
+| H2 yield | 0.9995 | 0.0076 |
+| C2H2 yield | 0.9956 | 0.0124 |
+| C3 lump | 0.9971 | 0.0162 |
+| C4+ lump | 0.9962 | 0.0098 |
+| enthalpy rise | 0.9993 | 0.0077 |
 
 These values compare GP predictions with a Cantera holdout design generated from a separate Latin-hypercube seed.
 
@@ -93,7 +93,7 @@ with (f=t/\tau). The current design space is:
 | input | range |
 |---|---:|
 | outlet temperature | 750–1000 °C |
-| residence time | 0.02–1.0 s |
+| residence time | 0.02–1.5 s |
 | steam / hydrocarbon | 0–0.70 kg/kg |
 | pressure | 1–5 bar |
 | heating-ramp exponent | 0.45–4 |

@@ -58,7 +58,8 @@ function solveTau(api,base,target,selector){
     const value=pick(result);
     return {tau,result,value,d:value-target,error:Math.abs(value-target)/Math.max(Math.abs(target),1e-12)};
   };
-  let lo=at(0.02),hi=at(1.0),best=lo.error<hi.error?lo:hi;
+  const bounds=api.metadata?.().source?.input_ranges?.residence_time_s||[0.02,1.0];
+  let lo=at(bounds[0]),hi=at(bounds[1]),best=lo.error<hi.error?lo:hi;
   if(lo.d===0)return lo;
   if(hi.d===0)return hi;
   if(lo.d*hi.d<0){
@@ -70,7 +71,7 @@ function solveTau(api,base,target,selector){
     return best;
   }
   for(let i=1;i<80;i++){
-    const tau=0.02*Math.pow(50,i/79);
+    const tau=bounds[0]*Math.pow(bounds[1]/bounds[0],i/79);
     const q=at(tau);
     if(q.error<best.error)best=q;
   }
