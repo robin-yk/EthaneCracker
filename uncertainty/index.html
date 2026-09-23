@@ -25,7 +25,7 @@ function render(r){
  html+='<h2>Literature comparison</h2><p>Outputs reserved from calibration. The intervals show parameter variation at 10% assumed discrepancy.</p>';
  html+=table(['Quantity','Published','Parameter interval','Published inside interval'],a.heldout.map(h=>[h.name,f(h.observed),q(h.prediction_q025_q50_q975),h.inside_parameter_interval?'Yes':'No']));
  const p=r.config.reference;
- html+='<h2>Paired cost comparison</h2><p>Reference: '+p.cot+' °C, '+p.tau+' s, gas $'+p.gas+'/GJ, electricity $'+p.elec+'/kWh. Δcost = Joule − fired. The Joule furnace factor scales the furnace capital contribution.</p>';
+ html+='<h2>Paired cost comparison</h2><p>Reference: '+p.cot+' °C, '+p.tau+' s, gas $'+p.gas+'/GJ, electricity $'+p.elec+'/kWh. Surplus tail gas: '+p.tailFate+'. Δcost = Joule − fired. The Joule furnace factor scales the furnace capital contribution.</p>';
  html+=table(['Joule efficiency','Joule furnace factor','Δcost ($/t)','Break-even electricity ($/kWh)','Conditional draw fraction: Joule cheaper'],a.scenarios.map(s=>[s.joule_efficiency_percent+'%',s.joule_furnace_factor,q(s.delta_cost_q025_q50_q975,1),q(s.breakeven_electricity_q025_q50_q975,4),(100*s.conditional_joule_cheaper_fraction).toFixed(1)+'% ('+r.config.draws+' draws)']));
  html+='<h2>Break-even electricity price</h2><p>Median break-even price and 95% parameter interval, at 95% Joule efficiency and 10% assumed discrepancy.</p>';
  const selected=a.scenarios.filter(s=>s.joule_efficiency_percent===95),all=selected.flatMap(s=>s.breakeven_electricity_q025_q50_q975),max=Math.max(.05,...all)*1.1,min=Math.min(0,...all),X=x=>180+600*(x-min)/(max-min);

@@ -84,21 +84,14 @@ C3 and C4+ are mass lumps formed by summing all mechanism species with three car
 
 ## 6. Plant-scale transformation
 
-For ideal recovery of unconverted ethane, the reactor inventory per kg ethylene follows directly from conversion (X) and ethylene mass yield (Y_{C2H4}):
+The basis is one kg of recovered ethylene. Cold-box ethylene recovery is `R = 0.995`; unconverted ethane is recycled. Let `Y_E` be reactor ethylene yield, `ΔY_E` ethylene formed in AC-201, and `ΔY_ethane` ethane formed in AC-201, each per kg coil ethane:
 
-[
-m_{coil,C2H6}=\frac{1}{Y_{C2H4}},
-]
+- `m_coil = 1 / [R × (Y_E + ΔY_E)]`
+- `m_fresh = (X − ΔY_ethane) × m_coil`
+- `m_recycle = m_coil − m_fresh`
+- `m_ethylene,tail = 1/R − 1`
 
-[
-m_{fresh,C2H6}=\frac{X}{Y_{C2H4}},
-]
-
-[
-m_{recycle,C2H6}=\frac{1-X}{Y_{C2H4}}.
-]
-
-The same scale factor converts CH4, H2, C2H2, C3, and C4+ yields to kg per kg ethylene.
+The same coil scale converts each reactor species yield to kg per kg recovered ethylene. The 0.5% unrecovered ethylene joins the light tail gas; its heating value and combustion carbon follow that stream.
 
 The process model uses those flows in the tail-gas balance, compressor flow, cold-box screening calculation, and coproduct credit.
 
@@ -174,9 +167,9 @@ The empirical baseline retains its original algebraic C/H/mass/energy residual c
 
 The downstream model uses the same equations for both reactor descriptions.
 
-Compression uses a four-stage ideal-gas shortcut to 32 bar. The compressed cracked gas then passes through a screening acetylene converter before cryogenic separation. This placement represents a front-end hydrogenation arrangement within the reduced process flowsheet. EPA ethylene-process descriptions place selective acetylene hydrogenation upstream of the ethylene/ethane splitter and report polymer-grade acetylene specifications of roughly 5–10 ppm; the present screening model uses a 5 ppm target.
+Compression uses a four-stage ideal-gas shortcut to 32 bar. The compressed cracked gas then passes through a screening acetylene converter before cryogenic separation. This placement represents a front-end hydrogenation arrangement within the reduced process flowsheet. EPA ethylene-process descriptions place selective acetylene hydrogenation upstream of the ethylene/ethane splitter and report polymer-grade acetylene specifications of roughly 5–10 ppm; the present screening model uses a 5 ppm product target, conservatively assigning all residual acetylene to recovered ethylene. Converter-outlet C2 ppm is reported separately.
 
-Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. The 90% value is a screening default consistent with reported high-selectivity Pd acetylene hydrogenation; it is not a plant-specific kinetic fit. Hydrogen is withdrawn from the mechanism-predicted H2 stream. The 640-point Cantera training design contains more H2 than this stoichiometric requirement at every point (minimum H2/requirement ratio 14.48). The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
+Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. The 90% value is a screening default consistent with reported high-selectivity Pd acetylene hydrogenation; it is not a plant-specific kinetic fit. Hydrogen is withdrawn from the mechanism-predicted H2 stream. The 640-point Cantera training design contains more H2 than this stoichiometric requirement at every point. The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
 
 Process references for this block are the U.S. EPA *Industrial Process Profiles for Environmental Use: Chapter 5 — Basic Petrochemical Industry*, Olefins Production Process No. 8, and the palladium acetylene-hydrogenation study reporting ethylene selectivity around 90% (DOI: 10.1016/0304-5102(93)E0323-9).
 
@@ -184,7 +177,7 @@ The web interface also reports a bed-count severity indicator from the raw C2 ac
 
 The cold-box calculation estimates refrigeration duty from the converter effluent flow, light-gas fraction, recovery, and Carnot-based work. The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
 
-TLE recovery credits recovered sensible heat. Tail gas supplies fired-heater demand before purchased natural gas. The Joule case supplies reactor heat electrically.
+TLE recovery credits recovered sensible heat. Tail gas supplies fired-heater demand before purchased natural gas. The Joule case supplies reactor heat electrically and consumes no tail gas in the heater. Surplus tail gas follows the selected burn, sell, or vent route; only sold gas earns revenue and displacement credit. Mass allocation uses the sold surplus mass. Methane venting uses the existing fossil-methane GWP; ethylene vent mass is retained in the inventory without a separate GWP factor.
 
 The capital model starts from the published 610 kt y⁻¹ bare-module anchor and applies section-specific capacity scaling. Total overnight cost uses the existing TOC/TBMC factor. OPEX combines feedstock, utilities, credits, capital charge, maintenance, and labor.
 
