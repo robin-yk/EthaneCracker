@@ -58,6 +58,7 @@ jobs:
             echo "SEGMENTS=20" >> "$GITHUB_ENV"
             echo "MAX_NRMSE=0.08" >> "$GITHUB_ENV"
             echo "MIN_R2=0.90" >> "$GITHUB_ENV"
+            echo "MIN_COVERAGE=0.80" >> "$GITHUB_ENV"
             echo "PROFILE=publication" >> "$GITHUB_ENV"
           else
             echo "BROAD_POINTS=64" >> "$GITHUB_ENV"
@@ -70,6 +71,7 @@ jobs:
             echo "SEGMENTS=20" >> "$GITHUB_ENV"
             echo "MAX_NRMSE=0.25" >> "$GITHUB_ENV"
             echo "MIN_R2=0.50" >> "$GITHUB_ENV"
+            echo "MIN_COVERAGE=0.70" >> "$GITHUB_ENV"
             echo "PROFILE=smoke" >> "$GITHUB_ENV"
           fi
 
@@ -184,7 +186,8 @@ jobs:
             --data multiscale/data/aramco_holdout.csv \
             --output multiscale/validation.json \
             --max-nrmse "$MAX_NRMSE" \
-            --min-r2 "$MIN_R2"
+            --min-r2 "$MIN_R2" \
+            --min-coverage "$MIN_COVERAGE"
 
       - name: Training-size convergence
         run: |
