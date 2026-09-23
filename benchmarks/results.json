@@ -6,7 +6,7 @@
       "id": "chen-2024",
       "short": "Chen et al. 2024",
       "title": "Ethylene production: process design, techno-economic and life-cycle assessments",
-      "journal": "Green Chemistry 26 (2024) 2903–2911",
+      "journal": "Green Chemistry 26 (2024) 2903\u20132911",
       "doi": "10.1039/D3GC03858K",
       "url": "https://doi.org/10.1039/D3GC03858K",
       "protocol": "composition-constrained pressure envelope",
@@ -31,7 +31,7 @@
       "facts": [
         [
           "temperature",
-          "950 °C"
+          "950 \u00b0C"
         ],
         [
           "source pressure",
@@ -39,7 +39,7 @@
         ],
         [
           "inferred residence",
-          "0.101–0.132 s"
+          "0.101\u20130.132 s"
         ],
         [
           "published MSP",
@@ -111,7 +111,7 @@
           ],
           "unit": "GJ/t",
           "role": "test",
-          "note": "web value is the Cantera 650 °C-to-outlet enthalpy rise"
+          "note": "web value is the Cantera 650 \u00b0C-to-outlet enthalpy rise"
         },
         {
           "name": "compressor work",
@@ -161,13 +161,13 @@
       "id": "shin-2025",
       "short": "Shin et al. 2025",
       "title": "Decarbonization approaches for ethylene production: comparative techno-economic and life-cycle analysis",
-      "journal": "Green Chemistry 27 (2025) 3655–3675",
+      "journal": "Green Chemistry 27 (2025) 3655\u20133675",
       "doi": "10.1039/D4GC04538F",
       "url": "https://doi.org/10.1039/D4GC04538F",
       "protocol": "inventory-constrained operating envelope",
       "inputs": {
-        "temperature_c": "800–900",
-        "pressure_bar": "1–5",
+        "temperature_c": "800\u2013900",
+        "pressure_bar": "1\u20135",
         "steam_hc": 0.33
       },
       "inferred": {
@@ -270,7 +270,7 @@
       },
       "notes": [
         "The paper reports steam ratio and plant inventory but no single reactor temperature/residence-time/pressure triplet in the main article.",
-        "Residence time is fitted to fresh-ethane demand across 800–900 °C and 1–5 bar. C3+ production, total combustion heat, and on-site GHG remain test quantities.",
+        "Residence time is fitted to fresh-ethane demand across 800\u2013900 \u00b0C and 1\u20135 bar. C3+ production, total combustion heat, and on-site GHG remain test quantities.",
         "The 17.2 GJ/t combustion-energy value is the paper's model-validation quantity and includes heat from imported natural gas plus hydrogen/methane purge gas."
       ],
       "model_flags": [
@@ -317,7 +317,7 @@
       "facts": [
         [
           "T / P",
-          "840 °C / 3.2 bar"
+          "840 \u00b0C / 3.2 bar"
         ],
         [
           "derived residence",
@@ -427,7 +427,7 @@
       "notes": [
         "Residence time is derived from the published tube geometry and reactor-feed flow using ideal-gas volumetric flow at the arithmetic-mean reactor temperature and pressure; inlet and outlet states define a bracket.",
         "The heating-ramp exponent is inferred from the published single-pass ethane conversion. Fresh ethane, recycle ethane, ethylene, CH4, H2, C3 and C4+ outlet fractions remain test quantities.",
-        "The web surrogate uses a 650 °C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 °C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
+        "The web surrogate uses a 650 \u00b0C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 \u00b0C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
       ],
       "model_flags": [
         "conversion 36.6% is outside the fitted range of 45 to 85%"
