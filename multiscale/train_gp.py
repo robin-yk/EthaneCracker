@@ -297,7 +297,7 @@ def main():
         xn[search_fit_idx], xn[tune_idx], alpha0, kinv0, best["length"]
     )
     pred, latent = original_predictions(pz, ymean, ystd, specs)
-    best["pred"], best["latent"], best["sig_std"] = pred, latent
+    best["pred"], best["latent"], best["sig_std"] = pred, latent, sig_std
 
     # Calibrate standard deviation after transforming it to original output units
     # with the local derivative of the inverse transform.
