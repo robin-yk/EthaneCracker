@@ -26,14 +26,21 @@ function row(name,p,r,status){
 }
 function validate(name,p,r){
   count++;
-  const nums=["conversion","selectivity_mass","fresh_ethane_kg_per_kg","coil_ethane_kg_per_kg","recycle_ethane_kg_per_kg","reactor_useful_heat_gj_per_t","compressor_kwh_per_t","refrigeration_kwh_per_t","splitter_kwh_per_t","total_process_power_kwh_per_t","cost_usd_per_t","carbon_kgco2e_per_t","annual_product_kt"];
+  const nums=["conversion","selectivity_mass","fresh_ethane_kg_per_kg","coil_ethane_kg_per_kg","recycle_ethane_kg_per_kg","reactor_useful_heat_gj_per_t","compressor_kwh_per_t","refrigeration_kwh_per_t","splitter_kwh_per_t","total_process_power_kwh_per_t","carbon_kgco2e_per_t","annual_product_kt"];
   nums.forEach(k=>check(name,finite(r[k]),k+" is not finite: "+r[k]));
   check(name,r.conversion>=0&&r.conversion<=1,"conversion outside [0,1]");
   check(name,r.fresh_ethane_kg_per_kg>0,"fresh ethane <= 0");
   check(name,r.coil_ethane_kg_per_kg>0,"coil ethane <= 0");
   check(name,r.recycle_ethane_kg_per_kg>=0,"negative recycle");
   check(name,r.total_process_power_kwh_per_t>=0,"negative process power");
-  check(name,r.annual_product_kt>0,"annual product <= 0");
+  if(r.economically_operable===false){
+    check(name,!finite(r.cost_usd_per_t),"non-operable case unexpectedly has finite cost");
+    check(name,(r.flags||[]).some(x=>/annualized cost is undefined/i.test(x)),"non-operable case lacks explanatory flag");
+    warn(name,"correctly marked NOT OPERABLE");
+  }else{
+    check(name,finite(r.cost_usd_per_t),"cost_usd_per_t is not finite: "+r.cost_usd_per_t);
+    check(name,r.annual_product_kt>0,"annual product <= 0");
+  }
   if(r.acetylene_converter&&r.acetylene_converter.enabled){
     const a=r.acetylene_converter;
     check(name,finite(a.residualPpm),"AC residual ppm not finite");
@@ -117,7 +124,20 @@ async function waitApi(){
     if(maxTau<1.49)fail("tau-slider","max slider reaches only "+maxTau+" s while model/industrial envelope uses 1.5 s");
   }
 
-  // Bad URL/API inputs: these should not silently produce NaN or economically nonsensical results.
+  // Bad URL inputs should be sanitized by the shell before evaluation.
+  const bad=document.createElement("iframe");
+  bad.src="../?model=aramco&heat=fired&T=99999&tau=0&steam=-1&P=0&n=0&cap=0&ethane=-200&elec=-1&gas=-4&grid=-2&case=Chaos";
+  document.body.appendChild(bad);
+  for(let i=0;i<400;i++){
+    try{if(bad.contentWindow.ethaneModel&&bad.contentWindow.ethaneModel.ready())break}catch(_){}
+    await sleep(50);
+  }
+  const bq=new URLSearchParams(bad.contentWindow.location.search);
+  const expected={T:1000,tau:0.02,steam:0,P:1,n:0.45,cap:150,ethane:0,elec:0,gas:0,grid:0};
+  Object.entries(expected).forEach(([k,v])=>check("bad-url-"+k,approx(+bq.get(k),v,1e-8),k+" not clamped: "+bq.get(k)));
+  bad.remove();
+
+  // Bad API inputs: these should throw instead of silently producing NaN or nonsensical economics.
   const invalid=[
     ["tau-zero",{tau:0}],
     ["tau-negative",{tau:-.1}],
@@ -131,11 +151,7 @@ async function waitApi(){
   for(const [name,mods] of invalid){
     let r=null,threw=false;
     try{r=api.evaluate({...base,...mods})}catch(e){threw=true}
-    if(!threw){
-      const critical=[r.cost_usd_per_t,r.carbon_kgco2e_per_t,r.annual_product_kt];
-      if(critical.some(x=>!finite(x)))fail(name,"invalid input silently produced non-finite output");
-      else warn(name,"invalid input accepted without throwing/clamping");
-    }
+    if(!threw)fail(name,"invalid API input was accepted");
   }
 
   document.body.dataset.fuzzStatus=failures.length?"fail":"pass";
