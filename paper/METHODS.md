@@ -45,7 +45,7 @@ The current domain is:
 | variable | range |
 |---|---:|
 | outlet temperature | 750–1000 °C |
-| residence time | 0.02–1.0 s |
+| residence time | 0.02–1.5 s |
 | steam / hydrocarbon | 0–0.70 kg kg⁻¹ |
 | pressure | 1–5 bar |
 | heating-ramp exponent | 0.45–4 |
@@ -138,8 +138,8 @@ The browser artifact stores normalized training coordinates, GP coefficients, co
 
 The publication build uses:
 
-- 256 training points with seed 42;
-- 64 holdout points with seed 4242;
+- 640 training points: 512 broad-domain and 128 high-severity points, with seed 42;
+- 128 holdout points with seed 4242;
 - 20 reactor segments.
 
 The holdout points remain outside GP fitting and hyperparameter selection.
@@ -150,15 +150,15 @@ The current holdout results are:
 
 | quantity | R² | RMSE / range |
 |---|---:|---:|
-| C2H6 conversion | 0.9991 | 0.0099 |
-| C2H4 selectivity | 0.9872 | 0.0229 |
-| C2H4 yield | 0.9979 | 0.0161 |
-| CH4 yield | 0.9724 | 0.0311 |
-| H2 yield | 0.9961 | 0.0197 |
-| C2H2 yield | 0.9680 | 0.0386 |
-| C3 lump | 0.9936 | 0.0215 |
-| C4+ lump | 0.9797 | 0.0316 |
-| enthalpy rise | 0.9980 | 0.0136 |
+| C2H6 conversion | 0.9997 | 0.0059 |
+| C2H4 selectivity | 0.9993 | 0.0039 |
+| C2H4 yield | 0.9994 | 0.0085 |
+| CH4 yield | 0.9996 | 0.0026 |
+| H2 yield | 0.9995 | 0.0076 |
+| C2H2 yield | 0.9956 | 0.0124 |
+| C3 lump | 0.9971 | 0.0162 |
+| C4+ lump | 0.9962 | 0.0098 |
+| enthalpy rise | 0.9993 | 0.0077 |
 
 The validation artifact also stores MAE, RMSE, maximum absolute error, prediction range, and calibrated 95% interval coverage.
 
@@ -176,7 +176,7 @@ The downstream model uses the same equations for both reactor descriptions.
 
 Compression uses a four-stage ideal-gas shortcut to 32 bar. The compressed cracked gas then passes through a screening acetylene converter before cryogenic separation. This placement represents a front-end hydrogenation arrangement within the reduced process flowsheet. EPA ethylene-process descriptions place selective acetylene hydrogenation upstream of the ethylene/ethane splitter and report polymer-grade acetylene specifications of roughly 5–10 ppm; the present screening model uses a 5 ppm target.
 
-Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. The 90% value is a screening default consistent with reported high-selectivity Pd acetylene hydrogenation; it is not a plant-specific kinetic fit. Hydrogen is withdrawn from the mechanism-predicted H2 stream. The 256-point Cantera training design contains more H2 than this stoichiometric requirement at every point (minimum H2/requirement ratio 15.5). The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
+Converted acetylene is assigned 90% selectivity to ethylene and 10% to ethane. The 90% value is a screening default consistent with reported high-selectivity Pd acetylene hydrogenation; it is not a plant-specific kinetic fit. Hydrogen is withdrawn from the mechanism-predicted H2 stream. The 640-point Cantera training design contains more H2 than this stoichiometric requirement at every point (minimum H2/requirement ratio 14.48). The converter is included within the existing recovery-section capital anchor and does not receive a separate vessel CAPEX in this screening model.
 
 Process references for this block are the U.S. EPA *Industrial Process Profiles for Environmental Use: Chapter 5 — Basic Petrochemical Industry*, Olefins Production Process No. 8, and the palladium acetylene-hydrogenation study reporting ethylene selectivity around 90% (DOI: 10.1016/0304-5102(93)E0323-9).
 
@@ -231,3 +231,7 @@ Higher-fidelity reactor work requires radial temperature gradients, furnace-side
 Higher-fidelity downstream work requires rigorous multicomponent thermodynamics, detailed quench chemistry, acetylene-hydrogenation kinetics including catalyst deactivation and green-oil formation, and vendor equipment design.
 
 Economic results retain the AACE Class 5 screening classification.
+
+## 15. TEA uncertainty
+
+Literature-based effective parameter estimates and paired cost uncertainty are calculated using bounded quadrature and shared parameter draws. The calculation covers three discrepancy scales, three Joule efficiencies, and three furnace capital factors. See [parameter estimates and economic intervals](UNCERTAINTY.md) and [equations and input ranges](../uncertainty/README.md).

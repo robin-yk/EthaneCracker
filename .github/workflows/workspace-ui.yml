@@ -7,6 +7,7 @@ on:
       - "engine.html"
       - "benchmarks/**"
       - "qa/**"
+      - "uncertainty/**"
       - "multiscale/**"
       - ".github/workflows/workspace-ui.yml"
   push:
@@ -22,6 +23,7 @@ on:
       - "engine.html"
       - "benchmarks/**"
       - "qa/**"
+      - "uncertainty/**"
       - ".github/workflows/workspace-ui.yml"
   workflow_dispatch:
 
@@ -57,6 +59,11 @@ jobs:
           node --check /tmp/workspace.js
           node --check /tmp/engine.js
           node --check /tmp/bench.js
+
+      - name: Calibration algebra and saved evidence
+        run: |
+          node --test uncertainty/test-analysis.mjs
+          node uncertainty/check-results.mjs
 
       - name: Headless workspace and benchmark
         run: |
@@ -102,6 +109,9 @@ jobs:
             sed -n '/<div id="summary"/,/<\/div>/p' /tmp/fuzz.html | sed 's/<[^>]*>/ /g'
             exit 1
           fi
+
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8000/uncertainty/check.html > /tmp/calibration-check.html
+          grep -q 'data-calibration-status="pass"' /tmp/calibration-check.html
 
       - name: Capture rendered workspace
         run: |

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Ethane TEA — literature calibration and uncertainty</title>
+<style>
+body{font:15px/1.55 system-ui,sans-serif;max-width:1150px;margin:36px auto;padding:0 24px;color:#19313b;background:#f6f8f9}h1{font-size:29px}h2{margin-top:32px;font-size:21px}table{border-collapse:collapse;width:100%;background:white;font-size:13px}th,td{padding:10px;border-bottom:1px solid #d5dfe3;text-align:left}th{background:#e6eef1}button,a{color:#07516c}button{padding:9px 14px;cursor:pointer}.note{padding:16px;border-left:4px solid #13758a;background:#eaf2f5}#status{font-family:monospace}iframe{position:absolute;width:1px;height:1px;left:-9999px}.scroll{overflow-x:auto}svg{max-width:100%;height:auto;background:white}.fail{color:#a52b22}
+</style>
+<body data-uncertainty-status="loading">
+<a href="../">← Simulator</a>
+<h1>TEA uncertainty</h1>
+<p>Literature-based parameter estimates, cost ranges, and break-even electricity prices.</p>
+<p class="note"><b>Calculation settings.</b> Uniform parameter ranges; assumed model–literature discrepancy of 5%, 10%, and 20%. Fired and Joule cases use the same reactor conditions.</p>
+<button id="run" disabled>Recalculate with current model</button> <button id="download" disabled>Download results JSON</button>
+<p id="status">Loading engine and saved results…</p>
+<div id="results"></div>
+<iframe id="engine" src="../engine.html"></iframe>
+<script type="module">
+import {runAnalysis} from './analysis.mjs';
+const $=id=>document.getElementById(id);let report;
+const f=x=>Number(x).toFixed(3),q=(a,n=3)=>a.map(x=>Number(x).toFixed(n)).join(' / ');
+function table(headers,rows){return '<div class="scroll"><table><thead><tr>'+headers.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
+function render(r){
+ const a=r.analyses.find(a=>a.relative_discrepancy_sigma===0.1)||r.analyses[0];
+ let html='<h2>Parameter estimates</h2><p>Chen: compressor duty '+f(r.evidence.compressor_kwh_per_t)+' kWh/t. Shin: total combustion energy '+f(r.evidence.combustion_gj_per_t)+' GJ/t. Missing reactor coordinates are reconstructed first; '+r.evidence.shin_accepted_states+' Shin states meet the feed constraint. All intervals below show 2.5th / 50th / 97.5th percentiles.</p>';
+ html+=table(['Assumed discrepancy σ','Effective fired efficiency (%)','Compression multiplier'],r.analyses.map(a=>[(100*a.relative_discrepancy_sigma)+'% of reported value',q(a.fired_efficiency.parameter_q025_q50_q975,2),q(a.compression.parameter_q025_q50_q975)]));
+ html+='<h2>Literature comparison</h2><p>Outputs reserved from calibration. The intervals show parameter variation at 10% assumed discrepancy.</p>';
+ html+=table(['Quantity','Published','Parameter interval','Published inside interval'],a.heldout.map(h=>[h.name,f(h.observed),q(h.prediction_q025_q50_q975),h.inside_parameter_interval?'Yes':'No']));
+ const p=r.config.reference;
+ html+='<h2>Paired cost comparison</h2><p>Reference: '+p.cot+' °C, '+p.tau+' s, gas $'+p.gas+'/GJ, electricity $'+p.elec+'/kWh. Δcost = Joule − fired. The Joule furnace factor scales the furnace capital contribution.</p>';
+ html+=table(['Joule efficiency','Joule furnace factor','Δcost ($/t)','Break-even electricity ($/kWh)','Conditional draw fraction: Joule cheaper'],a.scenarios.map(s=>[s.joule_efficiency_percent+'%',s.joule_furnace_factor,q(s.delta_cost_q025_q50_q975,1),q(s.breakeven_electricity_q025_q50_q975,4),(100*s.conditional_joule_cheaper_fraction).toFixed(1)+'% ('+r.config.draws+' draws)']));
+ html+='<h2>Break-even electricity price</h2><p>Median break-even price and 95% parameter interval, at 95% Joule efficiency and 10% assumed discrepancy.</p>';
+ const selected=a.scenarios.filter(s=>s.joule_efficiency_percent===95),all=selected.flatMap(s=>s.breakeven_electricity_q025_q50_q975),max=Math.max(.05,...all)*1.1,min=Math.min(0,...all),X=x=>180+600*(x-min)/(max-min);
+ html+='<svg viewBox="0 0 900 240" role="img" aria-label="Break-even electricity prices by Joule furnace capital assumption">';
+ for(let i=0;i<5;i++){const v=min+(max-min)*i/4;html+='<line x1="'+X(v)+'" x2="'+X(v)+'" y1="20" y2="185" stroke="#dde5e8"/><text x="'+X(v)+'" y="210" text-anchor="middle" font-size="13">'+v.toFixed(3)+'</text>';}
+ selected.forEach((s,i)=>{const [lo,mid,hi]=s.breakeven_electricity_q025_q50_q975,y=50+i*55;html+='<text x="15" y="'+(y+4)+'" font-size="14">Furnace ×'+s.joule_furnace_factor+'</text><line x1="'+X(lo)+'" x2="'+X(hi)+'" y1="'+y+'" y2="'+y+'" stroke="#13758a" stroke-width="5"/><circle cx="'+X(mid)+'" cy="'+y+'" r="7" fill="#153846"/>';});
+ html+='<text x="480" y="235" text-anchor="middle" font-size="13">Electricity price ($/kWh)</text></svg>';
+ html+='<h2>Calculation basis</h2><p>Heat recovery: 0.5–0.9. Shared capital multiplier: 0.7–1.5. Each fired–Joule pair uses the same shared-parameter draw. See <a href="README.md">parameters, equations, and sources</a>.</p>';
+ $('results').innerHTML=html;$('download').disabled=false;
+}
+async function run(){try{$('run').disabled=true;document.body.dataset.uncertaintyStatus='running';const api=$('engine').contentWindow.ethaneModel;const lit=await (await fetch('../benchmarks/literature.json')).json();report=await runAnalysis(api,lit,x=>$('status').textContent=x);render(report);$('status').textContent='Completed with the currently loaded surrogate.';document.body.dataset.uncertaintyStatus='complete';}catch(e){$('status').textContent=e.stack;document.body.dataset.uncertaintyStatus='failed';}finally{$('run').disabled=false;}}
+$('run').onclick=run;
+$('download').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));a.download='tea-calibration-results.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+try{const res=await fetch('results.json');if(res.ok){report=await res.json();render(report);$('status').textContent='Saved calculation. Recalculate uses the current model.';document.body.dataset.uncertaintyStatus='saved';const stale=[];for(const [path,expected] of Object.entries(report.provenance?.source_sha256||{})){const response=await fetch('../'+path,{cache:'no-store'});if(!response.ok){stale.push(path);continue;}const digest=await crypto.subtle.digest('SHA-256',await response.arrayBuffer());const actual=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==expected)stale.push(path);}if(stale.length){$('status').textContent='Model or data changed. Recalculate to update the results.';document.body.dataset.uncertaintyStatus='stale';}}}catch(_){}
+for(let i=0;i<600;i++){if($('engine').contentWindow.ethaneModel?.ready()){$('run').disabled=false;if(new URLSearchParams(location.search).get('run')==='1')await run();break;}await new Promise(r=>setTimeout(r,100));}
+</script></body></html>

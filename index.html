@@ -334,6 +334,7 @@ table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 7px;b
 
 <section id="view-model" class="view">
   <div class="hero"><div><h2>Model</h2><p>Mechanism, surrogate, process equations, and screening boundaries used by the workspace.</p></div></div>
+  <p><a href="uncertainty/">Literature calibration &amp; uncertainty →</a></p>
   <div class="modelgrid">
     <div class="modelcard"><h3>Chemistry</h3><dl id="chemMeta"></dl></div>
     <div class="modelcard"><h3>Surrogate validation</h3><dl id="gpMeta"></dl></div>
@@ -593,12 +594,21 @@ function renderCompare(){
 function benchmarkSummary(){
   if(!bench)return;
   const by=Object.fromEntries(bench.cases.map(x=>[x.id,x]));
-  const cards=[
-    ["chen-2024","Chen 2024","Reactor composition","C₂H₄ 37.7% → 37.1–38.4%","H₂ 40.7% → 39.6–41.2%","chen"],
-    ["shin-2025","Shin 2025","Plant energy + emissions","Heat 17.2 → 17.49–18.56 GJ/t","On-site GHG 442 → 431–509 kg/t","shin"],
-    ["wang-2026","Wang 2026","Geometry + kinetics","Published X 68.5%","Aramco GP 39.0% at domain edge","wang"]
+  const specs=[
+    ["chen-2024","Chen 2024","Reactor composition","dry C2H4 mole fraction","dry H2 mole fraction","chen"],
+    ["shin-2025","Shin 2025","Plant energy + emissions","combustion heat","on-site GHG","shin"],
+    ["wang-2026","Wang 2026","Geometry + kinetics","single-pass conversion","recycle ethane","wang"]
   ];
-  $("caseGrid").innerHTML=cards.map(([id,t,tag,a,b,p])=>'<div class="case"><h3>'+t+'</h3><div class="ref">'+(by[id]?by[id].journal:"")+'</div><div class="metric"><span>'+a.split(" → ")[0]+'</span><b>'+a.split(" → ").slice(1).join(" → ")+'</b></div><div class="metric"><span>'+b.split(" → ")[0]+'</span><b>'+b.split(" → ").slice(1).join(" → ")+'</b></div><div class="tag">'+tag+'</div><button class="casebtn" data-open="'+p+'">Open in workspace</button></div>').join("");
+  const metric=(c,name)=>{
+    const m=c&&c.metrics.find(m=>m.name===name);if(!m)return name+": —";
+    const factor=["mol/mol","fraction"].includes(m.unit)?100:1;
+    const unit=factor===100?"%":m.unit;
+    const values=m.model_range||[m.model];
+    return name+": "+fmt(m.published*factor,2)+" → "+values.map(x=>fmt(x*factor,2)).join("–")+" "+unit;
+  };
+  $("caseGrid").innerHTML=specs.map(([id,title,tag,a,b,preset])=>{
+    const c=by[id];return '<div class="case"><h3>'+title+'</h3><div class="ref">'+(c?c.journal:"")+'</div><div class="metric">'+metric(c,a)+'</div><div class="metric">'+metric(c,b)+'</div><div class="tag">'+tag+'</div><button class="casebtn" data-open="'+preset+'">Open in workspace</button></div>';
+  }).join("");
   document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>loadPreset(x.dataset.open));
   const tr=[];
   bench.cases.forEach(c=>c.metrics.forEach(m=>{

@@ -6,7 +6,7 @@
       "id": "chen-2024",
       "short": "Chen et al. 2024",
       "title": "Ethylene production: process design, techno-economic and life-cycle assessments",
-      "journal": "Green Chemistry 26 (2024) 2903\u20132911",
+      "journal": "Green Chemistry 26 (2024) 2903–2911",
       "doi": "10.1039/D3GC03858K",
       "url": "https://doi.org/10.1039/D3GC03858K",
       "protocol": "composition-constrained pressure envelope",
@@ -20,18 +20,18 @@
       },
       "inferred": {
         "residence_time_s": [
-          0.1013181130228225,
-          0.13188727262768263
+          0.10131811302271951,
+          0.13188727262878946
         ],
         "ethane_outlet_fit": [
-          0.15099999999818486,
-          0.15100000000024857
+          0.1509999999972845,
+          0.15100000000030853
         ]
       },
       "facts": [
         [
           "temperature",
-          "950 \u00b0C"
+          "950 °C"
         ],
         [
           "source pressure",
@@ -39,7 +39,7 @@
         ],
         [
           "inferred residence",
-          "0.101\u20130.132 s"
+          "0.101–0.132 s"
         ],
         [
           "published MSP",
@@ -51,8 +51,8 @@
           "name": "dry C2H6 mole fraction",
           "published": 0.151,
           "model_range": [
-            0.15099999999818486,
-            0.15100000000024857
+            0.1509999999972845,
+            0.15100000000030853
           ],
           "unit": "mol/mol",
           "role": "fit",
@@ -62,8 +62,8 @@
           "name": "dry C2H4 mole fraction",
           "published": 0.377,
           "model_range": [
-            0.37192065838703814,
-            0.3846920246248066
+            0.37192065838717414,
+            0.38469202462472335
           ],
           "unit": "mol/mol",
           "role": "test",
@@ -73,8 +73,8 @@
           "name": "dry H2 mole fraction",
           "published": 0.407,
           "model_range": [
-            0.3986514645661389,
-            0.41173901292917026
+            0.3986514645664974,
+            0.4117390129292091
           ],
           "unit": "mol/mol",
           "role": "test",
@@ -84,8 +84,8 @@
           "name": "dry CH4 mole fraction",
           "published": 0.033,
           "model_range": [
-            0.0355843656039592,
-            0.05639666696084573
+            0.03558436560394343,
+            0.05639666696116924
           ],
           "unit": "mol/mol",
           "role": "test",
@@ -95,8 +95,8 @@
           "name": "fresh ethane",
           "published": 1.1083123425692694,
           "model_range": [
-            1.1852100585796788,
-            1.218925677287082
+            1.1852100585801029,
+            1.2189256772883963
           ],
           "unit": "kg/kg",
           "role": "test",
@@ -106,19 +106,19 @@
           "name": "high-temperature reactor heat",
           "published": 5.248866498740553,
           "model_range": [
-            7.603469553665991,
-            7.682577277246803
+            7.6034695536690995,
+            7.682577277248628
           ],
           "unit": "GJ/t",
           "role": "test",
-          "note": "web value is the Cantera 650 \u00b0C-to-outlet enthalpy rise"
+          "note": "web value is the Cantera 650 °C-to-outlet enthalpy rise"
         },
         {
           "name": "compressor work",
           "published": 370.2770780856423,
           "model_range": [
-            296.9534594595629,
-            306.6914716399739
+            296.95345945966045,
+            306.6914716398413
           ],
           "unit": "kWh/t",
           "role": "test",
@@ -128,8 +128,8 @@
           "name": "MSP / web cost",
           "published": 832,
           "model_range": [
-            407.603260467137,
-            416.68338904733184
+            407.6032604670569,
+            416.68338904745383
           ],
           "unit": "USD/t",
           "role": "context",
@@ -139,8 +139,8 @@
           "name": "TCM / web annual OPEX",
           "published": 496,
           "model_range": [
-            159.78465665956801,
-            168.47454662924815
+            159.7846566594355,
+            168.47454662931244
           ],
           "unit": "MUSD/y",
           "role": "context",
@@ -161,20 +161,20 @@
       "id": "shin-2025",
       "short": "Shin et al. 2025",
       "title": "Decarbonization approaches for ethylene production: comparative techno-economic and life-cycle analysis",
-      "journal": "Green Chemistry 27 (2025) 3655\u20133675",
+      "journal": "Green Chemistry 27 (2025) 3655–3675",
       "doi": "10.1039/D4GC04538F",
       "url": "https://doi.org/10.1039/D4GC04538F",
       "protocol": "inventory-constrained operating envelope",
       "inputs": {
-        "temperature_c": "800\u2013900",
-        "pressure_bar": "1\u20135",
+        "temperature_c": "800–900",
+        "pressure_bar": "1–5",
         "steam_hc": 0.33
       },
       "inferred": {
-        "accepted_points": 17,
+        "accepted_points": 43,
         "residence_time_s": [
-          0.6660769363162808,
-          1
+          0.6660769363018824,
+          1.5
         ]
       },
       "facts": [
@@ -184,7 +184,7 @@
         ],
         [
           "accepted states",
-          "17"
+          "43"
         ],
         [
           "published heat",
@@ -200,8 +200,8 @@
           "name": "fresh ethane",
           "published": 1.3222722700835265,
           "model_range": [
-            1.320778992913291,
-            1.322272270088681
+            1.3176739769814654,
+            1.3222722700883454
           ],
           "unit": "kg/kg",
           "role": "fit",
@@ -211,8 +211,8 @@
           "name": "C3+ coproduct",
           "published": 0.13764813923995278,
           "model_range": [
-            0.11368890416398221,
-            0.12156854563660037
+            0.10970218482062422,
+            0.12728530311155117
           ],
           "unit": "kg/kg",
           "role": "test",
@@ -222,8 +222,8 @@
           "name": "combustion heat",
           "published": 17.2,
           "model_range": [
-            17.508623616876363,
-            18.382548172591342
+            17.196196163874102,
+            18.57570800114826
           ],
           "unit": "GJ/t",
           "role": "test",
@@ -233,8 +233,8 @@
           "name": "on-site GHG",
           "published": 442,
           "model_range": [
-            443.3970862478373,
-            512.7077626415678
+            415.24326908089824,
+            526.9485694411046
           ],
           "unit": "kgCO2e/t",
           "role": "test",
@@ -244,8 +244,8 @@
           "name": "LCOE / web cost",
           "published": 746,
           "model_range": [
-            370.5735763086508,
-            390.1002507595259
+            363.29600530619143,
+            397.87639271450627
           ],
           "unit": "USD/t",
           "role": "context",
@@ -255,8 +255,8 @@
           "name": "WTG GHG / web carbon",
           "published": 869,
           "model_range": [
-            1087.1015026883192,
-            1197.0222481147118
+            1046.0932382085055,
+            1231.08799973579
           ],
           "unit": "kgCO2e/t",
           "role": "context",
@@ -264,17 +264,17 @@
         }
       ],
       "central": {
-        "temperature_c": 880,
+        "temperature_c": 860,
         "pressure_bar": 5,
-        "residence_time_s": 0.9853243080115631
+        "residence_time_s": 1.5
       },
       "notes": [
         "The paper reports steam ratio and plant inventory but no single reactor temperature/residence-time/pressure triplet in the main article.",
-        "Residence time is fitted to fresh-ethane demand across 800\u2013900 \u00b0C and 1\u20135 bar. C3+ production, total combustion heat, and on-site GHG remain test quantities.",
+        "Residence time is fitted to fresh-ethane demand across 800–900 °C and 1–5 bar. C3+ production, total combustion heat, and on-site GHG remain test quantities.",
         "The 17.2 GJ/t combustion-energy value is the paper's model-validation quantity and includes heat from imported natural gas plus hydrogen/methane purge gas."
       ],
       "model_flags": [
-        "selectivity 75.2% is outside the industrial band of 78 to 88%"
+        "selectivity 75.5% is outside the industrial band of 78 to 88%"
       ]
     },
     {
@@ -317,7 +317,7 @@
       "facts": [
         [
           "T / P",
-          "840 \u00b0C / 3.2 bar"
+          "840 °C / 3.2 bar"
         ],
         [
           "derived residence",
@@ -427,7 +427,7 @@
       "notes": [
         "Residence time is derived from the published tube geometry and reactor-feed flow using ideal-gas volumetric flow at the arithmetic-mean reactor temperature and pressure; inlet and outlet states define a bracket.",
         "The heating-ramp exponent is inferred from the published single-pass ethane conversion. Fresh ethane, recycle ethane, ethylene, CH4, H2, C3 and C4+ outlet fractions remain test quantities.",
-        "The web surrogate uses a 650 \u00b0C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 \u00b0C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
+        "The web surrogate uses a 650 °C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 °C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
       ],
       "model_flags": [
         "conversion 36.6% is outside the fitted range of 45 to 85%"

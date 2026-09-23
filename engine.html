@@ -695,7 +695,7 @@ function model(p){
     qRxn=qDemand-qSens;
   }
   const qDeliver=qDemand/(p.eff/100);
-  const tleSteam=p.tle?TLE_REC*qSens:0;
+  const tleSteam=p.tle?(p.heatRecovery===undefined?TLE_REC:p.heatRecovery)*qSens:0;
 
   /* 3. Tail gas. The furnace burns this before buying anything. */
   const fuelGas=y.ch4*LHV.CH4*1000+y.h2*LHV.H2*1000;   // kJ/kg C2H4
@@ -715,7 +715,7 @@ function model(p){
   };
   const nGas=molComp.c2h4+molComp.c2h6+molComp.ch4+molComp.h2+molComp.c2h2+molComp.c3+molComp.c4plus;
   const gam=1.32,st=4,rSt=Math.pow(P_DISCH/1.5,1/st);
-  const wComp=st*(gam/(gam-1))*8.314*313*(Math.pow(rSt,(gam-1)/gam)-1)/0.75*nGas/1000;
+  const wComp=(p.compressionFactor===undefined?1:p.compressionFactor)*st*(gam/(gam-1))*8.314*313*(Math.pow(rSt,(gam-1)/gam)-1)/0.75*nGas/1000;
 
   /* 5. AC-201 effluent enters the cold box. */
   const mol={c2h4:1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
@@ -753,8 +753,8 @@ function model(p){
 
   /* 8. Capital. Anchored on TBMC $126.8 M at 610 kt/y, scaled by section. */
   const sc=(x,r,e)=>Math.pow(x/r,e);
-  const tbmc=REF.tbmc*sc(p.cap,REF.cap,0.65)*(
-      SPLIT.furnace*sc(coil,1.809,0.65)+SPLIT.compression*sc(wComp,1134,0.70)
+  const tbmc=(p.capitalFactor===undefined?1:p.capitalFactor)*REF.tbmc*sc(p.cap,REF.cap,0.65)*(
+      SPLIT.furnace*(p.mode==='JH'&&p.jouleFurnaceFactor!==undefined?p.jouleFurnaceFactor:1)*sc(coil,1.809,0.65)+SPLIT.compression*sc(wComp,1134,0.70)
     + SPLIT.coldbox*sc(wRef,2098,0.70)+SPLIT.fractionation*sc(rRatio*nAct,195,0.60));
   const toc=tbmc*2.5, prod=p.cap*1000*osf;
 
@@ -2289,6 +2289,14 @@ $('sGas').value=logInv(S.gas,1,30);
 
 /* ---------- stable read-only API for literature benchmarks ---------- */
 function validatePublicInputs(p){
+  // Optional research parameters preserve the published defaults when omitted.
+  for(const k of ['compressionFactor','capitalFactor','jouleFurnaceFactor']){
+    if(p[k]!==undefined&&(!Number.isFinite(p[k])||p[k]<=0))
+      throw new RangeError(k+' must be finite and > 0');
+  }
+  if(p.heatRecovery!==undefined&&(!Number.isFinite(p.heatRecovery)||p.heatRecovery<0||p.heatRecovery>1))
+    throw new RangeError('heatRecovery must be finite and in [0,1]');
+
   const finiteKeys=['eff','cot','tau','dilution','pressure','ramp','cap','ethane','elec','gas','grid'];
   for(const k of finiteKeys) if(!Number.isFinite(Number(p[k]))) throw new RangeError(k+' must be finite');
   if(p.eff<=0||p.eff>100) throw new RangeError('eff must be > 0 and <= 100 percent');
