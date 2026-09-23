@@ -1,6 +1,6 @@
 {
   "mechanism": "multiscale/mechanisms/aramcomech30/aramcomech30.yaml",
-  "mechanism_sha256": "f8746fc77753df71c3ab1cf90e6d3031bd9f977e2ac706c46058ebd5624898e7",
+  "mechanism_sha256": "3d22f3079965257aaa7e0ae237dd04f0828574f5da5997540b0edce907049a39",
   "mechanism_species": 581,
   "mechanism_reactions": 3037,
   "mechanism_provenance": {
@@ -13,7 +13,7 @@
       "journal": "Combustion and Flame 197 (2018) 423-438",
       "doi": "10.1016/j.combustflame.2018.08.006"
     },
-    "retrieved_utc": "2026-09-22T20:06:28.482291+00:00",
+    "retrieved_utc": "2026-09-23T00:27:44.403847+00:00",
     "cantera_version": "3.2.0",
     "phase": "gas",
     "species": 581,
@@ -41,13 +41,13 @@
     "yaml": {
       "filename": "aramcomech30.yaml",
       "bytes": 832582,
-      "sha256": "f8746fc77753df71c3ab1cf90e6d3031bd9f977e2ac706c46058ebd5624898e7"
+      "sha256": "3d22f3079965257aaa7e0ae237dd04f0828574f5da5997540b0edce907049a39"
     }
   },
   "phase": "gas",
   "cantera_version": "3.2.0",
   "python_version": "3.13.15",
-  "git_sha": "936a6b2d1af7e735b424a7d4554f0b3e6db70b7b",
+  "git_sha": "028b2313be3b451b04008d3e1f9850a7920b7b5a",
   "points_requested": 256,
   "points_succeeded": 256,
   "points_failed": 0,
