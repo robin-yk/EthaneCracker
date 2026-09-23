@@ -47,6 +47,7 @@ jobs:
         shell: bash
         run: |
           COMMIT_MSG="$(git log -1 --pretty=%B)"
+          # Publication design: 512 broad + 128 high-severity points, validated on 128 untouched broad-domain points.
           if [[ "${{ github.ref_name }}" == "main" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
             echo "BROAD_POINTS=512" >> "$GITHUB_ENV"
             echo "TARGETED_POINTS=128" >> "$GITHUB_ENV"
