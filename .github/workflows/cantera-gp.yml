@@ -14,6 +14,7 @@ on:
   push:
     branches:
       - cantera-gp-v1
+      - gp-domain-convergence-v1
       - main
     paths:
       - "index.html"
@@ -47,13 +48,17 @@ jobs:
         run: |
           COMMIT_MSG="$(git log -1 --pretty=%B)"
           if [[ "${{ github.ref_name }}" == "main" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
-            echo "TRAIN_POINTS=256" >> "$GITHUB_ENV"
-            echo "HOLDOUT_POINTS=64" >> "$GITHUB_ENV"
+            echo "BROAD_POINTS=512" >> "$GITHUB_ENV"
+            echo "TARGET_POINTS=128" >> "$GITHUB_ENV"
+            echo "TRAIN_POINTS=640" >> "$GITHUB_ENV"
+            echo "HOLDOUT_POINTS=128" >> "$GITHUB_ENV"
             echo "SEGMENTS=20" >> "$GITHUB_ENV"
             echo "MAX_NRMSE=0.08" >> "$GITHUB_ENV"
             echo "MIN_R2=0.90" >> "$GITHUB_ENV"
             echo "PROFILE=publication" >> "$GITHUB_ENV"
           else
+            echo "BROAD_POINTS=48" >> "$GITHUB_ENV"
+            echo "TARGET_POINTS=0" >> "$GITHUB_ENV"
             echo "TRAIN_POINTS=48" >> "$GITHUB_ENV"
             echo "HOLDOUT_POINTS=16" >> "$GITHUB_ENV"
             echo "SEGMENTS=20" >> "$GITHUB_ENV"
@@ -98,15 +103,41 @@ jobs:
             --reference "$REF_SEGMENTS" \
             --output multiscale/segment_convergence.json
 
-      - name: Generate AramcoMech training sweep
+      - name: Generate broad AramcoMech training sweep
         run: |
           python multiscale/cantera_sweep.py \
             --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
             --phase gas \
-            --points "$TRAIN_POINTS" \
+            --points "$BROAD_POINTS" \
             --segments "$SEGMENTS" \
             --seed 42 \
-            --output multiscale/data/aramco_train.csv
+            --region broad \
+            --output multiscale/data/aramco_train_broad.csv
+
+      - name: Generate severity-targeted training sweep
+        if: env.TARGET_POINTS != '0'
+        run: |
+          python multiscale/cantera_sweep.py \
+            --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
+            --phase gas \
+            --points "$TARGET_POINTS" \
+            --segments "$SEGMENTS" \
+            --seed 424242 \
+            --region severity \
+            --output multiscale/data/aramco_train_targeted.csv
+
+      - name: Combine training designs
+        run: |
+          if [[ "$TARGET_POINTS" == "0" ]]; then
+            python multiscale/combine_sweeps.py \
+              --broad multiscale/data/aramco_train_broad.csv \
+              --output multiscale/data/aramco_train.csv
+          else
+            python multiscale/combine_sweeps.py \
+              --broad multiscale/data/aramco_train_broad.csv \
+              --targeted multiscale/data/aramco_train_targeted.csv \
+              --output multiscale/data/aramco_train.csv
+          fi
 
       - name: Generate independent AramcoMech holdout sweep
         run: |
@@ -116,6 +147,7 @@ jobs:
             --points "$HOLDOUT_POINTS" \
             --segments "$SEGMENTS" \
             --seed 4242 \
+            --region broad \
             --output multiscale/data/aramco_holdout.csv
 
       - name: Check acetylene-converter hydrogen supply
@@ -150,6 +182,10 @@ jobs:
           path: |
             multiscale/data/aramco_train.csv
             multiscale/data/aramco_train.meta.json
+            multiscale/data/aramco_train_broad.csv
+            multiscale/data/aramco_train_broad.meta.json
+            multiscale/data/aramco_train_targeted.csv
+            multiscale/data/aramco_train_targeted.meta.json
             multiscale/data/aramco_holdout.csv
             multiscale/data/aramco_holdout.meta.json
             multiscale/segment_convergence.json
@@ -161,6 +197,14 @@ jobs:
             --input multiscale/data/aramco_train.csv \
             --output multiscale/surrogate.json \
             --report multiscale/training_report.json
+
+      - name: Training-size convergence
+        if: env.PROFILE == 'publication'
+        run: |
+          python multiscale/training_size_convergence.py \
+            --train multiscale/data/aramco_train.csv \
+            --holdout multiscale/data/aramco_holdout.csv \
+            --output multiscale/training_size_convergence.json
 
       - name: Independent holdout validation
         run: |
@@ -243,6 +287,7 @@ jobs:
             "multiscale/surrogate.json",
             "multiscale/training_report.json",
             "multiscale/validation.json",
+            "multiscale/training_size_convergence.json",
             "multiscale/segment_convergence.json",
           ]
           def sha(p):
@@ -252,6 +297,8 @@ jobs:
             "profile":os.environ["PROFILE"],
             "git_sha":os.environ["GITHUB_SHA"],
             "train_points":int(os.environ["TRAIN_POINTS"]),
+            "broad_points":int(os.environ["BROAD_POINTS"]),
+            "severity_targeted_points":int(os.environ["TARGET_POINTS"]),
             "holdout_points":int(os.environ["HOLDOUT_POINTS"]),
             "segments":int(os.environ["SEGMENTS"]),
             "artifacts":{p:sha(p) for p in names},
@@ -270,6 +317,7 @@ jobs:
           git add multiscale/surrogate.json
           git add multiscale/training_report.json
           git add multiscale/validation.json
+          git add multiscale/training_size_convergence.json
           git add multiscale/segment_convergence.json
           git add multiscale/release_manifest.json
           if git diff --cached --quiet; then
