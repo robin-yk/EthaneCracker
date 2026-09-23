@@ -2099,7 +2099,13 @@ function render(){
       ['Reactor chemistry','AramcoMech 3.0','Official Galway distribution; converted with Cantera ck2yaml'],
       ['GP training',app.gp?app.gp.training_points+' Cantera points':'loading','Five-dimensional Latin-hypercube design'],
       ['Independent holdout',app.gpValidation?app.gpValidation.validation_points+' Cantera points':'loading','Separate Latin-hypercube seed'],
-      ['Reactor domain','750–1000 C; 0.02–1.0 s; 0–0.70 steam/HC; 1–5 bar; n=0.45–4','Stored in surrogate metadata'],
+      ['Reactor domain',app.gp&&app.gp.source&&app.gp.source.input_ranges
+        ? app.gp.source.input_ranges.temperature_c[0]+'–'+app.gp.source.input_ranges.temperature_c[1]+' C; '
+          +app.gp.source.input_ranges.residence_time_s[0]+'–'+app.gp.source.input_ranges.residence_time_s[1]+' s; '
+          +app.gp.source.input_ranges.steam_hc_kgkg[0]+'–'+app.gp.source.input_ranges.steam_hc_kgkg[1]+' steam/HC; '
+          +app.gp.source.input_ranges.pressure_bar[0]+'–'+app.gp.source.input_ranges.pressure_bar[1]+' bar; n='
+          +app.gp.source.input_ranges.ramp_exponent[0]+'–'+app.gp.source.input_ranges.ramp_exponent[1]
+        : 'loading','Stored in surrogate metadata'],
       ['Reactor inlet','650 C','Fixed in the current Cantera sweep'],
       ['Heating history','T(f)=Tin+(Tout−Tin)f^n','Prescribed thermal-history coordinate'],
       ['Species inventory','C2H4, C2H6, CH4, H2, C2H2, C3, C4+','Mechanism-derived yields passed to the process model'],
@@ -2297,6 +2303,27 @@ window.ethaneModel={
   version:'ethane-web-model-v1',
   ready:()=>!!app.gp,
   defaults:()=>({...S}),
+  metadata:()=>({
+    training_points:app.gp?app.gp.training_points:null,
+    validation_points:app.gpValidation?app.gpValidation.validation_points:null,
+    domain_min:app.gp&&app.gp.domain_min?[...app.gp.domain_min]:null,
+    domain_max:app.gp&&app.gp.domain_max?[...app.gp.domain_max]:null,
+    source:app.gp&&app.gp.source?{
+      cantera_version:app.gp.source.cantera_version,
+      mechanism_species:app.gp.source.mechanism_species,
+      mechanism_reactions:app.gp.source.mechanism_reactions,
+      broad_points_requested:app.gp.source.broad_points_requested,
+      targeted_points_requested:app.gp.source.targeted_points_requested,
+      sampling_design:app.gp.source.sampling_design,
+      input_ranges:app.gp.source.input_ranges,
+      targeted_input_ranges:app.gp.source.targeted_input_ranges,
+      mechanism_provenance:app.gp.source.mechanism_provenance
+    }:null,
+    validation:app.gpValidation?{
+      passed:app.gpValidation.passed,
+      outputs:app.gpValidation.outputs
+    }:null
+  }),
   evaluate:(overrides={})=>{
     const p={...S,...overrides};
     if(p.kinetics==='gp'&&!app.gp) throw new Error('Aramco GP is still loading');

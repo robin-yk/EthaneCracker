@@ -124,20 +124,20 @@ async function waitApi(){
     if(maxTau<1.49)fail("tau-slider","max slider reaches only "+maxTau+" s while model/industrial envelope uses 1.5 s");
   }
 
-  // The selectable range includes extrapolation; it does not extend the GP domain.
+  // The expanded Cantera training and holdout domain covers the full slider range.
   const gp=await (await fetch('../multiscale/surrogate.json')).json();
   const tauIndex=gp.inputs.indexOf('log10_residence_time_s');
   const tauMax=10**gp.domain_max[tauIndex];
-  check("gp-domain",approx(tauMax,1),"declared GP upper limit changed; review scope regression");
-  for(const tau of [1,1.000001,1.5]){
+  check("gp-domain",approx(tauMax,1.5),"declared GP upper limit changed; review scope regression");
+  for(const tau of [1,1.25,1.5,1.500001,2]){
     const r=api.evaluate({...base,tau});
     const extrapolated=r.flags.some(x=>/Aramco GP extrapolation:.*log10_residence_time_s/.test(x));
     check("gp-tau-"+tau,extrapolated===(tau>tauMax),"incorrect residence-time extrapolation flag");
   }
-  check("gp-scope-label",d.getElementById("gpTauScope")?.textContent==="0.02–1.0 s",
+  check("gp-scope-label",d.getElementById("gpTauScope")?.textContent==="0.02–1.5 s",
     "GP residence-time domain is missing or overstated");
-  check("tau-ui-warning",/Aramco GP extrapolation:.*log10_residence_time_s/.test(d.getElementById("qual").textContent),
-    "slider at 1.5 s does not display the GP extrapolation warning");
+  check("tau-ui-warning",!/Aramco GP extrapolation:.*log10_residence_time_s/.test(d.getElementById("qual").textContent),
+    "slider at 1.5 s incorrectly displays a GP extrapolation warning");
 
   // Both the shell passthrough and direct engine API must reject invalid efficiencies.
   const engineApi=d.getElementById("engineFrame").contentWindow.ethaneModel;

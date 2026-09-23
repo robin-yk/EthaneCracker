@@ -1,6 +1,13 @@
 name: Workspace UI regression
 
 on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "engine.html"
+      - "qa/**"
+      - "multiscale/**"
+      - ".github/workflows/workspace-ui.yml"
   push:
     branches:
       - workspace-redesign-v1
