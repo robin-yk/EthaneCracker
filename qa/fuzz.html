@@ -1,0 +1,152 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Ethane Cracker Fuzz QA</title>
+<style>
+body{font:12px Consolas,monospace;margin:16px;background:#111;color:#ddd}
+h1{font:18px Tahoma,Arial}.pass{color:#7ee787}.fail{color:#ff7b72}.warn{color:#d29922}
+table{border-collapse:collapse;width:100%;background:#161b22}th,td{border:1px solid #30363d;padding:5px;text-align:right}th:first-child,td:first-child{text-align:left}
+iframe{width:1px;height:1px;position:absolute;left:-10000px}
+</style></head>
+<body data-fuzz-status="running" data-fuzz-failures="0">
+<h1>Ethane Cracker deterministic fuzz QA</h1>
+<div id="summary">starting…</div><table><thead><tr><th>case</th><th>T</th><th>tau</th><th>X</th><th>cost</th><th>AC ppm</th><th>status</th></tr></thead><tbody id="rows"></tbody></table>
+<iframe id="app" src="../?model=aramco&heat=fired&T=868&tau=0.3500&steam=0.35&P=1.5&n=1&cap=610&ethane=200&elec=0.07&gas=4&grid=0.36&case=Custom"></iframe>
+<script>
+"use strict";
+const f=document.getElementById("app"), rows=document.getElementById("rows"), summary=document.getElementById("summary");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const finite=x=>Number.isFinite(x);
+const approx=(a,b,t=1e-9)=>Math.abs(a-b)<=t*Math.max(1,Math.abs(a),Math.abs(b));
+let failures=[],warnings=[],count=0;
+function fail(name,msg){failures.push(name+": "+msg)}
+function warn(name,msg){warnings.push(name+": "+msg)}
+function check(name,cond,msg){if(!cond)fail(name,msg)}
+function row(name,p,r,status){
+  const ac=r&&r.acetylene_converter||{};
+  rows.insertAdjacentHTML("beforeend",'<tr><td>'+name+'</td><td>'+p.cot+'</td><td>'+p.tau+'</td><td>'+(r&&finite(r.conversion)?r.conversion.toFixed(4):"—")+'</td><td>'+(r&&finite(r.cost_usd_per_t)?r.cost_usd_per_t.toFixed(1):"—")+'</td><td>'+(finite(ac.residualPpm)?ac.residualPpm.toFixed(2):"—")+'</td><td class="'+(status==="PASS"?"pass":"fail")+'">'+status+'</td></tr>');
+}
+function validate(name,p,r){
+  count++;
+  const nums=["conversion","selectivity_mass","fresh_ethane_kg_per_kg","coil_ethane_kg_per_kg","recycle_ethane_kg_per_kg","reactor_useful_heat_gj_per_t","compressor_kwh_per_t","refrigeration_kwh_per_t","splitter_kwh_per_t","total_process_power_kwh_per_t","cost_usd_per_t","carbon_kgco2e_per_t","annual_product_kt"];
+  nums.forEach(k=>check(name,finite(r[k]),k+" is not finite: "+r[k]));
+  check(name,r.conversion>=0&&r.conversion<=1,"conversion outside [0,1]");
+  check(name,r.fresh_ethane_kg_per_kg>0,"fresh ethane <= 0");
+  check(name,r.coil_ethane_kg_per_kg>0,"coil ethane <= 0");
+  check(name,r.recycle_ethane_kg_per_kg>=0,"negative recycle");
+  check(name,r.total_process_power_kwh_per_t>=0,"negative process power");
+  check(name,r.annual_product_kt>0,"annual product <= 0");
+  if(r.acetylene_converter&&r.acetylene_converter.enabled){
+    const a=r.acetylene_converter;
+    check(name,finite(a.residualPpm),"AC residual ppm not finite");
+    check(name,a.residualPpm<=a.targetPpm*1.02+1e-8,"AC residual exceeds target: "+a.residualPpm);
+    check(name,a.rawKg+1e-12>=a.residualKg,"AC residual exceeds feed");
+    check(name,a.convertedKg>=-1e-12,"negative converted acetylene");
+    check(name,a.h2ConsumedKg>=-1e-12,"negative H2 consumption");
+  }
+  row(name,p,r,failures.some(x=>x.startsWith(name+":"))?"FAIL":"PASS");
+}
+async function waitApi(){
+  for(let i=0;i<400;i++){
+    try{if(f.contentWindow.ethaneModel&&f.contentWindow.ethaneModel.ready())return f.contentWindow.ethaneModel}catch(_){}
+    await sleep(100);
+  }
+  throw new Error("root API did not become ready");
+}
+(async()=>{
+ try{
+  const api=await waitApi();
+  const base={kinetics:"gp",mode:"CH",eff:60,cot:868,tau:.35,dilution:.35,pressure:1.5,ramp:1,cap:610,ethane:200,elec:.07,gas:4,grid:.36,ethaneUp:.50,lpg:550,steam:9.8};
+  const normal=[
+    ["user-url",{}],
+    ["low-severity",{cot:750,tau:.02,dilution:0,pressure:1,ramp:.45}],
+    ["high-severity",{cot:1000,tau:1,dilution:.70,pressure:5,ramp:4}],
+    ["long-tau",{cot:850,tau:1.5,dilution:.35,pressure:1.5,ramp:1}],
+    ["hot-short",{cot:1000,tau:.02,dilution:.2,pressure:1,ramp:.45}],
+    ["cold-long",{cot:750,tau:1.5,dilution:.7,pressure:5,ramp:4}],
+    ["small-plant",{cap:150}],
+    ["large-plant",{cap:1400}],
+    ["free-electricity",{mode:"JH",eff:95,elec:0}],
+    ["expensive-electricity",{mode:"JH",eff:95,elec:.30}],
+    ["expensive-gas",{gas:30}],
+    ["zero-grid",{grid:0}]
+  ];
+  for(const [name,mods] of normal){
+    const p={...base,...mods}, r=api.evaluate(p); validate(name,p,r);
+  }
+
+  // deterministic grid: intentionally broad, including points outside operating envelopes.
+  const Ts=[750,825,900,1000], taus=[.02,.10,.35,1.0,1.5], steams=[0,.35,.70], Ps=[1,3,5], ramps=[.45,1,4];
+  let n=0;
+  outer: for(const T of Ts)for(const tau of taus)for(const dilution of steams)for(const pressure of Ps)for(const ramp of ramps){
+    if((n++%7)!==0)continue;
+    const p={...base,cot:T,tau,dilution,pressure,ramp};
+    const name="grid-"+n;
+    const r=api.evaluate(p);validate(name,p,r);
+    if(n>220)break outer;
+  }
+
+  // Chemistry must be identical between fired/Joule for the same imposed thermal history.
+  const rf=api.evaluate({...base,mode:"CH",eff:60});
+  const rj=api.evaluate({...base,mode:"JH",eff:95});
+  ["conversion","selectivity_mass","ch4_kg_per_kg","h2_kg_per_kg","c2h2_kg_per_kg","c3_kg_per_kg","c4plus_kg_per_kg"].forEach(k=>
+    check("mode-invariance",approx(rf[k],rj[k],1e-10),k+" changes with heating mode: "+rf[k]+" vs "+rj[k])
+  );
+  check("mode-invariance",!approx(rf.cost_usd_per_t,rj.cost_usd_per_t,1e-6),"fired/Joule costs unexpectedly identical");
+
+  // UI controls should be live, not decorative.
+  const w=f.contentWindow,d=w.document;
+  const clickChecks=[
+    ["Simulation",'nav button[data-view="workspace"]'],
+    ["Literature Cases",'nav button[data-view="benchmarks"]'],
+    ["Case Comparison",'nav button[data-view="compare"]'],
+    ["Model Setup",'nav button[data-view="model"]'],
+    ["Reports",'nav button[data-view="cite"]'],
+    ["Fired",'#heatFired'],["Joule",'#heatJoule'],
+    ["Pin baseline",'#pin'],["Copy results",'#copy'],["JSON",'#json'],["CSV",'#csv']
+  ];
+  clickChecks.forEach(([name,sel])=>check("button-"+name,!!d.querySelector(sel)&&typeof d.querySelector(sel).onclick==="function",sel+" has no onclick"));
+
+  // Long-tau UI consistency check: model accepts 1.5 s, but can the slider represent it?
+  const tauSlider=d.getElementById("inTau");
+  check("tau-slider",!!tauSlider,"tau slider missing");
+  if(tauSlider){
+    const max=+tauSlider.max;
+    tauSlider.value=max;tauSlider.dispatchEvent(new Event("input",{bubbles:true}));
+    await sleep(20);
+    const q=new URLSearchParams(w.location.search);
+    const maxTau=+q.get("tau");
+    if(maxTau<1.49)fail("tau-slider","max slider reaches only "+maxTau+" s while model/industrial envelope uses 1.5 s");
+  }
+
+  // Bad URL/API inputs: these should not silently produce NaN or economically nonsensical results.
+  const invalid=[
+    ["tau-zero",{tau:0}],
+    ["tau-negative",{tau:-.1}],
+    ["pressure-zero",{pressure:0}],
+    ["steam-negative",{dilution:-.2}],
+    ["negative-electricity",{elec:-.07}],
+    ["negative-gas",{gas:-4}],
+    ["negative-ethane",{ethane:-200}],
+    ["zero-capacity",{cap:0}]
+  ];
+  for(const [name,mods] of invalid){
+    let r=null,threw=false;
+    try{r=api.evaluate({...base,...mods})}catch(e){threw=true}
+    if(!threw){
+      const critical=[r.cost_usd_per_t,r.carbon_kgco2e_per_t,r.annual_product_kt];
+      if(critical.some(x=>!finite(x)))fail(name,"invalid input silently produced non-finite output");
+      else warn(name,"invalid input accepted without throwing/clamping");
+    }
+  }
+
+  document.body.dataset.fuzzStatus=failures.length?"fail":"pass";
+  document.body.dataset.fuzzFailures=String(failures.length);
+  document.body.dataset.fuzzWarnings=String(warnings.length);
+  summary.innerHTML='<b class="'+(failures.length?"fail":"pass")+'">'+(failures.length?"FAIL":"PASS")+'</b> · '+count+' model cases · '+failures.length+' failures · '+warnings.length+' warnings'
+    +(failures.length?'<pre>'+failures.join("\n")+'</pre>':'')
+    +(warnings.length?'<pre class="warn">'+warnings.join("\n")+'</pre>':'');
+ }catch(e){
+  document.body.dataset.fuzzStatus="crash";document.body.dataset.fuzzFailures="1";
+  summary.innerHTML='<b class="fail">CRASH</b><pre>'+String(e&&e.stack||e)+'</pre>';
+ }
+})();
+</script></body></html>
