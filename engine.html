@@ -750,7 +750,8 @@ function model(p){
      recycle vanishes and zF runs to 1, which collapsed the reflux onto its floor and put a
      step in the cost. Capping zF keeps the shortcut degrading smoothly; at normal
      conversion zF is near 0.62 so the cap never binds. */
-  const zF=Math.min(0.995,mol.c2h4/(mol.c2h4+mol.c2h6));
+  const recoveredEthyleneMol=mol.c2h4*RECOVERY;
+  const zF=Math.min(0.995,recoveredEthyleneMol/(recoveredEthyleneMol+mol.c2h6));
   const rMin=Math.max(0.5,(1/(alpha-1))*(PURITY/zF-alpha*(1-PURITY)/(1-zF)));
   const gx=(nAct-nMin)/(nAct+1);
   const rRatio=Math.max(rMin*1.15,(rMin+(1-Math.sqrt(gx))*0.9)*1.05);
