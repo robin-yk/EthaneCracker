@@ -8,11 +8,13 @@ on:
       - workspace-detail-v3
       - workspace-polish-v4
       - ui-visual-audit-v5
+      - play-fuzz-v1
       - main
     paths:
       - "index.html"
       - "engine.html"
       - "benchmarks/**"
+      - "qa/**"
       - ".github/workflows/workspace-ui.yml"
   workflow_dispatch:
 
@@ -78,6 +80,14 @@ jobs:
           grep -o 'data-control-audit-error="[^"]*"' /tmp/control-audit.html || true
           grep -q 'data-control-audit="pass"' /tmp/control-audit.html
           grep -q 'data-control-audit-count="' /tmp/control-audit.html
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=30000 --dump-dom http://127.0.0.1:8000/qa/fuzz.html > /tmp/fuzz.html
+          grep -o 'data-fuzz-status="[^"]*"' /tmp/fuzz.html || true
+          grep -o 'data-fuzz-failures="[^"]*"' /tmp/fuzz.html || true
+          if ! grep -q 'data-fuzz-status="pass"' /tmp/fuzz.html; then
+            echo "---- fuzz failures ----"
+            sed -n '/<div id="summary"/,/<\/div>/p' /tmp/fuzz.html | sed 's/<[^>]*>/ /g'
+            exit 1
+          fi
 
       - name: Capture rendered workspace
         run: |
