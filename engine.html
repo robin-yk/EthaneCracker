@@ -2283,8 +2283,9 @@ $('sGas').value=logInv(S.gas,1,30);
 
 /* ---------- stable read-only API for literature benchmarks ---------- */
 function validatePublicInputs(p){
-  const finiteKeys=['cot','tau','dilution','pressure','ramp','cap','ethane','elec','gas','grid'];
+  const finiteKeys=['eff','cot','tau','dilution','pressure','ramp','cap','ethane','elec','gas','grid'];
   for(const k of finiteKeys) if(!Number.isFinite(Number(p[k]))) throw new RangeError(k+' must be finite');
+  if(p.eff<=0||p.eff>100) throw new RangeError('eff must be > 0 and <= 100 percent');
   if(p.tau<=0) throw new RangeError('tau must be > 0');
   if(p.dilution<0) throw new RangeError('steam / hydrocarbon must be >= 0');
   if(p.pressure<=0) throw new RangeError('pressure must be > 0');
