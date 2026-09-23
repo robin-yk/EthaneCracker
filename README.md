@@ -184,3 +184,4 @@ python -m http.server 8000
 ```
 
 Open `http://localhost:8000/`.
+<!-- publication GP rebuild: expanded tau domain, 512 broad + 128 targeted + 128 holdout -->

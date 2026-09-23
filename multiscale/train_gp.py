@@ -128,15 +128,22 @@ def rbf_kernel(xa: np.ndarray, xb: np.ndarray, length: np.ndarray) -> np.ndarray
     return np.exp(-0.5 * np.sum(d * d, axis=2))
 
 
-def fit_gp(xn, yz, length, noise):
+def fit_gp(xn, yz, length, noise, with_inverse=True):
     k = rbf_kernel(xn, xn, length)
     k.flat[:: len(k) + 1] += noise
     l = np.linalg.cholesky(k)
     alpha = np.linalg.solve(l.T, np.linalg.solve(l, yz))
+    if not with_inverse:
+        return alpha, None
     eye = np.eye(len(k))
     linv = np.linalg.solve(l, eye)
     kinv = linv.T @ linv
     return alpha, kinv
+
+
+def predict_mean(xtrain, xtest, alpha, length):
+    k = rbf_kernel(xtest, xtrain, length)
+    return k @ alpha
 
 
 def predict_latent(xtrain, xtest, alpha, kinv, length):
@@ -213,6 +220,10 @@ def main():
     ap.add_argument("--random-kernels", type=int, default=64)
     ap.add_argument("--noise", type=float, default=2e-6)
     ap.add_argument("--tune-fraction", type=float, default=0.20)
+    ap.add_argument(
+        "--tune-max-points", type=int, default=256,
+        help="cap the kernel-search fitting subset; the final GP still fits every point",
+    )
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--outputs", default=",".join(DEFAULT_OUTPUTS))
     ap.add_argument("--round-digits", type=int, default=10)
@@ -244,15 +255,26 @@ def main():
     tune_idx, fit_idx = order[:ntune], order[ntune:]
     if len(fit_idx) < 16:
         raise ValueError("tuning split leaves too few fitting points")
+    search_fit_idx = fit_idx
+    if args.tune_max_points > 0 and len(search_fit_idx) > args.tune_max_points:
+        # Hyperparameter search on a deterministic subset keeps 640-point
+        # publication builds tractable. The selected kernel is then refit once
+        # on the complete training set.
+        search_fit_idx = rng.choice(
+            search_fit_idx, size=args.tune_max_points, replace=False
+        )
 
     candidates = []
     best = None
     for length in candidate_lengths(base_length, rng, args.random_kernels):
         try:
-            alpha0, kinv0 = fit_gp(xn[fit_idx], yz[fit_idx], length, args.noise)
+            alpha0, _ = fit_gp(
+                xn[search_fit_idx], yz[search_fit_idx], length, args.noise,
+                with_inverse=False,
+            )
         except np.linalg.LinAlgError:
             continue
-        pz, sig_std = predict_latent(xn[fit_idx], xn[tune_idx], alpha0, kinv0, length)
+        pz = predict_mean(xn[search_fit_idx], xn[tune_idx], alpha0, length)
         pred, latent = original_predictions(pz, ymean, ystd, specs)
         score, per = score_candidate(y[tune_idx], pred, outputs)
         candidates.append({
@@ -261,11 +283,24 @@ def main():
             "rmse_over_range": per,
         })
         if best is None or score < best["score"]:
-            best = dict(score=score, length=length, pred=pred, latent=latent,
-                        sig_std=sig_std, alpha=alpha0, kinv=kinv0)
+            best = dict(score=score, length=length)
 
     if best is None:
         raise RuntimeError("no stable GP kernel candidate")
+
+    # Calibrate uncertainty at nearly the same design density as the final GP.
+    # Kernel search may use a capped subset for speed, but calibrating sigma on
+    # that sparse subset makes the final 640-point posterior overconfident after
+    # its variance contracts. Use the complete internal fit split here and keep
+    # the untouched Cantera holdout exclusively for release validation.
+    alpha0, kinv0 = fit_gp(
+        xn[fit_idx], yz[fit_idx], best["length"], args.noise
+    )
+    pz, sig_std = predict_latent(
+        xn[fit_idx], xn[tune_idx], alpha0, kinv0, best["length"]
+    )
+    pred, latent = original_predictions(pz, ymean, ystd, specs)
+    best["pred"], best["latent"], best["sig_std"] = pred, latent, sig_std
 
     # Calibrate standard deviation after transforming it to original output units
     # with the local derivative of the inverse transform.
@@ -337,6 +372,8 @@ def main():
         "schema": "ethane-cantera-gp-training-v3",
         "training_points": int(len(x)),
         "fit_points_internal": int(len(fit_idx)),
+        "kernel_search_fit_points": int(len(search_fit_idx)),
+        "uncertainty_calibration_fit_points": int(len(fit_idx)),
         "tuning_points_internal": int(len(tune_idx)),
         "seed": args.seed,
         "kernel_candidates_evaluated": len(candidates),
@@ -346,7 +383,11 @@ def main():
         "source": source,
     }
     Path(args.report).write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(f"trained final GP on {len(x)} cases; tuned on {len(tune_idx)} internal cases")
+    print(
+        f"trained final GP on {len(x)} cases; tuned on {len(tune_idx)} internal cases; "
+        f"kernel search used {len(search_fit_idx)} fit points; "
+        f"uncertainty calibration used {len(fit_idx)} fit points"
+    )
     print(f"evaluated {len(candidates)} kernels; selected {best['length']} score {best['score']:.5g}")
     for name, q in tune_metrics.items():
         print(f"  {name:30s} R2={q['r2']} RMSE/range={q['rmse_over_range']} 95%cov={q['coverage_95']:.3f}")

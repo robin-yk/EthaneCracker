@@ -14,6 +14,7 @@ on:
   push:
     branches:
       - cantera-gp-v1
+      - gp-domain-expansion-v1
       - main
     paths:
       - "index.html"
@@ -47,18 +48,30 @@ jobs:
         run: |
           COMMIT_MSG="$(git log -1 --pretty=%B)"
           if [[ "${{ github.ref_name }}" == "main" || ("${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.profile }}" == "publication") || "$COMMIT_MSG" == *"[publication]"* ]]; then
-            echo "TRAIN_POINTS=256" >> "$GITHUB_ENV"
-            echo "HOLDOUT_POINTS=64" >> "$GITHUB_ENV"
+            echo "BROAD_POINTS=512" >> "$GITHUB_ENV"
+            echo "TARGETED_POINTS=128" >> "$GITHUB_ENV"
+            echo "TRAIN_POINTS=640" >> "$GITHUB_ENV"
+            echo "HOLDOUT_POINTS=128" >> "$GITHUB_ENV"
+            echo "RANDOM_KERNELS=32" >> "$GITHUB_ENV"
+            echo "TUNE_MAX_POINTS=256" >> "$GITHUB_ENV"
+            echo "CONVERGENCE_SIZES=64,128,256,512,640" >> "$GITHUB_ENV"
             echo "SEGMENTS=20" >> "$GITHUB_ENV"
             echo "MAX_NRMSE=0.08" >> "$GITHUB_ENV"
             echo "MIN_R2=0.90" >> "$GITHUB_ENV"
+            echo "MIN_COVERAGE=0.80" >> "$GITHUB_ENV"
             echo "PROFILE=publication" >> "$GITHUB_ENV"
           else
-            echo "TRAIN_POINTS=48" >> "$GITHUB_ENV"
-            echo "HOLDOUT_POINTS=16" >> "$GITHUB_ENV"
+            echo "BROAD_POINTS=64" >> "$GITHUB_ENV"
+            echo "TARGETED_POINTS=16" >> "$GITHUB_ENV"
+            echo "TRAIN_POINTS=80" >> "$GITHUB_ENV"
+            echo "HOLDOUT_POINTS=24" >> "$GITHUB_ENV"
+            echo "RANDOM_KERNELS=8" >> "$GITHUB_ENV"
+            echo "TUNE_MAX_POINTS=64" >> "$GITHUB_ENV"
+            echo "CONVERGENCE_SIZES=32,64,80" >> "$GITHUB_ENV"
             echo "SEGMENTS=20" >> "$GITHUB_ENV"
             echo "MAX_NRMSE=0.25" >> "$GITHUB_ENV"
             echo "MIN_R2=0.50" >> "$GITHUB_ENV"
+            echo "MIN_COVERAGE=0.70" >> "$GITHUB_ENV"
             echo "PROFILE=smoke" >> "$GITHUB_ENV"
           fi
 
@@ -103,7 +116,8 @@ jobs:
           python multiscale/cantera_sweep.py \
             --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
             --phase gas \
-            --points "$TRAIN_POINTS" \
+            --points "$BROAD_POINTS" \
+            --targeted-points "$TARGETED_POINTS" \
             --segments "$SEGMENTS" \
             --seed 42 \
             --output multiscale/data/aramco_train.csv
@@ -114,6 +128,7 @@ jobs:
             --mechanism multiscale/mechanisms/aramcomech30/aramcomech30.yaml \
             --phase gas \
             --points "$HOLDOUT_POINTS" \
+            --targeted-points 0 \
             --segments "$SEGMENTS" \
             --seed 4242 \
             --output multiscale/data/aramco_holdout.csv
@@ -160,7 +175,9 @@ jobs:
           python multiscale/train_gp.py \
             --input multiscale/data/aramco_train.csv \
             --output multiscale/surrogate.json \
-            --report multiscale/training_report.json
+            --report multiscale/training_report.json \
+            --random-kernels "$RANDOM_KERNELS" \
+            --tune-max-points "$TUNE_MAX_POINTS"
 
       - name: Independent holdout validation
         run: |
@@ -169,7 +186,17 @@ jobs:
             --data multiscale/data/aramco_holdout.csv \
             --output multiscale/validation.json \
             --max-nrmse "$MAX_NRMSE" \
-            --min-r2 "$MIN_R2"
+            --min-r2 "$MIN_R2" \
+            --min-coverage "$MIN_COVERAGE"
+
+      - name: Training-size convergence
+        run: |
+          python multiscale/check_training_size_convergence.py \
+            --model multiscale/surrogate.json \
+            --train multiscale/data/aramco_train.csv \
+            --holdout multiscale/data/aramco_holdout.csv \
+            --sizes "$CONVERGENCE_SIZES" \
+            --output multiscale/training_size_convergence.json
 
       - name: Preserve surrogate validation evidence
         if: always()
@@ -180,6 +207,7 @@ jobs:
             multiscale/surrogate.json
             multiscale/training_report.json
             multiscale/validation.json
+            multiscale/training_size_convergence.json
           if-no-files-found: warn
           retention-days: 30
 
@@ -243,6 +271,7 @@ jobs:
             "multiscale/surrogate.json",
             "multiscale/training_report.json",
             "multiscale/validation.json",
+            "multiscale/training_size_convergence.json",
             "multiscale/segment_convergence.json",
           ]
           def sha(p):
@@ -252,6 +281,8 @@ jobs:
             "profile":os.environ["PROFILE"],
             "git_sha":os.environ["GITHUB_SHA"],
             "train_points":int(os.environ["TRAIN_POINTS"]),
+            "broad_points":int(os.environ["BROAD_POINTS"]),
+            "targeted_points":int(os.environ["TARGETED_POINTS"]),
             "holdout_points":int(os.environ["HOLDOUT_POINTS"]),
             "segments":int(os.environ["SEGMENTS"]),
             "artifacts":{p:sha(p) for p in names},
@@ -270,6 +301,7 @@ jobs:
           git add multiscale/surrogate.json
           git add multiscale/training_report.json
           git add multiscale/validation.json
+          git add multiscale/training_size_convergence.json
           git add multiscale/segment_convergence.json
           git add multiscale/release_manifest.json
           if git diff --cached --quiet; then
@@ -291,6 +323,11 @@ jobs:
           print("SPECIES",src.get("mechanism_species"),"REACTIONS",src.get("mechanism_reactions"))
           print("TRAIN",s["training_points"],"HOLDOUT",v["validation_points"])
           print("VALIDATION PASS",v["passed"])
-          for k in ["x_c2h6","s_c2h4_mol","y_c2h4_kg_per_kg_ethane","heat_MJ_per_kg_ethane"]:
+          conv=json.load(open("multiscale/training_size_convergence.json"))
+          print("TRAINING-SIZE CONVERGENCE")
+          for n in conv["evaluated_sizes"]:
+              q=conv["results"][str(n)]
+              print(" N",n,"mean RMSE/range",q["mean_rmse_over_range"],"max",q["max_rmse_over_range"])
+          for k in ["x_c2h6","s_c2h4_mol","y_c2h4_kg_per_kg_ethane","y_c2h2_kg_per_kg_ethane","y_c4plus_kg_per_kg_ethane","heat_MJ_per_kg_ethane"]:
               print(k,v["outputs"][k])
           PY
