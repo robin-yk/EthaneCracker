@@ -11,11 +11,11 @@ on:
         options:
           - publication
           - smoke
+  # Main uses the checked-in release. Generate replacements explicitly with workflow_dispatch.
   push:
     branches:
       - cantera-gp-v1
       - gp-domain-expansion-v1
-      - main
     paths:
       - "index.html"
       - "engine.html"
