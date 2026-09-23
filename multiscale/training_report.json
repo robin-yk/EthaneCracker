@@ -3,6 +3,7 @@
   "training_points": 80,
   "fit_points_internal": 64,
   "kernel_search_fit_points": 64,
+  "uncertainty_calibration_fit_points": 64,
   "tuning_points_internal": 16,
   "seed": 2026,
   "kernel_candidates_evaluated": 15,
@@ -13,92 +14,92 @@
     0.57,
     0.532
   ],
-  "selected_score": 0.071066839808699,
+  "selected_score": 0.07106683992029988,
   "internal_tuning_metrics": {
     "x_c2h6": {
-      "mae": 0.018779165894348037,
-      "rmse": 0.030871273512634627,
-      "rmse_over_range": 0.03228013331919789,
-      "r2": 0.9928485829233882,
+      "mae": 0.018779165883182826,
+      "rmse": 0.030871273480633895,
+      "rmse_over_range": 0.03228013328573013,
+      "r2": 0.9928485829382075,
       "coverage_95": 1.0,
       "sigma_scale": 0.25
     },
     "s_c2h4_mol": {
-      "mae": 0.009105571170262818,
-      "rmse": 0.019019007532599365,
-      "rmse_over_range": 0.07070547142061695,
-      "r2": 0.9640692670073309,
+      "mae": 0.009105571243535115,
+      "rmse": 0.01901900771341517,
+      "rmse_over_range": 0.07070547209282167,
+      "r2": 0.9640692663533206,
       "coverage_95": 0.875,
-      "sigma_scale": 0.36864060936442816
+      "sigma_scale": 0.36864061098820533
     },
     "y_c2h4_kg_per_kg_ethane": {
-      "mae": 0.02672256821058243,
-      "rmse": 0.042858392623044694,
-      "rmse_over_range": 0.06514752115889169,
-      "r2": 0.9688074017077053,
+      "mae": 0.02672256813469691,
+      "rmse": 0.04285839243984454,
+      "rmse_over_range": 0.06514752088039752,
+      "r2": 0.9688074019620866,
       "coverage_95": 0.9375,
-      "sigma_scale": 0.2768412837377263
+      "sigma_scale": 0.276841282798084
     },
     "y_ch4_kg_per_kg_ethane": {
-      "mae": 0.004632293150139745,
-      "rmse": 0.011567787487385017,
-      "rmse_over_range": 0.09200402898621708,
-      "r2": 0.9357394063546094,
+      "mae": 0.0046322931793120045,
+      "rmse": 0.011567787616222657,
+      "rmse_over_range": 0.09200403001092314,
+      "r2": 0.9357394050450565,
       "coverage_95": 0.9375,
-      "sigma_scale": 0.25194170821263906
+      "sigma_scale": 0.2519417093991146
     },
     "y_h2_kg_per_kg_ethane": {
-      "mae": 0.0023205923004497005,
-      "rmse": 0.004038310011287099,
-      "rmse_over_range": 0.06468672584605197,
-      "r2": 0.9687480675592157,
+      "mae": 0.002320592292997503,
+      "rmse": 0.0040383099945979955,
+      "rmse_over_range": 0.064686725578708,
+      "r2": 0.9687480678068755,
       "coverage_95": 0.9375,
-      "sigma_scale": 0.27634487435006233
+      "sigma_scale": 0.276344873501273
     },
     "y_c2h2_kg_per_kg_ethane": {
-      "mae": 0.0018947467822579137,
-      "rmse": 0.00393590630335162,
-      "rmse_over_range": 0.09055704118539198,
-      "r2": 0.9137082327552493,
+      "mae": 0.0018947467844163493,
+      "rmse": 0.0039359063087429,
+      "rmse_over_range": 0.09055704130943414,
+      "r2": 0.9137082325359013,
       "coverage_95": 0.9375,
-      "sigma_scale": 0.3497338007959674
+      "sigma_scale": 0.3497338005435828
     },
     "y_c2h6_kg_per_kg_ethane": {
-      "mae": 0.04963620219868142,
-      "rmse": 0.06748044954327861,
-      "rmse_over_range": 0.07056002748979374,
-      "r2": 0.9658304743070409,
+      "mae": 0.0496362020304907,
+      "rmse": 0.06748044949061976,
+      "rmse_over_range": 0.07056002743471723,
+      "r2": 0.9658304743603379,
       "coverage_95": 0.9375,
-      "sigma_scale": 0.4823133717077387
+      "sigma_scale": 0.4823133716290501
     },
     "y_c3_kg_per_kg_ethane": {
-      "mae": 0.0005277513419938265,
-      "rmse": 0.0008306351317500334,
-      "rmse_over_range": 0.07950715558021294,
-      "r2": 0.9540331534372568,
+      "mae": 0.0005277513415581987,
+      "rmse": 0.0008306351300421048,
+      "rmse_over_range": 0.07950715549851432,
+      "r2": 0.9540331536000495,
       "coverage_95": 0.9375,
-      "sigma_scale": 0.37299914313396754
+      "sigma_scale": 0.37299914314679156
     },
     "y_c4plus_kg_per_kg_ethane": {
-      "mae": 0.004961450202077549,
-      "rmse": 0.012098578390517832,
-      "rmse_over_range": 0.10225771042390713,
-      "r2": 0.9303620620287619,
+      "mae": 0.004961450208408007,
+      "rmse": 0.012098578416240163,
+      "rmse_over_range": 0.10225771064131339,
+      "r2": 0.9303620617562629,
       "coverage_95": 0.9375,
-      "sigma_scale": 0.28159733001270426
+      "sigma_scale": 0.28159733043601887
     },
     "heat_MJ_per_kg_ethane": {
-      "mae": 0.142686563164597,
-      "rmse": 0.23002589294466969,
-      "rmse_over_range": 0.042962582676708716,
-      "r2": 0.9851550554316046,
+      "mae": 0.14268656277921413,
+      "rmse": 0.23002589184028255,
+      "rmse_over_range": 0.04296258247043923,
+      "r2": 0.9851550555699424,
       "coverage_95": 1.0,
       "sigma_scale": 0.25
     }
   },
   "source": {
     "mechanism": "multiscale/mechanisms/aramcomech30/aramcomech30.yaml",
-    "mechanism_sha256": "59205c216ce05bfc637fd9c2a00d0e6fa0173bb05642fa6b26ab5aeb70606439",
+    "mechanism_sha256": "2cd87c24191aa48f64732c28f57abf678fae06a45ee456e79ae00b333a14f28d",
     "mechanism_species": 581,
     "mechanism_reactions": 3037,
     "mechanism_provenance": {
@@ -111,7 +112,7 @@
         "journal": "Combustion and Flame 197 (2018) 423-438",
         "doi": "10.1016/j.combustflame.2018.08.006"
       },
-      "retrieved_utc": "2026-09-23T03:02:04.791931+00:00",
+      "retrieved_utc": "2026-09-23T14:09:09.459575+00:00",
       "cantera_version": "3.2.0",
       "phase": "gas",
       "species": 581,
@@ -139,13 +140,13 @@
       "yaml": {
         "filename": "aramcomech30.yaml",
         "bytes": 832582,
-        "sha256": "59205c216ce05bfc637fd9c2a00d0e6fa0173bb05642fa6b26ab5aeb70606439"
+        "sha256": "2cd87c24191aa48f64732c28f57abf678fae06a45ee456e79ae00b333a14f28d"
       }
     },
     "phase": "gas",
     "cantera_version": "3.2.0",
     "python_version": "3.13.15",
-    "git_sha": "3e2838f0d928fdc87d0f3aef220a404b13291dc1",
+    "git_sha": "5c2bd4caf185d4812ae5b64179ea289ecefa13a4",
     "points_requested": 80,
     "broad_points_requested": 64,
     "targeted_points_requested": 16,
@@ -205,9 +206,9 @@
     "thermal_discretization": "segment edges uniform in normalized temperature progress",
     "yield_basis": "kg species per kg ethane entering reactor",
     "closure_max_abs": {
-      "carbon_residual": 1.5580869927589447e-12,
-      "hydrogen_residual": 6.903731221006374e-12,
-      "oxygen_residual": 1.6438395262369851e-12,
+      "carbon_residual": 9.21707155043805e-13,
+      "hydrogen_residual": 4.281188056207572e-12,
+      "oxygen_residual": 1.1308807949763475e-12,
       "mass_residual": 1.7763568394002505e-15
     },
     "failures": []

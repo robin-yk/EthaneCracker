@@ -1,21 +1,21 @@
 {
   "schema": "ethane-multiscale-release-v1",
   "profile": "smoke",
-  "git_sha": "3e2838f0d928fdc87d0f3aef220a404b13291dc1",
+  "git_sha": "5c2bd4caf185d4812ae5b64179ea289ecefa13a4",
   "train_points": 80,
   "broad_points": 64,
   "targeted_points": 16,
   "holdout_points": 24,
   "segments": 20,
   "artifacts": {
-    "multiscale/data/aramco_train.csv": "121894f88fdf0d2b6ea67aac667f0641a63d0a5d9c034dd330d076ac9087f1dd",
-    "multiscale/data/aramco_train.meta.json": "64a12945118c747ce765aed7ea2d0b4553e813c133a19d6261e083fedda501f2",
-    "multiscale/data/aramco_holdout.csv": "71584c0ad917954916277d7800a8d519f8e42cf0d328793be2ede092b643791e",
-    "multiscale/data/aramco_holdout.meta.json": "c1c8c6c59474db4394161e64c574eb7806ba05a0f0cf35ef88dc85c76ba65aa1",
-    "multiscale/surrogate.json": "60535c7f6c4724f243f82389c5217f28107d5c076de280f56d71aec03ee036bb",
-    "multiscale/training_report.json": "a781ccb6cc1247c06f09e070f2c502982e87be25fc656f17801431b78eb3b80b",
-    "multiscale/validation.json": "eaa40908d3a30f7f7347ad37a54fbf224b9c23fedfa896c162ff6623baac6230",
-    "multiscale/training_size_convergence.json": "ef630c0c54bf3a16a2fdb90e63b76cefa591934191e49a07f02c45c6156314f1",
-    "multiscale/segment_convergence.json": "0a151b82d4daeb23397feef7685f028d9660456ae4b2823f8b527dad265b31eb"
+    "multiscale/data/aramco_train.csv": "1596d090fd0482df7bbdc405549e4f23052e200c6c727e80a9328047ebf1dc14",
+    "multiscale/data/aramco_train.meta.json": "6fe348ea2291ef84b99d66536d51988bb5992936ae8766d7dda870b5effe3528",
+    "multiscale/data/aramco_holdout.csv": "f37e0e79efd3707e0f42ee77370836edb4d65cd3b10f4f726bf2f4a515a91ff7",
+    "multiscale/data/aramco_holdout.meta.json": "85a28d87f2da8deb5007970ad7c92e540d38241df5dab80b9faf20cfec155274",
+    "multiscale/surrogate.json": "3f324ecff4105d204ae43699fa77ece6e3fa69b913f10d19b0dd49e5b1871a3c",
+    "multiscale/training_report.json": "04c2f7f97c62dae56c2217e8f13da452a1e04c7578069df6dc6a01bd66626528",
+    "multiscale/validation.json": "7a1810aa40c8ffd1a8b14191ef9ae01db5729aed4aec5a98a13f1f2973f7ed28",
+    "multiscale/training_size_convergence.json": "f0357bb67b834cdee54018bf09012f85677bb8ab4539ca69905c3f1425a6da72",
+    "multiscale/segment_convergence.json": "d0b6a392b4903f61dd86c893ba602091024ca42adb17e05f29594b0c54599105"
   }
 }
