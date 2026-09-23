@@ -288,13 +288,16 @@ def main():
     if best is None:
         raise RuntimeError("no stable GP kernel candidate")
 
-    # Only the selected candidate pays the inverse-matrix cost for uncertainty
-    # calibration. Final fitting below still uses every training point.
+    # Calibrate uncertainty at nearly the same design density as the final GP.
+    # Kernel search may use a capped subset for speed, but calibrating sigma on
+    # that sparse subset makes the final 640-point posterior overconfident after
+    # its variance contracts. Use the complete internal fit split here and keep
+    # the untouched Cantera holdout exclusively for release validation.
     alpha0, kinv0 = fit_gp(
-        xn[search_fit_idx], yz[search_fit_idx], best["length"], args.noise
+        xn[fit_idx], yz[fit_idx], best["length"], args.noise
     )
     pz, sig_std = predict_latent(
-        xn[search_fit_idx], xn[tune_idx], alpha0, kinv0, best["length"]
+        xn[fit_idx], xn[tune_idx], alpha0, kinv0, best["length"]
     )
     pred, latent = original_predictions(pz, ymean, ystd, specs)
     best["pred"], best["latent"], best["sig_std"] = pred, latent, sig_std
@@ -370,6 +373,7 @@ def main():
         "training_points": int(len(x)),
         "fit_points_internal": int(len(fit_idx)),
         "kernel_search_fit_points": int(len(search_fit_idx)),
+        "uncertainty_calibration_fit_points": int(len(fit_idx)),
         "tuning_points_internal": int(len(tune_idx)),
         "seed": args.seed,
         "kernel_candidates_evaluated": len(candidates),
@@ -381,7 +385,8 @@ def main():
     Path(args.report).write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(
         f"trained final GP on {len(x)} cases; tuned on {len(tune_idx)} internal cases; "
-        f"kernel search used {len(search_fit_idx)} fit points"
+        f"kernel search used {len(search_fit_idx)} fit points; "
+        f"uncertainty calibration used {len(fit_idx)} fit points"
     )
     print(f"evaluated {len(candidates)} kernels; selected {best['length']} score {best['score']:.5g}")
     for name, q in tune_metrics.items():
