@@ -748,6 +748,8 @@ function model(p){
   const runDays=60*Math.exp(-0.025*(p.cot-850))*Math.pow(p.dilution/0.35,0.6)
                   *Math.pow(0.35/p.tau,0.3);
   const osf=runDays/(runDays+1.5);
+  if(!Number.isFinite(runDays)||runDays<=0)
+    flags.push('run-length correlation predicts zero on-stream time; annualized cost is undefined');
 
   /* 8. Capital. Anchored on TBMC $126.8 M at 610 kt/y, scaled by section. */
   const sc=(x,r,e)=>Math.pow(x/r,e);
@@ -2280,6 +2282,16 @@ $('sElec').value=logInv(S.elec,0.008,0.30);
 $('sGas').value=logInv(S.gas,1,30);
 
 /* ---------- stable read-only API for literature benchmarks ---------- */
+function validatePublicInputs(p){
+  const finiteKeys=['cot','tau','dilution','pressure','ramp','cap','ethane','elec','gas','grid'];
+  for(const k of finiteKeys) if(!Number.isFinite(Number(p[k]))) throw new RangeError(k+' must be finite');
+  if(p.tau<=0) throw new RangeError('tau must be > 0');
+  if(p.dilution<0) throw new RangeError('steam / hydrocarbon must be >= 0');
+  if(p.pressure<=0) throw new RangeError('pressure must be > 0');
+  if(p.ramp<=0) throw new RangeError('heating exponent must be > 0');
+  if(p.cap<=0) throw new RangeError('capacity must be > 0');
+  for(const k of ['ethane','elec','gas','grid']) if(p[k]<0) throw new RangeError(k+' must be >= 0');
+}
 window.ethaneModel={
   version:'ethane-web-model-v1',
   ready:()=>!!app.gp,
@@ -2287,6 +2299,7 @@ window.ethaneModel={
   evaluate:(overrides={})=>{
     const p={...S,...overrides};
     if(p.kinetics==='gp'&&!app.gp) throw new Error('Aramco GP is still loading');
+    validatePublicInputs(p);
     const r=model(p), lc=lca(r,p);
     const annualOpex=(r.coo-r.L.capital)*r.prod/1e6;
     return {
@@ -2321,6 +2334,9 @@ window.ethaneModel={
       carbon_kgco2e_per_t:lc.ci,
       carbon_scopes_kgco2e_per_t:{scope1:lc.scope1,scope2:lc.scope2,scope3:lc.scope3},
       annual_product_kt:r.prod/1000,
+      economically_operable:Number.isFinite(r.coo)&&r.prod>0,
+      run_days:r.runDays,
+      onstream_factor:r.osf,
       cost_breakdown_usd_per_t:{...r.L},
       gp_mean:r.gp&&r.gp.mean?{...r.gp.mean}:null,
       flags:[...r.flags]
