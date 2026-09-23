@@ -1,6 +1,6 @@
 {
   "mechanism": "multiscale/mechanisms/aramcomech30/aramcomech30.yaml",
-  "mechanism_sha256": "f7f8faa3abeb507bceecfcf9ffec578d0a6223829dd00c29e3a1934150d3cb0d",
+  "mechanism_sha256": "59205c216ce05bfc637fd9c2a00d0e6fa0173bb05642fa6b26ab5aeb70606439",
   "mechanism_species": 581,
   "mechanism_reactions": 3037,
   "mechanism_provenance": {
@@ -13,7 +13,7 @@
       "journal": "Combustion and Flame 197 (2018) 423-438",
       "doi": "10.1016/j.combustflame.2018.08.006"
     },
-    "retrieved_utc": "2026-09-23T02:49:05.454840+00:00",
+    "retrieved_utc": "2026-09-23T03:02:04.791931+00:00",
     "cantera_version": "3.2.0",
     "phase": "gas",
     "species": 581,
@@ -41,13 +41,13 @@
     "yaml": {
       "filename": "aramcomech30.yaml",
       "bytes": 832582,
-      "sha256": "f7f8faa3abeb507bceecfcf9ffec578d0a6223829dd00c29e3a1934150d3cb0d"
+      "sha256": "59205c216ce05bfc637fd9c2a00d0e6fa0173bb05642fa6b26ab5aeb70606439"
     }
   },
   "phase": "gas",
   "cantera_version": "3.2.0",
   "python_version": "3.13.15",
-  "git_sha": "cc0fbc84defa06858f3a81a9dc590f14d5e143e3",
+  "git_sha": "3e2838f0d928fdc87d0f3aef220a404b13291dc1",
   "points_requested": 24,
   "broad_points_requested": 24,
   "targeted_points_requested": 0,
@@ -86,10 +86,10 @@
   "thermal_discretization": "segment edges uniform in normalized temperature progress",
   "yield_basis": "kg species per kg ethane entering reactor",
   "closure_max_abs": {
-    "carbon_residual": 1.4026557693114228e-12,
-    "hydrogen_residual": 6.782015211131406e-12,
-    "oxygen_residual": 1.5586796426265102e-12,
-    "mass_residual": 1.5543122344752192e-15
+    "carbon_residual": 7.545075675352564e-13,
+    "hydrogen_residual": 3.6690949562675625e-12,
+    "oxygen_residual": 1.7500744944097012e-12,
+    "mass_residual": 1.3322676295501878e-15
   },
   "failures": []
 }
