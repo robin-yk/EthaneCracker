@@ -185,3 +185,7 @@ python -m http.server 8000
 
 Open `http://localhost:8000/`.
 <!-- publication GP rebuild: expanded tau domain, 512 broad + 128 targeted + 128 holdout -->
+
+## Literature-constrained TEA uncertainty
+
+`uncertainty/` contains a separate research analysis that calibrates effective fired efficiency and compression duty against the documented literature utility observations, retains uncalibrated heat-recovery/capital assumptions, and propagates shared parameter draws into paired fired/Joule costs and break-even electricity prices. The Model page links to its dashboard. See [method, source boundaries and reproduction](uncertainty/README.md). These are conditional scenario results; same-study held-out outputs and unresolved mismatches remain visible.
