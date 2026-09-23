@@ -80,6 +80,40 @@ async function waitApi(){
     const p={...base,...mods}, r=api.evaluate(p); validate(name,p,r);
   }
 
+  // Product recovery and tail-gas fate must share the material and energy inventory.
+  for(const kinetics of ['gp','empirical']){
+    for(const mode of ['CH','JH']){
+      const byFate={};
+      for(const tailFate of ['burn','sell','vent']){
+        const name=kinetics+'-'+mode+'-'+tailFate;
+        const r=api.evaluate({...base,kinetics,mode,tailFate});byFate[tailFate]=r;
+        const t=r.tail_gas_gj_per_t,loss=r.ethylene_loss_to_tail_kg_per_kg;
+        check(name,approx(r.ethylene_before_recovery_kg_per_kg*r.ethylene_recovery,1),'recovered product basis does not close');
+        check(name,approx(loss+1,r.ethylene_before_recovery_kg_per_kg),'ethylene loss missing from material balance');
+        check(name,approx(t.generated,t.heater+t.surplus),'tail-gas split does not close');
+        check(name,approx(r.cost_breakdown_usd_per_t.gasCr,-t.sold*base.gas),'sale credit disagrees with sold gas');
+        check(name,tailFate==='sell'?approx(t.sold,t.surplus):t.sold===0,'burned/vented gas sold');
+        const expectedCO2=(r.ch4_kg_per_kg*44.01/16.04+loss*88.02/28.05)*1000;
+        const c=r.carbon_tail_kgco2e_per_t;
+        if(tailFate==='burn')check(name,approx(c.heater+c.fate,expectedCO2),'tail combustion carbon does not close');
+        if(mode==='JH')check(name,t.heater===0&&c.heater===0,'Joule heater burns tail gas');
+        if(mode==='JH'&&tailFate==='vent')check(name,approx(c.fate,r.ch4_kg_per_kg*29.8*1000),'vented methane omitted or burned');
+        if(kinetics==='gp'){
+          const a=r.acetylene_converter,g=r.gp_mean;
+          check(name,approx(a.rawEthyleneKg+a.ethyleneRecoveredKg,r.ethylene_before_recovery_kg_per_kg),'converter ethylene does not close');
+          check(name,approx(a.rawEthyleneKg,g.y_c2h4_kg_per_kg_ethane*r.coil_ethane_kg_per_kg),'coil scaling ignores recovery');
+          const impurityMol=r.c2h2_kg_per_kg/26.038;
+          const ppm=1e6*impurityMol/(1/28.05+impurityMol);
+          check(name,approx(ppm,a.residualPpm)&&ppm<=5+1e-8,'product acetylene exceeds 5 ppm');
+        }else{
+          check(name,approx(r.fresh_ethane_kg_per_kg*r.selectivity_mass*r.ethylene_recovery,1),'empirical feed ignores recovery');
+        }
+      }
+      check(kinetics+mode,approx(byFate.burn.cost_usd_per_t-byFate.sell.cost_usd_per_t,-byFate.sell.cost_breakdown_usd_per_t.gasCr),'fate cost difference is not sale revenue');
+      check(kinetics+mode,approx(byFate.burn.cost_usd_per_t,byFate.vent.cost_usd_per_t),'venting earns sale revenue');
+    }
+  }
+
   // deterministic grid: intentionally broad, including points outside operating envelopes.
   const Ts=[750,825,900,1000], taus=[.02,.10,.35,1.0,1.5], steams=[0,.35,.70], Ps=[1,3,5], ramps=[.45,1,4];
   let n=0;

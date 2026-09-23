@@ -607,7 +607,11 @@ function model(p){
     const nA=ya*1000/MW.C2H2;
     const nE=ye*1000/MW.C2H4;
     const nEth=yeth*1000/MW.C2H6;
-    const targetNA=ACET.targetPpm*1e-6*Math.max(1e-12,nA+nE+nEth);
+    // Bound residual acetylene against recovered ethylene, assuming all residual
+    // C2H2 reaches the product. Solve for conversion-dependent ethylene yield.
+    const ppmRatio=ACET.targetPpm*1e-6;
+    const targetNA=ppmRatio*RECOVERY*(nE+ACET.selectivity*nA)
+      /(1+ppmRatio*RECOVERY*ACET.selectivity);
     const nAres=Math.min(nA,targetNA);
     const nArxn=Math.max(0,nA-nAres);
     const nErec=nArxn*ACET.selectivity;
@@ -619,7 +623,7 @@ function model(p){
     const h2NeedPerCoil=h2NeedMol*MW.H2/1000;
     const finalEthyleneYield=ye+ethyleneRecoveredPerCoil;
 
-    coil=1/Math.max(finalEthyleneYield,1e-12);
+    coil=1/Math.max(RECOVERY*finalEthyleneYield,1e-12);
     const fresh=Math.max(0,(X-ethaneMadePerCoil)*coil);
     recycle=Math.max(0,coil-fresh);
     dilSteam=coil*p.dilution;
@@ -640,11 +644,13 @@ function model(p){
       rawKg:ya*coil,
       convertedKg:(nArxn*MW.C2H2/1000)*coil,
       residualKg:y.c2h2,
-      residualPpm:nAres/Math.max(1e-12,nAres+nE+nErec+nEth+nEthMade)*1e6,
+      residualPpm:nAres/Math.max(1e-12,nAres+RECOVERY*(nE+nErec))*1e6,
+      residualBasis:'recovered ethylene product; all residual acetylene carried to product',
+      converterC2Ppm:nAres/Math.max(1e-12,nAres+nE+nErec+nEth+nEthMade)*1e6,
       rawC2MolPct:100*nA/Math.max(1e-12,nA+nE+nEth),
       conversion:nA>0?nArxn/nA:0,
       beds:(nA/Math.max(1e-12,nA+nE+nEth)<0.005?1:(nA/Math.max(1e-12,nA+nE+nEth)<=0.017?2:3)),
-      rawEthyleneKg:Math.max(0,1-ethyleneRecoveredPerCoil*coil),
+      rawEthyleneKg:ye*coil,
       rawEthaneKg:Math.max(0,recycle-ethaneMadePerCoil*coil),
       rawH2Kg:yh2raw*coil,
       ethyleneRecoveredKg:ethyleneRecoveredPerCoil*coil,
@@ -675,12 +681,16 @@ function model(p){
     const rest=2*loss;
     nCH4=fCH4*rest; nC3=fC3*rest/3; nCoke=fCoke*rest;
     nH2=3-2*Smol-rest*(2*fCH4+fC3);
-    n=1000/(Smol*MW.C2H4);
+    n=1000/(RECOVERY*Smol*MW.C2H4);
     const kg=m=>n*m/1000;
     y={ethane:kg(MW.C2H6),ch4:kg(nCH4*MW.CH4),h2:kg(nH2*MW.H2),
        c2h2:0,c3:kg(nC3*MW.C3),c4plus:0,coke:kg(nCoke*MW.C)};
     coil=y.ethane/X; recycle=coil-y.ethane; dilSteam=coil*p.dilution;
   }
+
+  // Basis: one kg recovered ethylene. Cold-box loss joins light tail gas.
+  const ethyleneBeforeRecovery=1/RECOVERY;
+  const ethyleneLoss=ethyleneBeforeRecovery-1;
 
   /* 2. Reactor duty. In the mechanism route, Cantera supplies the enthalpy rise
      from the fixed 650 C radiant-section inlet to the requested outlet. The
@@ -698,15 +708,17 @@ function model(p){
   const tleSteam=p.tle?(p.heatRecovery===undefined?TLE_REC:p.heatRecovery)*qSens:0;
 
   /* 3. Tail gas. The furnace burns this before buying anything. */
-  const fuelGas=y.ch4*LHV.CH4*1000+y.h2*LHV.H2*1000;   // kJ/kg C2H4
-  let gasBuy=0,gasSell=0,elecHeat=0;
-  if(p.mode==='CH'){ if(fuelGas>=qDeliver) gasSell=fuelGas-qDeliver; else gasBuy=qDeliver-fuelGas; }
-  else { elecHeat=qDeliver; gasSell=fuelGas; }
+  const fuelGas=(y.ch4*LHV.CH4+y.h2*LHV.H2+ethyleneLoss*LHV_MJ.C2H4)*1000;   // kJ/kg C2H4
+  const gasBurned=p.mode==='CH'?Math.min(fuelGas,qDeliver):0;
+  const gasSurplus=fuelGas-gasBurned;
+  const gasSell=p.tailFate==='sell'?gasSurplus:0;
+  const gasBuy=p.mode==='CH'?Math.max(0,qDeliver-fuelGas):0;
+  const elecHeat=p.mode==='CH'?0:qDeliver;
 
   /* 4. Compressor. Specification fixed. AC-201 sits after compression, so
      compressor flow uses the raw reactor outlet. */
   const molComp={
-    c2h4:(useMechanismSpecies?acetylene.rawEthyleneKg:1)*1000/MW.C2H4,
+    c2h4:(useMechanismSpecies?acetylene.rawEthyleneKg:ethyleneBeforeRecovery)*1000/MW.C2H4,
     c2h6:(useMechanismSpecies?acetylene.rawEthaneKg:recycle)*1000/MW.C2H6,
     ch4:y.ch4*1000/MW.CH4,
     h2:(useMechanismSpecies?acetylene.rawH2Kg:y.h2)*1000/MW.H2,
@@ -718,14 +730,14 @@ function model(p){
   const wComp=(p.compressionFactor===undefined?1:p.compressionFactor)*st*(gam/(gam-1))*8.314*313*(Math.pow(rSt,(gam-1)/gam)-1)/0.75*nGas/1000;
 
   /* 5. AC-201 effluent enters the cold box. */
-  const mol={c2h4:1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
+  const mol={c2h4:ethyleneBeforeRecovery*1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
              h2:y.h2*1000/MW.H2,c2h2:(y.c2h2||0)*1000/MW.C2H2,
              c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4};
   const nPostAC=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c2h2+mol.c3+mol.c4plus;
   const lightFrac=(mol.ch4+mol.h2)/nPostAC;
   const tCold=-100-40*Math.log10(0.01/(1-RECOVERY))-160*(lightFrac-0.40);
-  const mCold=1+recycle+y.ch4+y.h2+(y.c2h2||0)+y.c3+(y.c4plus||0);
-  const qCold=mCold*2.2*(30-tCold)+(1+recycle+(y.c2h2||0)+y.c3+(y.c4plus||0))*350;
+  const mCold=ethyleneBeforeRecovery+recycle+y.ch4+y.h2+(y.c2h2||0)+y.c3+(y.c4plus||0);
+  const qCold=mCold*2.2*(30-tCold)+(ethyleneBeforeRecovery+recycle+(y.c2h2||0)+y.c3+(y.c4plus||0))*350;
   const lv=[[-40,.55],[-100,.30],[tCold,.15]];
   let wRef=0; for(const[T,fr]of lv){const Tk=T+273.15;
     wRef+=qCold*fr/Math.max(.05,ETA2*Tk/(T_AMB-Tk));}
@@ -786,7 +798,7 @@ function model(p){
   }else{
     const cIn=2, cOut=2*Smol+nCH4+3*nC3+nCoke;
     const hIn=6, hOut=4*Smol+4*nCH4+6*nC3+2*nH2;
-    const mIn=y.ethane, mOut=1+y.ch4+y.h2+y.c3+y.coke;
+    const mIn=y.ethane, mOut=1+ethyleneLoss+y.ch4+y.h2+y.c3+y.coke;
     bal={carbon:(cOut-cIn)/cIn,hydrogen:(hOut-hIn)/hIn,
          mass:(mOut-mIn)/mIn,energy:(eOut-eIn)/eIn};
     balanceBasis='closed lumped empirical chemistry';
@@ -807,7 +819,7 @@ function model(p){
     flags.push('selectivity '+sig(Smass*100,3)+'% is outside the industrial band of '
       +sig(VALID.sel[0],2)+' to '+sig(VALID.sel[1],2)+'%');
 
-  return {flags,selClipped,y,acetylene,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,
+  return {flags,selClipped,y,acetylene,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,gasSurplus,gasBurned,ethyleneBeforeRecovery,ethyleneLoss,
     elecHeat,wComp,wRef,wSplit,tCold,qCold,lightFrac,nGas,alpha,nMin,nAct,rRatio,
     qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc,
     reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp,useMechanismSpecies,balanceBasis};
@@ -839,19 +851,19 @@ function breakeven(){
    emission factors. Everything is kg CO2e per tonne of ethylene. */
 function lca(r,p){
   const perT=1000;                                   // kg per kg C2H4 -> kg per tonne C2H4
-  const burnFrac=r.fuelGas>0?Math.min(1,r.qDeliver/r.fuelGas):0;
+  const burnFrac=r.fuelGas>0?r.gasBurned/r.fuelGas:0;
   const ch4Burned=r.y.ch4*burnFrac;                   // tail gas methane actually fired
   const ch4Surplus=r.y.ch4-ch4Burned;
 
   const s3_feed  = r.y.ethane*p.ethaneUp*perT;
   const s1_gas   = r.gasBuy*kJ2GJ*EF.ng;
-  const s1_tail  = ch4Burned*EF.ch4*perT;
+  const s1_tail  = (ch4Burned*EF.ch4+r.ethyleneLoss*burnFrac*(2*44.01/MW.C2H4))*perT;
   const s1_coke  = r.y.coke*EF.coke*perT;
   const s2_power = r.elec_kWh*perT*p.grid;
 
   let s1_fate=0, cr_tail=0;
-  if(r.gasSell>0){
-    if(p.tailFate==='burn')      s1_fate = ch4Surplus*EF.ch4*perT;
+  if(r.gasSurplus>0){
+    if(p.tailFate==='burn')      s1_fate = (ch4Surplus*EF.ch4+r.ethyleneLoss*(1-burnFrac)*(2*44.01/MW.C2H4))*perT;
     else if(p.tailFate==='vent') s1_fate = ch4Surplus*GWP_CH4*perT;
     else                         cr_tail = -r.gasSell*kJ2GJ*EF.ng;
   }
@@ -874,7 +886,7 @@ function lca(r,p){
     shareNote='avoided C3+ production credited';
   }else{
     let a=1,b=coproduct,c=0;
-    if(p.alloc==='mass'){ c=(p.tailFate==='sell'?r.y.ch4+r.y.h2:0); }
+    if(p.alloc==='mass'){ c=(p.tailFate==='sell'?(r.y.ch4+r.y.h2+r.ethyleneLoss)*(1-burnFrac):0); }
     else if(p.alloc==='energy'){ a=LHV_MJ.C2H4; b=coproduct*LHV_MJ.C3; c=soldTailMJ/1000; }
     else { a=r.coo; b=coproduct*p.lpg; c=(p.tailFate==='sell'?soldTailMJ/1000*p.gas:0); }
     share=a/(a+b+c);
@@ -948,7 +960,7 @@ function panelFlow(r){
   const up=(x,lab,col)=>'<line x1="'+x+'" y1="'+BY+'" x2="'+x+'" y2="96" stroke="'+col+'" marker-end="url(#a)"/>'
     +'<text x="'+x+'" y="88" font-size="10.5" fill="'+col+'" text-anchor="middle">'+lab+'</text>';
   s+=down(xs[1]+BW/2,'Water',G);
-  s+=up(xs[3]+BW/2,r.gasSell>0?'Tail gas '+usd(-r.L.gasCr)+'/t':'Tail gas to furnace',r.gasSell>0?A:G);
+  s+=up(xs[3]+BW/2,r.gasSurplus>0?'Tail gas: '+S.tailFate:'Tail gas to furnace',r.gasSurplus>0?A:G);
   s+='<line x1="'+(xs[4]+28)+'" y1="'+(BY+BH)+'" x2="'+(xs[4]+28)+'" y2="224" stroke="'+K+'" marker-end="url(#k)"/>';
   s+='<text x="'+(xs[4]+28)+'" y="238" font-size="10.5" fill="'+K+'" text-anchor="middle">'+C2H4+' 1.000 kg</text>';
   s+='<line x1="'+(xs[4]+92)+'" y1="'+(BY+BH)+'" x2="'+(xs[4]+92)+'" y2="250" stroke="'+A+'" marker-end="url(#a)"/>';
@@ -1661,7 +1673,7 @@ function renderCarbon(r){
   $('vEup').textContent=sig(S.ethaneUp,3)+' kg/kg';
   $('nEup').innerHTML='Scope 3 <b>'+sig(l.scope3,4)+'</b> kg/t';
   $('vFate').textContent=S.tailFate;
-  $('nFate').innerHTML=r.gasSell>0?('Surplus methane <b>'+sig(l.ch4Surplus,3)+'</b> kg/kg')
+  $('nFate').innerHTML=r.gasSurplus>0?('Surplus methane <b>'+sig(l.ch4Surplus,3)+'</b> kg/kg')
     :'No surplus at this setting. All tail gas is fired.';
   ['fBurn','fSell','fVent'].forEach((id,i)=>$(id).classList.toggle('active',S.tailFate===['burn','sell','vent'][i]));
   $('vAlloc').textContent=S.alloc;
@@ -1832,7 +1844,7 @@ function renderExplained(r,l){
   h+=item('High pressure steam recovery','credit of $'+sig(-r.L.steamCr,4)+' per tonne',
     '<p>Heat taken out in the transfer-line exchanger raises '+sig(r.tleSteam*kJ2GJ,3)+' gigajoules of steam per '
     +'tonne of ethylene. The model values it at $'+sig(S.steam,3)+' per gigajoule and subtracts it.</p>');
-  h+=item('Tail gas',(r.gasSell>0?sig(r.gasSell*kJ2GJ,3)+' GJ surplus':'all consumed in the furnace'),
+  h+=item('Tail gas',(r.gasSurplus>0?sig(r.gasSurplus*kJ2GJ,3)+' GJ surplus':'all consumed in the furnace'),
     '<p>Hydrogen and methane from the separation system. The furnace burns them before any natural gas is bought. '
     +'At these conditions the tail gas covers '+pctS(Math.min(100,r.fuelGas/r.qDeliver*100),3)+' of furnace demand.</p>');
   h+=item('Water removal',sig(r.dilSteam,3)+' kilograms',
@@ -2297,6 +2309,7 @@ function validatePublicInputs(p){
   if(p.heatRecovery!==undefined&&(!Number.isFinite(p.heatRecovery)||p.heatRecovery<0||p.heatRecovery>1))
     throw new RangeError('heatRecovery must be finite and in [0,1]');
 
+  if(!['burn','sell','vent'].includes(p.tailFate)) throw new RangeError('tailFate must be burn, sell or vent');
   const finiteKeys=['eff','cot','tau','dilution','pressure','ramp','cap','ethane','elec','gas','grid'];
   for(const k of finiteKeys) if(!Number.isFinite(Number(p[k]))) throw new RangeError(k+' must be finite');
   if(p.eff<=0||p.eff>100) throw new RangeError('eff must be > 0 and <= 100 percent');
@@ -2354,6 +2367,12 @@ window.ethaneModel={
       c3_kg_per_kg:r.y.c3||0,
       c4plus_kg_per_kg:r.y.c4plus||0,
       acetylene_converter:{...r.acetylene},
+      ethylene_recovery:RECOVERY,
+      ethylene_before_recovery_kg_per_kg:r.ethyleneBeforeRecovery,
+      ethylene_loss_to_tail_kg_per_kg:r.ethyleneLoss,
+      tail_gas_gj_per_t:{generated:r.fuelGas*kJ2GJ,heater:r.gasBurned*kJ2GJ,
+        surplus:r.gasSurplus*kJ2GJ,sold:r.gasSell*kJ2GJ},
+      carbon_tail_kgco2e_per_t:{heater:lc.s1_tail,fate:lc.s1_fate,sale_credit:lc.cr_tail},
       reactor_useful_heat_gj_per_t:r.qDemand*kJ2GJ,
       mechanism_zone_heat_gj_per_t:(r.gp&&r.gp.mean&&Number.isFinite(r.gp.mean.heat_MJ_per_kg_ethane))
         ? r.gp.mean.heat_MJ_per_kg_ethane*r.coil : null,

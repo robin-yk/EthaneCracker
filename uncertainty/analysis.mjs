@@ -7,7 +7,7 @@ export const CONFIG = {
     jouleEfficiency:[90,95,98],jouleFurnaceFactor:[0.7,1,1.3]},
   reference: {kinetics:'gp',mode:'CH',eff:60,cot:850,tau:0.35,dilution:0.35,
     pressure:1.5,ramp:1,cap:610,ethane:200,elec:0.07,gas:4,grid:0.36,
-    ethaneUp:0.5,lpg:550,steam:9.8,ccf:0.10,labor:5,tle:true,
+    ethaneUp:0.5,lpg:550,steam:9.8,ccf:0.10,labor:5,tle:true,tailFate:'burn',alloc:'expansion',
     compressionFactor:1,heatRecovery:0.7,capitalFactor:1,jouleFurnaceFactor:1}
 };
 export function rng(seed){let x=seed>>>0;return ()=>{x=(Math.imul(1664525,x)+1013904223)>>>0;return x/4294967296;};}
