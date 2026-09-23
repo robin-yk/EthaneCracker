@@ -36,8 +36,16 @@ import numpy as np
 
 INPUT_RANGES = {
     "temperature_c": (750.0, 1000.0),
-    "residence_time_s": (0.02, 1.00),  # sampled log-uniform
+    "residence_time_s": (0.02, 1.50),  # sampled log-uniform
     "steam_hc_kgkg": (0.0, 0.70),
+    "pressure_bar": (1.0, 5.0),
+    "ramp_exponent": (0.45, 4.0),
+}
+
+SEVERITY_RANGES = {
+    "temperature_c": (900.0, 1000.0),
+    "residence_time_s": (0.30, 1.50),
+    "steam_hc_kgkg": (0.0, 0.35),
     "pressure_bar": (1.0, 5.0),
     "ramp_exponent": (0.45, 4.0),
 }
@@ -63,23 +71,24 @@ def latin_hypercube(n: int, d: int, rng: np.random.Generator) -> np.ndarray:
     return x
 
 
-def scale_samples(unit: np.ndarray) -> list[dict[str, float]]:
+def scale_samples(unit: np.ndarray, ranges: dict[str, tuple[float, float]] | None = None) -> list[dict[str, float]]:
+    ranges = ranges or INPUT_RANGES
     rows: list[dict[str, float]] = []
     for u in unit:
-        t = INPUT_RANGES["temperature_c"][0] + u[0] * (
+        t = ranges["temperature_c"][0] + u[0] * (
             INPUT_RANGES["temperature_c"][1] - INPUT_RANGES["temperature_c"][0]
         )
-        log_tau = math.log10(INPUT_RANGES["residence_time_s"][0]) + u[1] * (
+        log_tau = math.log10(ranges["residence_time_s"][0]) + u[1] * (
             math.log10(INPUT_RANGES["residence_time_s"][1])
             - math.log10(INPUT_RANGES["residence_time_s"][0])
         )
-        steam = INPUT_RANGES["steam_hc_kgkg"][0] + u[2] * (
+        steam = ranges["steam_hc_kgkg"][0] + u[2] * (
             INPUT_RANGES["steam_hc_kgkg"][1] - INPUT_RANGES["steam_hc_kgkg"][0]
         )
-        p = INPUT_RANGES["pressure_bar"][0] + u[3] * (
+        p = ranges["pressure_bar"][0] + u[3] * (
             INPUT_RANGES["pressure_bar"][1] - INPUT_RANGES["pressure_bar"][0]
         )
-        ramp = INPUT_RANGES["ramp_exponent"][0] + u[4] * (
+        ramp = ranges["ramp_exponent"][0] + u[4] * (
             INPUT_RANGES["ramp_exponent"][1] - INPUT_RANGES["ramp_exponent"][0]
         )
         rows.append(
@@ -263,6 +272,10 @@ def main() -> None:
     ap.add_argument("--inlet-temperature-c", type=float, default=650.0)
     ap.add_argument("--output", default="multiscale/data/cantera_sweep.csv")
     ap.add_argument(
+        "--region", choices=("broad","severity"), default="broad",
+        help="broad full-domain LHS or severity-targeted LHS",
+    )
+    ap.add_argument(
         "--workers", type=int, default=0,
         help="parallel worker processes; 0 selects up to four CPUs",
     )
@@ -270,7 +283,8 @@ def main() -> None:
 
     gas = ct.Solution(args.mechanism, args.phase)
     rng = np.random.default_rng(args.seed)
-    cases = scale_samples(latin_hypercube(args.points, 5, rng))
+    ranges = SEVERITY_RANGES if args.region == "severity" else INPUT_RANGES
+    cases = scale_samples(latin_hypercube(args.points, 5, rng), ranges)
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -346,7 +360,8 @@ def main() -> None:
         "workers": workers,
         "seed": args.seed,
         "inlet_temperature_c": args.inlet_temperature_c,
-        "input_ranges": INPUT_RANGES,
+        "input_ranges": ranges,
+        "sampling_region": args.region,
         "reactor_model": "prescribed-temperature Lagrangian PFR approximation",
         "thermal_history": "T(f)=Tin+(Tout-Tin)*f**ramp_exponent",
         "thermal_discretization": "segment edges uniform in normalized temperature progress",
