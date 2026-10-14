@@ -175,7 +175,7 @@ Process references for this block are the U.S. EPA *Industrial Process Profiles 
 
 The web interface also reports a bed-count severity indicator from the raw C2 acetylene concentration: one bed below 0.5 mol%, two beds from 0.5 to 1.7 mol%, and three beds above 1.7 mol%. This follows published tail-end reactor practice and is displayed as a design indicator only; bed count does not independently scale CAPEX in the present screening TEA.
 
-The cold-box calculation estimates refrigeration duty from the converter effluent flow, light-gas fraction, recovery, and Carnot-based work. The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
+The cold box is solved in the engine with the Peng–Robinson equation of state (ChemSep binary interaction parameters; NASA polynomials for the ideal-gas enthalpy). A flash at 30 bar gives the cold-end temperature that leaves 0.5 % of the ethylene in the tail gas. The refrigeration duty at the −40 °C, −100 °C and cold-end levels is the feed enthalpy drop between the level boundaries less the enthalpy taken up by the tail gas and the condensate rewarming against the feed with a 5 K approach, walked in 10 K steps so that no step recuperates more than the feed releases. A propylene / ethylene / methane cascade of two-stage vapor-compression cycles evaluated with CoolProp converts duty to work (COP 1.69, 1.45, 2.88; isentropic efficiency 0.75; `multiscale/coldbox/refrigeration_cycles.py`). The C2-splitter condenser at −30 °C sits on the propylene cycle (COP 2.07). The engine's flash and enthalpy balance agree with the thermo-library calculation on 1,232 feed compositions within 0.04 K and 1.3 % of refrigeration work (`multiscale/coldbox/check_engine.cjs`). The C2 splitter uses Fenske–Underwood–Gilliland-style shortcut relationships at fixed product purity and recovery.
 
 TLE recovery credits recovered sensible heat. Tail gas supplies fired-heater demand before purchased natural gas. The Joule case supplies reactor heat electrically and consumes no tail gas in the heater. Surplus tail gas follows the selected burn, sell, or vent route; only sold gas earns revenue and displacement credit. Mass allocation uses the sold surplus mass. Methane venting uses the existing fossil-methane GWP; ethylene vent mass is retained in the inventory without a separate GWP factor.
 
@@ -217,7 +217,7 @@ Current release status:
 
 ## 14. Model scope
 
-The current calculation covers gas-phase chemistry, imposed thermal history, recycle, compression, screening acetylene hydrogenation, refrigeration screening, C2 fractionation screening, heat recovery, CAPEX/OPEX, and LCA.
+The current calculation covers gas-phase chemistry, imposed thermal history, recycle, compression, screening acetylene hydrogenation, refrigeration from an equation-of-state flash and cascade, C2 fractionation screening, heat recovery, CAPEX/OPEX, and LCA.
 
 Higher-fidelity reactor work requires radial temperature gradients, furnace-side radiation, tube-wall conduction, pressure drop, and coke-deposition kinetics.
 

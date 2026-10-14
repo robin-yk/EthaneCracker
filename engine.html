@@ -430,7 +430,21 @@ const CAL={cot:850, tau:0.35, X:0.65};
 const A_PRE=(-Math.log(1-CAL.X)/CAL.tau)*Math.exp(EA/(8.314*(CAL.cot+273.15)));
 const H_RXN=145, CP_C2H6=3.0, CP_STEAM=2.3, T_PREHEAT=150;
 const LHV={CH4:50,H2:120};
-const ETA2=0.35, T_AMB=303, TLE_REC=0.70;
+const TLE_REC=0.70;
+/* Refrigeration. The cold box is solved in coldBox() below: a Peng-Robinson flash sets the
+   cold end for the ethylene recovery, and the duty by level is an enthalpy balance over the
+   cooling curve. Duty becomes work through a propylene / ethylene / methane cascade of
+   two-stage economized vapor-compression cycles evaluated with CoolProp: 5 K approach,
+   30 degC cooling water, isentropic efficiency 0.75, no motor losses
+   (multiscale/coldbox/refrigeration_cycles.py). The C2-splitter condenser at 243 K sits
+   on the propylene cycle. */
+const COP={propylene:1.693,ethylene:1.453,methane:2.879,splitter:2.067};
+/* Cold-box capital scales with refrigeration work relative to the reference plant. The
+   anchor is the reference-case work (850 degC, 0.35 s, 1.5 bar, d 0.35, n 1) so that the
+   reference plant carries exactly the SPLIT.coldbox share. The earlier anchor (2098)
+   predated the acetylene converter and the flash, and left the reference cold-box
+   capital 16 % above its share. */
+const REF_WREF=1274.9;
 /* Dilution steam is not free, and until now this model treated it as if it were. It is
    raised in the dilution steam generator, condensed out again in the quench, and the
    condensation duty is rejected to cooling water. Only the sensible heat of superheating
@@ -552,6 +566,163 @@ function mechanismGP(p){
   if(mean.s_c2h4_mol<0||mean.s_c2h4_mol>1)physical.push('selectivity outside [0,1]');
   return {mean,inside:outside.length===0,outside,physical,
           qualified:outside.length===0&&physical.length===0};
+}
+
+/* ---------- cold-box thermodynamics ----------
+   Peng-Robinson equation of state for the cracked-gas lumps (H2, CH4, C2H4, C2H6, C3 as
+   propylene, C4+ as 1-butene) with the ChemSep binary interaction parameters distributed
+   with the thermo library, and NASA polynomials for the ideal-gas enthalpy (McBride, Gordon
+   and Reno; Cantera nasa_gas.yaml, 200-1000 K range, used down to the cold end). The cold
+   box is one equilibrium stage at P_COLD that leaves (1 - RECOVERY) of the ethylene in the
+   tail gas. The refrigeration duty at each level is the feed enthalpy drop between the
+   level boundaries, less the enthalpy the tail gas and the condensate take up while
+   rewarming against the feed with a DT_MIN approach. Validation against the thermo and
+   CoolProp calculation: multiscale/coldbox/check_engine.cjs. */
+const CB={
+  Tc:[33.145,190.564,282.350,305.322,364.211,419.290],          // K
+  Pc:[12.964e5,45.992e5,50.418e5,48.722e5,45.550e5,40.051e5],   // Pa
+  w:[-0.219,0.01142,0.0866,0.0995,0.146,0.192],
+  kij:[[0,-0.0044,0.0633,-0.0781,-0.1037,0],[-0.0044,0,0.0244,-0.0059,0.033,0],
+       [0.0633,0.0244,0,0.0078,0,0],[-0.0781,-0.0059,0.0078,0,0.0089,0],
+       [-0.1037,0.033,0,0.0089,0,0.0004],[0,0,0,0,0.0004,0]],
+  nasa:[[2.344331120e+00,7.980520750e-03,-1.947815100e-05,2.015720940e-08,-7.376117610e-12,-9.179351730e+02],
+        [5.149876130e+00,-1.367097880e-02,4.918005990e-05,-4.847430260e-08,1.666939560e-11,-1.024664760e+04],
+        [3.959201480e+00,-7.570522470e-03,5.709902920e-05,-6.915887530e-08,2.698843730e-11,5.089775930e+03],
+        [4.291424920e+00,-5.501542700e-03,5.994382880e-05,-7.084662850e-08,2.686857710e-11,-1.152220550e+04],
+        [3.834645240e+00,3.290784050e-03,5.052281840e-05,-6.662514180e-08,2.637075850e-11,7.538382950e+02],
+        [4.426740730e+00,6.639462490e-03,6.806528150e-05,-9.287535620e-08,3.734739490e-11,-2.115327960e+03]]
+};
+const RG=8.314462618, P_COLD=30e5, DT_MIN=5, T_COLD_IN=303.15, T_TAIL_OUT=298.15, T_LIQ_OUT=243.15,
+      T_LEVEL=[238.15,178.15];   // feed temperatures below which the -100 degC level and the cold end serve
+const SQ2=Math.SQRT2;
+
+function hIdeal(z,T){           // J/mol, NASA7 low-range polynomial
+  let h=0;
+  for(let i=0;i<6;i++){const a=CB.nasa[i];
+    h+=z[i]*RG*T*(a[0]+a[1]*T/2+a[2]*T*T/3+a[3]*T*T*T/4+a[4]*T*T*T*T/5+a[5]/T);}
+  return h;
+}
+function prPure(T){
+  const a=[],b=[],da=[];
+  for(let i=0;i<6;i++){
+    const Tc=CB.Tc[i],Pc=CB.Pc[i],w=CB.w[i],m=0.37464+1.54226*w-0.26992*w*w;
+    const ac=0.45724*RG*RG*Tc*Tc/Pc, al=1+m*(1-Math.sqrt(T/Tc));
+    a[i]=ac*al*al; b[i]=0.07780*RG*Tc/Pc; da[i]=-ac*m*al/Math.sqrt(T*Tc);
+  }
+  return {a,b,da};
+}
+function cubicRoots(c2,c1,c0){  // real roots of Z^3 + c2 Z^2 + c1 Z + c0
+  const q=(3*c1-c2*c2)/9, r=(9*c2*c1-27*c0-2*c2*c2*c2)/54, d=q*q*q+r*r, s=-c2/3;
+  if(d>0){const sq=Math.sqrt(d), cb=x=>Math.cbrt(x); return [s+cb(r+sq)+cb(r-sq)];}
+  const th=Math.acos(Math.max(-1,Math.min(1,r/Math.sqrt(-q*q*q)))), rt=2*Math.sqrt(-q);
+  return [rt*Math.cos(th/3)+s, rt*Math.cos((th+2*Math.PI)/3)+s, rt*Math.cos((th+4*Math.PI)/3)+s];
+}
+function prPhase(z,T,P,liquid,pp){   // ln(fugacity coefficients) and departure enthalpy of one phase
+  const {a,b,da}=pp; let am=0,bm=0,dam=0; const ai=new Array(6).fill(0);
+  for(let i=0;i<6;i++){bm+=z[i]*b[i];
+    for(let j=0;j<6;j++){const s=Math.sqrt(a[i]*a[j]),k=1-CB.kij[i][j],aij=s*k;
+      ai[i]+=z[j]*aij; am+=z[i]*z[j]*aij; dam+=z[i]*z[j]*k*(da[i]*a[j]+a[i]*da[j])/(2*s);}}
+  const A=am*P/(RG*RG*T*T), B=bm*P/(RG*T);
+  const roots=cubicRoots(-(1-B),A-3*B*B-2*B,-(A*B-B*B-B*B*B)).filter(x=>x>B);
+  const Z=liquid?Math.min(...roots):Math.max(...roots);
+  const L=Math.log((Z+(1+SQ2)*B)/(Z+(1-SQ2)*B));
+  const lnphi=[];
+  for(let i=0;i<6;i++) lnphi[i]=b[i]/bm*(Z-1)-Math.log(Z-B)-A/(2*SQ2*B)*(2*ai[i]/am-b[i]/bm)*L;
+  return {Z,lnphi,hdep:RG*T*(Z-1)+(T*dam-am)/(2*SQ2*bm)*L};
+}
+function flashPT(z,T,P){   // stability test, then Rachford-Rice with successive substitution
+  /* Michelsen's tangent-plane stability test decides whether the feed splits: a vapor-like
+     and a liquid-like trial phase are iterated from the Wilson K values, and the feed is
+     unstable when a trial reaches a total mole number above one. A stable feed is one phase,
+     the root with the lower Gibbs energy. An unstable feed starts the flash from the trial
+     K values; the vapor fraction is left free outside [0, 1] (negative flash, Whitson and
+     Michelsen 1989) so that the iteration cannot settle on the trivial x = y = z solution. */
+  const pp=prPure(T);
+  const L0=prPhase(z,T,P,true,pp),G0=prPhase(z,T,P,false,pp);
+  const gibbs=ph=>z.reduce((s,zi,i)=>s+(zi>0?zi*(Math.log(zi)+ph.lnphi[i]):0),0);
+  const feedLiquid=Math.abs(L0.Z-G0.Z)>1e-9?gibbs(L0)<gibbs(G0):L0.Z<0.3;
+  const lnphiZ=(feedLiquid?L0:G0).lnphi;
+  const Kw=CB.Tc.map((Tc,i)=>CB.Pc[i]/P*Math.exp(5.373*(1+CB.w[i])*(1-Tc/T)));
+  const trial=(w,vapor)=>{            // returns the converged trial composition and its mole sum
+    let S=1;
+    for(let it=0;it<200;it++){
+      const sw=w.reduce((a,b)=>a+b,0), wn=w.map(v=>v/sw);
+      const ph=prPhase(wn,T,P,!vapor,pp);
+      const W=z.map((zi,i)=>zi*Math.exp(lnphiZ[i]-ph.lnphi[i]));
+      S=W.reduce((a,b)=>a+b,0);
+      const d=W.reduce((m,Wi,i)=>z[i]>0?Math.max(m,Math.abs(Math.log(Wi/w[i]))):m,0);   // absent species carry no K
+      w=W; if(d<1e-8) break;
+    }
+    const wn=w.map(v=>v/S), trivial=wn.every((v,i)=>Math.abs(v-z[i])<1e-6);
+    return {w:wn,S,unstable:!trivial&&S>1+1e-8};
+  };
+  const tv=trial(z.map((zi,i)=>zi*Kw[i]),true), tl=trial(z.map((zi,i)=>zi/Kw[i]),false);
+  const single=()=>feedLiquid?{V:0,x:z,y:z,h:hIdeal(z,T)+L0.hdep}:{V:1,x:z,y:z,h:hIdeal(z,T)+G0.hdep};
+  if(!tv.unstable&&!tl.unstable) return single();
+  let K=tv.unstable&&(!tl.unstable||tv.S>=tl.S)?tv.w.map((w,i)=>z[i]>0?w/z[i]:1):tl.w.map((w,i)=>z[i]>0?z[i]/w:1);
+  let V=0.5,x=z,y=z,best=null;
+  for(let it=0;it<500;it++){
+    if(!K.every(Number.isFinite)) K=Kw.slice();          // restart from Wilson if the update broke
+    const Kp=K.filter((k,i)=>z[i]>0), Kmax=Math.max(...Kp),Kmin=Math.min(...Kp);
+    if(Kmax<=1||Kmin>=1) return single();
+    const g=v=>z.reduce((s,zi,i)=>s+zi*(K[i]-1)/(1+v*(K[i]-1)),0);
+    let lo=1/(1-Kmax)+1e-9,hi=1/(1-Kmin)-1e-9;
+    for(let k=0;k<80;k++){V=(lo+hi)/2;if(g(V)>0)lo=V;else hi=V;}
+    x=z.map((zi,i)=>zi/(1+V*(K[i]-1))); let sx=x.reduce((s,v)=>s+v,0); x=x.map(v=>v/sx);
+    y=x.map((xi,i)=>K[i]*xi); let sy=y.reduce((s,v)=>s+v,0); y=y.map(v=>v/sy);
+    const L=prPhase(x,T,P,true,pp), G=prPhase(y,T,P,false,pp);
+    let err=0; const Kn=[];
+    const damp=it<100?1:0.5;
+    for(let i=0;i<6;i++){if(z[i]<=0){Kn[i]=1;continue;} const kn=Math.exp(L.lnphi[i]-G.lnphi[i]); err+=Math.abs(Math.log(kn/K[i]));
+      Kn[i]=Math.exp(damp*Math.log(kn)+(1-damp)*Math.log(K[i]));}
+    K=Kn;
+    const sol=V<=0||V>=1?single():{V,x,y,h:V*(hIdeal(y,T)+G.hdep)+(1-V)*(hIdeal(x,T)+L.hdep)};
+    if(err<1e-8) return sol;
+    if(!best||err<best.err) best={err,sol};
+  }
+  if(best&&best.err<1e-6) return best.sol;              // settled to 1e-6 in K: good enough for the duty
+  throw new Error('cold-box flash did not converge at '+T.toFixed(1)+' K');
+}
+/* z: feed mole fractions [H2, CH4, C2H4, C2H6, C3, C4+]; n: feed mol per kg product.
+   Returns the cold end (K) and the duty at the -40 degC, -100 degC and cold-end levels
+   in kJ per kg product. */
+function coldBox(z,n){
+  const rec=T=>{const f=flashPT(z,T,P_COLD);return 1-f.V*f.y[2]/z[2];};
+  let lo=110,hi=273.15,Tc;
+  if(rec(hi)>=RECOVERY) Tc=hi;             // too little hydrogen to carry 0.5 % out even at 0 degC
+  else{for(let k=0;k<30;k++){Tc=(lo+hi)/2;if(rec(Tc)<RECOVERY)hi=Tc;else lo=Tc;}Tc=(lo+hi)/2;}
+  const end=flashPT(z,Tc,P_COLD);
+  const nTail=end.V*n, nLiq=(1-end.V)*n;
+  const Hf=T=>flashPT(z,T,P_COLD).h*n/1000;                                  // kJ per kg product
+  // tail gas: superheated vapor above its dew point Tc; condensate: flashed, it partly vaporizes
+  const Hv=(c,T)=>hIdeal(c,T)+prPhase(c,T,P_COLD,false,prPure(T)).hdep;
+  const Hs=(c,m,T,Tret,vapor)=>m>0?(vapor?Hv(c,Math.min(Tret,Math.max(Tc,T))):flashPT(c,Math.min(Tret,Math.max(Tc,T)),P_COLD).h)*m/1000:0;
+  /* Each level band is walked in steps of at most 10 K. In a step the two returning streams
+     can take up no more than the feed releases there (a pinch), so the net duty of a step
+     is never negative; the remainder is refrigeration at that level. */
+  const Tb=[T_COLD_IN,Math.max(T_LEVEL[0],Tc),Math.max(T_LEVEL[1],Tc),Tc];
+  const q=[];
+  for(let k=0;k<3;k++){
+    q[k]=0;
+    if(Tb[k]<=Tb[k+1]) continue;
+    const steps=Math.ceil((Tb[k]-Tb[k+1])/10), dT=(Tb[k]-Tb[k+1])/steps;
+    let Th=Tb[k], Hh=Hf(Th), Gh=Hs(end.y,nTail,Th-DT_MIN,T_TAIL_OUT,true), Lh=Hs(end.x,nLiq,Th-DT_MIN,T_LIQ_OUT,false);
+    for(let m=1;m<=steps;m++){
+      const Tl=Tb[k]-m*dT, Hl=Hf(Tl), Gl=Hs(end.y,nTail,Tl-DT_MIN,T_TAIL_OUT,true), Ll=Hs(end.x,nLiq,Tl-DT_MIN,T_LIQ_OUT,false);
+      q[k]+=Math.max(0,(Hh-Hl)-(Gh-Gl)-(Lh-Ll));
+      Hh=Hl; Gh=Gl; Lh=Ll;
+    }
+  }
+  return {T_cold_K:Tc,q,tailFrac:end.V,yTail:end.y};
+}
+
+/* Cascade work for duties [q40, q100, qcold] in kJ/kg. Each condenser load, duty plus
+   compressor work, is carried by the next-warmer cycle. */
+function cascadeWork(q){
+  const wM=q[2]/COP.methane;
+  const wE=(q[1]+q[2]+wM)/COP.ethylene;
+  const wP=(q[0]+q[1]+q[2]+wM+wE)/COP.propylene;
+  return wM+wE+wP;
 }
 
 /* ---------- model ---------- */
@@ -729,18 +900,19 @@ function model(p){
   const gam=1.32,st=4,rSt=Math.pow(P_DISCH/1.5,1/st);
   const wComp=(p.compressionFactor===undefined?1:p.compressionFactor)*st*(gam/(gam-1))*8.314*313*(Math.pow(rSt,(gam-1)/gam)-1)/0.75*nGas/1000;
 
-  /* 5. AC-201 effluent enters the cold box. */
+  /* 5. AC-201 effluent enters the cold box. The flash sets the cold end for the ethylene
+     recovery and the enthalpy balance gives the duty at the -40 degC, -100 degC and
+     cold-end levels; the cascade converts duty to work. Residual acetylene (5 ppm) is
+     counted with ethylene. */
   const mol={c2h4:ethyleneBeforeRecovery*1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
              h2:y.h2*1000/MW.H2,c2h2:(y.c2h2||0)*1000/MW.C2H2,
              c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4};
   const nPostAC=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c2h2+mol.c3+mol.c4plus;
   const lightFrac=(mol.ch4+mol.h2)/nPostAC;
-  const tCold=-100-40*Math.log10(0.01/(1-RECOVERY))-160*(lightFrac-0.40);
-  const mCold=ethyleneBeforeRecovery+recycle+y.ch4+y.h2+(y.c2h2||0)+y.c3+(y.c4plus||0);
-  const qCold=mCold*2.2*(30-tCold)+(ethyleneBeforeRecovery+recycle+(y.c2h2||0)+y.c3+(y.c4plus||0))*350;
-  const lv=[[-40,.55],[-100,.30],[tCold,.15]];
-  let wRef=0; for(const[T,fr]of lv){const Tk=T+273.15;
-    wRef+=qCold*fr/Math.max(.05,ETA2*Tk/(T_AMB-Tk));}
+  const cb=coldBox([mol.h2,mol.ch4,mol.c2h4+mol.c2h2,mol.c2h6,mol.c3,mol.c4plus].map(v=>v/nPostAC),nPostAC);
+  const tCold=cb.T_cold_K-273.15, qLevels=cb.q, qCold=cb.q[0]+cb.q[1]+cb.q[2];
+  const wRef=cascadeWork(qLevels);
+  if(cb.T_cold_K>=273.15) flags.push('cold box: the recovery is met without refrigeration below 0 degC');
 
   /* 6. C2 splitter, FUG. Fix the purity and reflux comes out as a result. */
   const alpha=1.85-0.018*P_DISCH;
@@ -755,7 +927,7 @@ function model(p){
   const rMin=Math.max(0.5,(1/(alpha-1))*(PURITY/zF-alpha*(1-PURITY)/(1-zF)));
   const gx=(nAct-nMin)/(nAct+1);
   const rRatio=Math.max(rMin*1.15,(rMin+(1-Math.sqrt(gx))*0.9)*1.05);
-  const wSplit=(rRatio+1)*280/Math.max(.05,ETA2*243/(T_AMB-243));
+  const wSplit=(rRatio+1)*280/COP.splitter;
 
   /* 7. Coking sets run length, run length sets on-stream factor. */
   const runDays=60*Math.exp(-0.025*(p.cot-850))*Math.pow(p.dilution/0.35,0.6)
@@ -768,7 +940,7 @@ function model(p){
   const sc=(x,r,e)=>Math.pow(x/r,e);
   const tbmc=(p.capitalFactor===undefined?1:p.capitalFactor)*REF.tbmc*sc(p.cap,REF.cap,0.65)*(
       SPLIT.furnace*(p.mode==='JH'&&p.jouleFurnaceFactor!==undefined?p.jouleFurnaceFactor:1)*sc(coil,1.809,0.65)+SPLIT.compression*sc(wComp,1134,0.70)
-    + SPLIT.coldbox*sc(wRef,2098,0.70)+SPLIT.fractionation*sc(rRatio*nAct,195,0.60));
+    + SPLIT.coldbox*sc(wRef,REF_WREF,0.70)+SPLIT.fractionation*sc(rRatio*nAct,195,0.60));
   const toc=tbmc*2.5, prod=p.cap*1000*osf;
 
   /* 9. Cost ladder, all in USD per tonne C2H4 */
@@ -821,7 +993,7 @@ function model(p){
       +sig(VALID.sel[0],2)+' to '+sig(VALID.sel[1],2)+'%');
 
   return {flags,selClipped,y,acetylene,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,gasSurplus,gasBurned,ethyleneBeforeRecovery,ethyleneLoss,
-    elecHeat,wComp,wRef,wSplit,tCold,qCold,lightFrac,nGas,alpha,nMin,nAct,rRatio,
+    elecHeat,wComp,wRef,wSplit,tCold,qCold,qLevels,lightFrac,nGas,alpha,nMin,nAct,rRatio,
     qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc,
     reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp,useMechanismSpecies,balanceBasis};
 }
@@ -912,7 +1084,7 @@ function panelFlow(r){
     {n:'C1 Compression',a:sig(P_DISCH,3)+' bar, 4 stages',b:sig(r.nGas,4)+' mol/kg',
      c:r.wComp*kJ2GJ*eGJ,t:'Shaft duty '+sig(r.wComp*kJ2GJ,3)+' GJ/t. Grows with recycle.'},
     {n:'T2 Cold box',a:fnum(r.tCold,1).replace('-','\u2212')+' \u00b0C',b:'Light ends '+pctS(r.lightFrac*100),
-     c:r.wRef*kJ2GJ*eGJ,t:'Recovery of '+pctS(RECOVERY*100,4)+' sets the temperature required. More methane means colder.'},
+     c:r.wRef*kJ2GJ*eGJ,t:'Recovery of '+pctS(RECOVERY*100,4)+' sets the cold end from a Peng-Robinson flash. Hydrogen carries the ethylene out, so more hydrogen means colder.'},
     {n:'T3 / T4 Columns',a:sig(r.nAct,3)+' stages',b:'Reflux '+sig(r.rRatio,3)+', computed',
      c:r.wSplit*kJ2GJ*eGJ,t:'Purity of 99.9 mol% is specified; reflux follows from it.'}
   ];
@@ -1070,10 +1242,13 @@ function drawInspector(r){
           ['Light ends',pctS(r.lightFrac*100),r.lightFrac*100,B?B.lightFrac*100:null,'pp',0.1],
           ['Refrigeration duty',sig(r.wRef*kJ2GJ,3)+' GJ/t',r.wRef*kJ2GJ,B?B.wRef*kJ2GJ:null,'hide',THRESH.energy],
           ['Cost',usd(r.wRef*kJ2GJ*eGJ)+'/t',r.wRef*kJ2GJ*eGJ,B?B.wRef*kJ2GJ*bGJ:null,'$',THRESH.cost,'cost']],
-     spec:'Ethylene recovery of '+pctS(RECOVERY*100,4)+' is specified. The temperature is whatever '
-         +'meets it, so a larger methane fraction drives the box colder.',
-     warn:'Refrigeration work uses a Carnot bound with an assumed second-law efficiency of '
-         +pctS(ETA2*100,3)+'. No cryogenic utility price exists in the open literature to check it against.'},
+     spec:'Ethylene recovery of '+pctS(RECOVERY*100,4)+' is specified. The cold end is the single-stage '
+         +'flash temperature that meets it at 30 bar (Peng-Robinson, ChemSep interaction parameters), '
+         +'and the duty is the enthalpy balance over the cooling curve with a 5 K approach, with the '
+         +'tail gas and the condensate rewarming against the feed.',
+     warn:'Duty becomes work through a propylene / ethylene / methane cascade (COP '+sig(COP.propylene,3)+', '
+         +sig(COP.ethylene,3)+', '+sig(COP.methane,3)+' from CoolProp cycles, two-stage, 5 K approach, '
+         +'isentropic efficiency 0.75). Motor losses and the demethanizer column are not included.'},
     {t:'T3 and T4 Fractionation',role:'calculated',
      set:null,
      out:[['Stages',sig(r.nAct,3),r.nAct,B?B.nAct:null,'hide',0.5],
@@ -2143,7 +2318,9 @@ function render(){
     ['Compressor discharge',sig(P_DISCH,3)+' bar','Design constant'],
     ['Product purity',pctS(PURITY*100,4)+' mol','Downstream specification, FUG shortcut'],
     ['Cold-box recovery',pctS(RECOVERY*100,4),'Downstream specification'],
-    ['Refrigeration second-law efficiency',pctS(ETA2*100,3),'Multistage cryogenic screening assumption'],
+    ['Cold-box pressure','30 bar','Discharge less drying and chilling-train drop'],
+    ['Cascade COP, propylene / ethylene / methane',sig(COP.propylene,3)+' / '+sig(COP.ethylene,3)+' / '+sig(COP.methane,3),'CoolProp two-stage economized cycles, 5 K approach, isentropic efficiency 0.75'],
+    ['C2-splitter condenser COP',sig(COP.splitter,3),'Propylene cycle at 238 K evaporator'],
     ['Dilution steam latent heat',sig(H_VAP_DSG,4)+' kJ/kg','Steam tables near 5 barg'],
     ['Low-grade heat value',pctS(STEAM_GRADE*100,2)+' of the HP steam price','Screening assumption for dilution-steam economics'],
     ['Quench heat rejection','$'+sig(CW_REJECT,2)+' / GJ','Cooling-water screening value'],
