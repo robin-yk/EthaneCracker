@@ -528,7 +528,7 @@ const CI_REF=1200;  // kg CO2e per tonne ethylene, typical published ethane crac
 const PUB={coo:680,ethane:1.19,netEnergy:14.7};
 
 /* ---------- state ---------- */
-const S={tab:'main',grid:0.36,ethaneUp:0.50,tailFate:'burn',alloc:'expansion',mode:'CH',cap:610,eff:60,selMode:'calc',sel:84,tle:true,
+const S={tab:'main',grid:0.36,ethaneUp:0.50,tailFate:'sell',tailGas:0.5,alloc:'expansion',mode:'CH',cap:610,eff:60,selMode:'calc',sel:84,tle:true,
          kinetics:'empirical',pressure:1.5,ramp:1.0,
          cot:850,tau:0.35,dilution:0.35,
          ethane:200,elec:0.07,gas:4,steam:9.8,lpg:550,ccf:0.10,labor:5};
@@ -952,7 +952,7 @@ function model(p){
   L.heat     = p.mode==='CH' ? gasBuy*kJ2GJ*p.gas : elecHeat*kJ2GJ*eGJ;
   L.elecProc = (wComp+wRef+wSplit)*kJ2GJ*eGJ;
   L.steamCr  = -tleSteam*kJ2GJ*p.steam;
-  L.gasCr    = -gasSell*kJ2GJ*p.gas;
+  L.gasCr    = -gasSell*kJ2GJ*p.gas*p.tailGas;   // exported tail gas is hydrogen-rich, off-specification fuel: sold at a fraction of the natural-gas price
   L.lpgCr    = -(y.c3+(y.c4plus||0))*p.lpg;
   L.dilSteam = qDSG*kJ2GJ*(p.steam*(p.grade===undefined?STEAM_GRADE:p.grade)+CW_REJECT);
   L.capital  = toc*1e6*p.ccf/prod;
@@ -1061,7 +1061,7 @@ function lca(r,p){
     let a=1,b=coproduct,c=0;
     if(p.alloc==='mass'){ c=(p.tailFate==='sell'?(r.y.ch4+r.y.h2+r.ethyleneLoss)*(1-burnFrac):0); }
     else if(p.alloc==='energy'){ a=LHV_MJ.C2H4; b=coproduct*LHV_MJ.C3; c=soldTailMJ/1000; }
-    else { a=r.coo; b=coproduct*p.lpg; c=(p.tailFate==='sell'?soldTailMJ/1000*p.gas:0); }
+    else { a=r.coo; b=coproduct*p.lpg; c=(p.tailFate==='sell'?soldTailMJ/1000*p.gas*p.tailGas:0); }
     share=a/(a+b+c);
     ciFinal=netBeforeCoproduct*share;
     shareNote=sig(share*100,3)+'% of the burden assigned to ethylene';
@@ -2318,6 +2318,7 @@ function render(){
     ['Compressor discharge',sig(P_DISCH,3)+' bar','Design constant'],
     ['Product purity',pctS(PURITY*100,4)+' mol','Downstream specification, FUG shortcut'],
     ['Cold-box recovery',pctS(RECOVERY*100,4),'Downstream specification'],
+    ['Exported tail-gas price',pctS(S.tailGas*100,2)+' of the natural-gas price per GJ','Hydrogen-rich, off-specification fuel gas; assumed discount'],
     ['Cold-box pressure','30 bar','Discharge less drying and chilling-train drop'],
     ['Cascade COP, propylene / ethylene / methane',sig(COP.propylene,3)+' / '+sig(COP.ethylene,3)+' / '+sig(COP.methane,3),'CoolProp two-stage economized cycles, 5 K approach, isentropic efficiency 0.75'],
     ['C2-splitter condenser COP',sig(COP.splitter,3),'Propylene cycle at 238 K evaporator'],
@@ -2488,7 +2489,7 @@ function validatePublicInputs(p){
     throw new RangeError('heatRecovery must be finite and in [0,1]');
 
   if(!['burn','sell','vent'].includes(p.tailFate)) throw new RangeError('tailFate must be burn, sell or vent');
-  const finiteKeys=['eff','cot','tau','dilution','pressure','ramp','cap','ethane','elec','gas','grid'];
+  const finiteKeys=['eff','cot','tau','dilution','pressure','ramp','cap','ethane','elec','gas','grid','tailGas'];
   for(const k of finiteKeys) if(!Number.isFinite(Number(p[k]))) throw new RangeError(k+' must be finite');
   if(p.eff<=0||p.eff>100) throw new RangeError('eff must be > 0 and <= 100 percent');
   if(p.tau<=0) throw new RangeError('tau must be > 0');
@@ -2496,7 +2497,7 @@ function validatePublicInputs(p){
   if(p.pressure<=0) throw new RangeError('pressure must be > 0');
   if(p.ramp<=0) throw new RangeError('heating exponent must be > 0');
   if(p.cap<=0) throw new RangeError('capacity must be > 0');
-  for(const k of ['ethane','elec','gas','grid']) if(p[k]<0) throw new RangeError(k+' must be >= 0');
+  for(const k of ['ethane','elec','gas','grid','tailGas']) if(p[k]<0) throw new RangeError(k+' must be >= 0');
 }
 window.ethaneModel={
   version:'ethane-web-model-v1',
