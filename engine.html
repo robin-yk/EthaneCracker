@@ -531,7 +531,7 @@ const PUB={coo:680,ethane:1.19,netEnergy:14.7};
 const S={tab:'main',grid:0.36,ethaneUp:0.50,tailFate:'sell',tailGas:0.5,alloc:'expansion',mode:'CH',cap:610,eff:60,selMode:'calc',sel:84,tle:true,
          kinetics:'empirical',pressure:1.5,ramp:1.0,
          cot:850,tau:0.35,dilution:0.35,
-         ethane:200,elec:0.07,gas:4,steam:9.8,lpg:550,ccf:0.10,labor:5};
+         ethane:200,elec:0.07,gas:4,steam:4.4,lpg:550,ccf:0.10,labor:5};   // steam: natural-gas price / 0.90 boiler efficiency (Towler and Sinnott 2013, Eq. 3.1)
 
 /* Browser GP mean evaluator. The full uncertainty calculation lives on the mechanism
    page; the root TEA calls model() hundreds of times during scans, so this path evaluates
