@@ -132,12 +132,15 @@ jobs:
           path: ui-audit/*.png
           retention-days: 14
 
-      - name: Verify API passthrough
+      - name: Verify single-file simulator
         run: |
           python - <<'PY'
           from pathlib import Path
           text=Path('index.html').read_text(encoding='utf-8')
           assert 'window.ethaneModel=api' in text
-          assert 'src="engine.html"' in text
-          print('workspace shell delegates to engine.html and preserves benchmark API')
+          for bad in ('src="engine.html"', '<iframe', 'fetch('):
+              assert bad not in text, bad
+          for block in ('id="gp-parameters"', 'id="gp-validation"', 'id="literature-cases"', 'id="literature-results"', 'EthaneCrackerModel'):
+              assert block in text, block
+          print('index.html is one file: process model and data blocks inside, no iframe, no network call; benchmark API kept')
           PY
