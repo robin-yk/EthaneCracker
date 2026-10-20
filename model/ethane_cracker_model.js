@@ -413,7 +413,7 @@ function calculatePlant(inputs) {
   else {
     if (!gpParameters) throw new Error(gpStatus.message);
     const g = predictReaction(p); reaction = g.mean; gpSD = g.sd; outsideTrainingRange = g.outsideTrainingRange;
-    if (outsideTrainingRange.length) warnings.push('WARNING outside GP training range (' + outsideTrainingRange.join(', ') + '): extrapolated; see GP SD');
+    if (outsideTrainingRange.length) warnings.push('WARNING Aramco GP extrapolation: ' + outsideTrainingRange.join(', ') + ' outside the training range; the result is extrapolated, see the GP SD');
   }
   const conversion = reaction.x_c2h6;
   const yEthylene = reaction.y_c2h4_kg_per_kg_ethane, yAcetylene = reaction.y_c2h2_kg_per_kg_ethane || 0;
@@ -556,7 +556,7 @@ function calculatePlant(inputs) {
      on-stream factor = t_run/(t_run + 1.5 d decoking). */
   const runDays = DESIGN.runLengthReference_d * Math.exp(-0.025 * (p.coilOutletTemperature_C - 850)) * Math.pow(p.steamToEthane_kg_per_kg / 0.35, 0.6) * Math.pow(0.35 / p.residenceTime_s, 0.3);
   const onStreamFactor = runDays / (runDays + DESIGN.decoking_d);
-  if (!Number.isFinite(runDays) || runDays <= 0) warnings.push('FAILED run length: zero on-stream time');
+  if (!Number.isFinite(runDays) || runDays <= 0) warnings.push('FAILED run length: the correlation gives zero on-stream time (no dilution steam); annualized cost is undefined');
   const scale = (x, ref, e) => Math.pow(x / ref, e), C = CAPITAL;
   const tbmc = C.referenceTBMC_MUSD * scale(p.plantCapacity_kt_per_y, C.referenceCapacity_kt_per_y, C.capacityExponent) * (
       C.shareFurnace * scale(coilAreaUsed, FURNACE.referenceCoilArea_m2, C.furnaceExponent)
@@ -602,7 +602,9 @@ function calculatePlant(inputs) {
   const c3PlusCreditCarbon = -(product.c3 + product.c4plus) * 0.80 * 1000;
   const carbonIntensity = scope1 + fuelGasBurnCarbon + scope2 + scope3 + steamCreditCarbon + c3PlusCreditCarbon + fuelGasCreditCarbon;
 
-  return { inputs: p, warnings, reaction, gpSD, outsideTrainingRange, conversion, coilEthane, freshEthane, recycleEthane, dilutionSteam, product, acetyleneConverter,
+  const tailCarbon = { heater: (product.methane * burnedFraction * 44.01 / 16.04 + ethyleneToFuelGas * burnedFraction * 2 * 44.01 / MOLAR_MASS.ethylene) * 1000,
+    fate: fuelGasBurnCarbon, sale_credit: fuelGasCreditCarbon };
+  return { inputs: p, warnings, reaction, gpSD, ethyleneToFuelGas, fuelGasSurplus, tailCarbon, outsideTrainingRange, conversion, coilEthane, freshEthane, recycleEthane, dilutionSteam, product, acetyleneConverter,
     reactorDuty, purchasedHeat, naturalGasBought, fuelGas, fuelGasBurned, fuelGasSold, electricHeat, furnace, coilHeat, convectionSteam,
     compressorWork, refrigerationWork, splitterWork, deethanizerWork, reboilerSteam, coolingWater, columns: { deethanizer, depropanizer, debutanizer, cost },
     coldEnd_K: cb.coldEnd_K, runDays, onStreamFactor, tbmc, tci, annualProduct_t, costItems, productionCost,
@@ -617,6 +619,8 @@ function toInputs(s) {
   return { ...d,
     heatSource: s.mode === 'JH' ? 'electric' : (s.mode === 'CH' ? 'fired' : d.heatSource),
     firedHeatModel: s.firedHeatModel || d.firedHeatModel,
+    fuelGasUse: s.tailFate === 'burn' ? 'burn' : (s.tailFate === 'sell' ? 'sell' : d.fuelGasUse),
+    fuelGasPriceFactor: v(s.tailGas, d.fuelGasPriceFactor),
     coilOutletTemperature_C: v(s.cot, d.coilOutletTemperature_C), residenceTime_s: v(s.tau, d.residenceTime_s),
     steamToEthane_kg_per_kg: v(s.dilution, d.steamToEthane_kg_per_kg), coilPressure_bar: v(s.pressure, d.coilPressure_bar),
     heatingExponent: v(s.ramp, d.heatingExponent), plantCapacity_kt_per_y: v(s.cap, d.plantCapacity_kt_per_y),
@@ -627,8 +631,20 @@ function toInputs(s) {
     firedEfficiencyFixed_percent: s.mode === 'CH' ? v(s.eff, d.firedEfficiencyFixed_percent) : d.firedEfficiencyFixed_percent,
     electricEfficiency_percent: s.mode === 'JH' ? v(s.eff, d.electricEfficiency_percent) : d.electricEfficiency_percent };
 }
+/* Input check. Each wrong input stops the calculation with a RangeError that names the input. */
+function checkInputs(s) {
+  const has = k => Object.prototype.hasOwnProperty.call(s, k);
+  if (has('eff')) { const e = s.eff; if (typeof e !== 'number' || !Number.isFinite(e) || e <= 0 || e > 100) throw new RangeError('eff must be a number > 0 and <= 100 percent'); }
+  for (const k of ['cot', 'tau', 'dilution', 'pressure', 'ramp', 'cap', 'ethane', 'elec', 'gas', 'grid', 'tailGas', 'steam', 'lpg', 'ethaneUp'])
+    if (has(k) && !Number.isFinite(Number(s[k]))) throw new RangeError(k + ' must be finite');
+  for (const k of ['tau', 'pressure', 'ramp', 'cap']) if (has(k) && s[k] <= 0) throw new RangeError(k + ' must be > 0');
+  for (const k of ['dilution', 'ethane', 'elec', 'gas', 'grid', 'tailGas']) if (has(k) && s[k] < 0) throw new RangeError(k + ' must be >= 0');
+  if (has('tailFate') && !['burn', 'sell'].includes(s.tailFate)) throw new RangeError('tailFate must be burn or sell');
+  if (has('kinetics') && s.kinetics !== 'gp') throw new RangeError('kinetics must be gp (AramcoMech 3.0 GP)');
+}
 /* Output for the screen. Names are those the screen reads. */
 function evaluate(state = {}) {
+  checkInputs(state);
   const r = calculatePlant(toInputs(state)), ci = r.costItems;
   return {
     conversion: r.conversion, selectivity_mass: r.reaction.y_c2h4_kg_per_kg_ethane / Math.max(r.conversion, 1e-12),
@@ -648,6 +664,15 @@ function evaluate(state = {}) {
     cost_breakdown_usd_per_t: { floor: ci.ethaneFeedMinimum, selLoss: ci.ethaneFeedSelectivityLoss, heat: ci.purchasedHeat, elecProc: ci.processElectricity,
       heavyEnds: ci.columnSteamAndCoolingWater, steamCr: ci.steamCredit, gasCr: ci.fuelGasCredit, lpgCr: ci.c3PlusCredit, dilSteam: ci.dilutionSteam,
       capital: ci.capitalCharge, om: ci.operationMaintenanceLabor },
+    inputs: { ...state }, reactor_model: 'AramcoMech 3.0 -> Cantera -> GP',
+    selectivity_mol: r.reaction.y_c2h4_kg_per_kg_ethane * MOLAR_MASS.ethane / (Math.max(r.conversion, 1e-12) * MOLAR_MASS.ethylene),
+    ethylene_recovery: DESIGN.ethyleneRecovery, ethylene_before_recovery_kg_per_kg: 1 / DESIGN.ethyleneRecovery,
+    ethylene_loss_to_tail_kg_per_kg: r.ethyleneToFuelGas,
+    tail_gas_gj_per_t: { generated: r.fuelGas / 1000, heater: r.fuelGasBurned / 1000, surplus: r.fuelGasSurplus / 1000, sold: r.fuelGasSold / 1000 },
+    carbon_tail_kgco2e_per_t: { ...r.tailCarbon },
+    mechanism_zone_heat_gj_per_t: r.reaction.heat_MJ_per_kg_ethane * r.coilEthane,
+    economically_operable: Number.isFinite(r.productionCost) && r.annualProduct_t > 0, onstream_factor: r.onStreamFactor,
+    annual_opex_musd: (r.productionCost - r.costItems.capitalCharge) * r.annualProduct_t / 1e6,
     gp_mean: { ...r.reaction }, gp_sd: r.gpSD ? { ...r.gpSD } : null, outside_training_range: r.outsideTrainingRange,
     flags: [...r.warnings]
   };
@@ -764,11 +789,12 @@ const INPUT_TABLE = [
 
 return {
   loadGP, status: () => gpStatus, ready: () => !!gpParameters,
-  metadata: () => ({ training_points: gpParameters ? gpParameters.training_points : null,
+  metadata: () => ({ training_points: gpParameters ? gpParameters.training_points : null, inputs: gpParameters ? [...gpParameters.inputs] : null,
     validation_points: gpValidation ? gpValidation.validation_points : null,
     domain_min: gpParameters ? [...gpParameters.domain_min] : null, domain_max: gpParameters ? [...gpParameters.domain_max] : null,
     source: gpParameters && gpParameters.source ? { cantera_version: gpParameters.source.cantera_version, mechanism_species: gpParameters.source.mechanism_species,
-      mechanism_reactions: gpParameters.source.mechanism_reactions, mechanism_provenance: gpParameters.source.mechanism_provenance } : null,
+      mechanism_reactions: gpParameters.source.mechanism_reactions, mechanism_provenance: gpParameters.source.mechanism_provenance,
+      input_ranges: gpParameters.source.input_ranges, targeted_input_ranges: gpParameters.source.targeted_input_ranges, sampling_design: gpParameters.source.sampling_design } : null,
     validation: gpValidation ? { passed: gpValidation.passed, outputs: gpValidation.outputs } : null }),
   defaults: () => ({ ...DEFAULT_INPUTS }),
   evaluate, calculatePlant, toInputs,
