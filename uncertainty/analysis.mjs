@@ -5,9 +5,9 @@ export const CONFIG = {
   priors: {firedEfficiency:[45,85],compressionFactor:[0.5,2]},
   scenarios: {heatRecovery:[0.5,0.9],capitalFactor:[0.7,1.5],
     jouleEfficiency:[90,95,98],jouleFurnaceFactor:[0.7,1,1.3]},
-  reference: {kinetics:'gp',mode:'CH',eff:60,cot:850,tau:0.35,dilution:0.35,
+  reference: {kinetics:'gp',mode:'CH',eff:60,firedModel:'fixed',cot:850,tau:0.35,dilution:0.35,
     pressure:1.5,ramp:1,cap:610,ethane:200,elec:0.07,gas:4,grid:0.36,
-    ethaneUp:0.5,lpg:550,steam:9.8,ccf:0.10,labor:5,tle:true,tailFate:'burn',alloc:'expansion',
+    ethaneUp:0.5,lpg:550,steam:4.4,ccf:0.10,labor:5,tle:true,tailFate:'sell',tailGas:0.5,alloc:'expansion',
     compressionFactor:1,heatRecovery:0.7,capitalFactor:1,jouleFurnaceFactor:1}
 };
 export function rng(seed){let x=seed>>>0;return ()=>{x=(Math.imul(1664525,x)+1013904223)>>>0;return x/4294967296;};}

@@ -1,0 +1,201 @@
+{
+ "dT_approach_K": 5.0,
+ "eta_isentropic": 0.75,
+ "T_amb_K": 303.0,
+ "cycles": {
+  "propylene": {
+   "fluid": "Propylene",
+   "T_evap_degC": -44.99999999999997,
+   "T_cond_degC": 34.85000000000002,
+   "T_crit_degC": 91.0610025913478,
+   "COP_single_stage": 1.4114886623705907,
+   "COP_two_stage_economizer": 1.692843006620596,
+   "carnot_COP_between_cycle_temperatures": 2.8572323105823423,
+   "engine_COP_at_service_level": 1.168253400143164,
+   "single": {
+    "P_evap_bar": 1.139668392409311,
+    "P_cond_bar": 14.642428100756968,
+    "pressure_ratio": 12.847972443810788,
+    "T_discharge_degC": 83.51409413327849
+   },
+   "two_stage": {
+    "P_int_bar": 4.085035188900901,
+    "economizer_vapor_fraction": 0.29959820723208674,
+    "T_discharge_degC": 77.48699617956561
+   }
+  },
+  "ethylene": {
+   "fluid": "Ethylene",
+   "T_evap_degC": -104.99999999999997,
+   "T_cond_degC": -39.99999999999997,
+   "T_crit_degC": 9.20000000000249,
+   "COP_single_stage": 1.3077396390926215,
+   "COP_two_stage_economizer": 1.4527216734926542,
+   "carnot_COP_between_cycle_temperatures": 2.586923076923077,
+   "engine_COP_at_service_level": 0.46671159029649595,
+   "single": {
+    "P_evap_bar": 0.9419574745770323,
+    "P_cond_bar": 14.520918195315451,
+    "pressure_ratio": 15.415683390416099,
+    "T_discharge_degC": 74.47685752422564
+   },
+   "two_stage": {
+    "P_int_bar": 3.698389843134309,
+    "economizer_vapor_fraction": 0.23003497868615666,
+    "T_discharge_degC": 66.06495238958462
+   }
+  },
+  "methane": {
+   "fluid": "Methane",
+   "T_evap_degC": -128.85791678400747,
+   "T_cond_degC": -99.99999999999997,
+   "T_crit_degC": -82.585997348713,
+   "COP_single_stage": 2.6386871760170023,
+   "COP_two_stage_economizer": 2.8793574274498317,
+   "carnot_COP_between_cycle_temperatures": 5.000086606943034,
+   "engine_COP_at_service_level": 0.3399449437534368,
+   "single": {
+    "P_evap_bar": 7.9541876833893745,
+    "P_cond_bar": 26.03958424751048,
+    "pressure_ratio": 3.2736949747726727,
+    "T_discharge_degC": -63.63399955299445
+   },
+   "two_stage": {
+    "P_int_bar": 14.391794200242296,
+    "economizer_vapor_fraction": 0.19111813499025834,
+    "T_discharge_degC": -66.67181841503714
+   }
+  }
+ },
+ "feeds": {
+  "reference fired case (850 degC, 0.35 s)": {
+   "single_stage": {
+    "tail_gas_recuperation": {
+     "methane": 82.04980584247492,
+     "ethylene": 815.6210731326679,
+     "propylene": 2068.0213961557006,
+     "total": 2965.6922751308434,
+     "propylene_evaporator_load": 2918.988754213571
+    },
+    "with_condensate_credit": {
+     "methane": 23.064210633875216,
+     "ethylene": 313.0805024215108,
+     "propylene": 1184.4254513027713,
+     "total": 1520.5701643581574,
+     "propylene_evaporator_load": 1671.803095937032
+    }
+   },
+   "two_stage": {
+    "tail_gas_recuperation": {
+     "methane": 75.19169673317529,
+     "ethylene": 729.5009897922549,
+     "propylene": 1669.387267875119,
+     "total": 2474.0799544005495,
+     "propylene_evaporator_load": 2826.0105617638587
+    },
+    "with_condensate_credit": {
+     "methane": 21.136395309721195,
+     "ethylene": 280.5079426809761,
+     "propylene": 967.1911184137937,
+     "total": 1268.835456404491,
+     "propylene_evaporator_load": 1637.3027208723433
+    }
+   },
+   "carnot_work_at_service_levels_kJ_per_kg": 1109.503865116822,
+   "eta2_effective": {
+    "single_stage": 0.3741129430118881,
+    "two_stage": 0.44845109518121706
+   },
+   "engine_w_ref_kJ_per_kg": 2575.555298341932,
+   "step2_w_ref_engine_rule_kJ_per_kg": 3170.011043190921
+  },
+  "Wang 2026, published Table 5 composition": {
+   "single_stage": {
+    "tail_gas_recuperation": {
+     "methane": 71.0823061606581,
+     "ethylene": 693.8798323195962,
+     "propylene": 1444.4715408036761,
+     "total": 2209.4336792839304,
+     "propylene_evaporator_load": 2038.855202961367
+    },
+    "with_condensate_credit": {
+     "methane": 23.543283843779697,
+     "ethylene": 350.43163598279756,
+     "propylene": 842.2381732623697,
+     "total": 1216.213093088947,
+     "propylene_evaporator_load": 1188.809632575552
+    }
+   },
+   "two_stage": {
+    "tail_gas_recuperation": {
+     "methane": 65.14091231596878,
+     "ethylene": 620.5405922520963,
+     "propylene": 1157.5642640135043,
+     "total": 1843.2457685815693,
+     "propylene_evaporator_load": 1959.5745690491779
+    },
+    "with_condensate_credit": {
+     "methane": 21.575425324993684,
+     "ethylene": 314.10385827791663,
+     "propylene": 679.6341963503418,
+     "total": 1015.313479953252,
+     "propylene_evaporator_load": 1150.513996351885
+    }
+   },
+   "carnot_work_at_service_levels_kJ_per_kg": 830.6004014578498,
+   "eta2_effective": {
+    "single_stage": 0.37593362011528875,
+    "two_stage": 0.45061836875774886
+   },
+   "engine_w_ref_kJ_per_kg": 1863.0045692449487,
+   "step2_w_ref_engine_rule_kJ_per_kg": 2373.144004165286
+  },
+  "Wang 2026, GP-predicted composition": {
+   "single_stage": {
+    "tail_gas_recuperation": {
+     "methane": 84.27250440328092,
+     "ethylene": 838.9018992067909,
+     "propylene": 2161.0516986600405,
+     "total": 3084.2261022701123,
+     "propylene_evaporator_load": 3050.2999714553534
+    },
+    "with_condensate_credit": {
+     "methane": 23.739648309660236,
+     "ethylene": 313.3553325577588,
+     "propylene": 1236.4682336529036,
+     "total": 1573.5632145203226,
+     "propylene_evaporator_load": 1745.2608931824639
+    }
+   },
+   "two_stage": {
+    "tail_gas_recuperation": {
+     "methane": 77.22861168254462,
+     "ethylene": 750.330496248068,
+     "propylene": 1745.3979277584037,
+     "total": 2572.9570356890163,
+     "propylene_evaporator_load": 2954.684675775894
+    },
+    "with_condensate_credit": {
+     "methane": 21.75537672422074,
+     "ethylene": 280.71648228455683,
+     "propylene": 1010.5117631307996,
+     "total": 1312.9836221395772,
+     "propylene_evaporator_load": 1710.6377713238223
+    }
+   },
+   "carnot_work_at_service_levels_kJ_per_kg": 1153.5226447696928,
+   "eta2_effective": {
+    "single_stage": 0.3740071598254922,
+    "two_stage": 0.4483256536232013
+   },
+   "engine_w_ref_kJ_per_kg": 2692.7128442914327,
+   "step2_w_ref_engine_rule_kJ_per_kg": 3295.7789850562667
+  }
+ },
+ "splitter_condenser": {
+  "T_service_K": 243.0,
+  "COP_single": 1.7713943653384276,
+  "COP_two_stage": 2.0673177107850256,
+  "engine_COP": 1.4175
+ }
+}

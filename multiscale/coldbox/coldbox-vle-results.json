@@ -1,0 +1,630 @@
+{
+ "recovery": 0.995,
+ "P_cold_bar": 30.0,
+ "kij_source": "ChemSep PR table in thermo.interaction_parameters.IPDB",
+ "kij_matrix": {
+  "hydrogen": {
+   "hydrogen": 0.0,
+   "methane": -0.0044,
+   "ethylene": 0.0633,
+   "ethane": -0.0781,
+   "propylene": -0.1037,
+   "1-butene": 0
+  },
+  "methane": {
+   "hydrogen": -0.0044,
+   "methane": 0.0,
+   "ethylene": 0.0244,
+   "ethane": -0.0059,
+   "propylene": 0.033,
+   "1-butene": 0
+  },
+  "ethylene": {
+   "hydrogen": 0.0633,
+   "methane": 0.0244,
+   "ethylene": 0.0,
+   "ethane": 0.0078,
+   "propylene": 0,
+   "1-butene": 0
+  },
+  "ethane": {
+   "hydrogen": -0.0781,
+   "methane": -0.0059,
+   "ethylene": 0.0078,
+   "ethane": 0.0,
+   "propylene": 0.0089,
+   "1-butene": 0
+  },
+  "propylene": {
+   "hydrogen": -0.1037,
+   "methane": 0.033,
+   "ethylene": 0,
+   "ethane": 0.0089,
+   "propylene": 0.0,
+   "1-butene": 0.0004
+  },
+  "1-butene": {
+   "hydrogen": 0,
+   "methane": 0,
+   "ethylene": 0,
+   "ethane": 0,
+   "propylene": 0.0004,
+   "1-butene": 0.0
+  }
+ },
+ "feeds": {
+  "reference fired case (850 degC, 0.35 s)": {
+   "feed_mass_kg_per_kg_ethylene": {
+    "hydrogen": 0.07285984725808861,
+    "methane": 0.02966752119654958,
+    "ethylene": 1.0,
+    "ethane": 1.878767524245053,
+    "propylene": 0.01011089703660906,
+    "1-butene": 0.028984782073515642
+   },
+   "feed_mol_frac": {
+    "hydrogen": 0.26404,
+    "methane": 0.01351,
+    "ethylene": 0.26046,
+    "ethane": 0.45646,
+    "propylene": 0.00176,
+    "1-butene": 0.00377
+   },
+   "feed_mol_per_kg_ethylene": 136.87766384094311,
+   "phi_methane_plus_hydrogen": 0.27754998346373866,
+   "model_tCold_degC": -92.44903875048502,
+   "correlation_tc_degC_recomputed": -92.44919718075741,
+   "vle": {
+    "PR ChemSep kij, 30 bar": {
+     "P_bar": 30.0,
+     "T_cold_end_degC": -123.85791678400747,
+     "VF_mol": 0.2557188539161681,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98374,
+      "methane": 0.00777,
+      "ethylene": 0.00509,
+      "ethane": 0.0034,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01676,
+      "methane": 0.01549,
+      "ethylene": 0.34819,
+      "ethane": 0.61213,
+      "propylene": 0.00236,
+      "1-butene": 0.00507
+     }
+    },
+    "PR ChemSep kij, 32 bar": {
+     "P_bar": 32.0,
+     "T_cold_end_degC": -123.24918631497437,
+     "VF_mol": 0.2547598071572377,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98383,
+      "methane": 0.0076,
+      "ethylene": 0.00511,
+      "ethane": 0.00346,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01798,
+      "methane": 0.01553,
+      "ethylene": 0.34775,
+      "ethane": 0.61132,
+      "propylene": 0.00236,
+      "1-butene": 0.00506
+     }
+    },
+    "PR ChemSep kij, 25 bar": {
+     "P_bar": 25.0,
+     "T_cold_end_degC": -125.60849405142707,
+     "VF_mol": 0.25811664981122917,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98343,
+      "methane": 0.00827,
+      "ethylene": 0.00505,
+      "ethane": 0.00325,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01375,
+      "methane": 0.01534,
+      "ethylene": 0.34932,
+      "ethane": 0.61415,
+      "propylene": 0.00237,
+      "1-butene": 0.00509
+     }
+    },
+    "PR kij = 0, 30 bar": {
+     "P_bar": 30.0,
+     "T_cold_end_degC": -123.52036436723952,
+     "VF_mol": 0.2569964088743235,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98392,
+      "methane": 0.0077,
+      "ethylene": 0.00507,
+      "ethane": 0.00331,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01504,
+      "methane": 0.01552,
+      "ethylene": 0.34879,
+      "ethane": 0.6132,
+      "propylene": 0.00236,
+      "1-butene": 0.00508
+     }
+    }
+   },
+   "recovery_at_model_tCold": {
+    "T_degC": -92.44903875048502,
+    "ethylene_recovery": 0.9686036561353355,
+    "VF_mol": 0.26654650953724873,
+    "vapor_mol_frac": {
+     "hydrogen": 0.92766,
+     "methane": 0.01589,
+     "ethylene": 0.03068,
+     "ethane": 0.02576,
+     "propylene": 1e-05,
+     "1-butene": 0.0
+    },
+    "liquid_mol_frac": {
+     "hydrogen": 0.02287,
+     "methane": 0.01265,
+     "ethylene": 0.34396,
+     "ethane": 0.61299,
+     "propylene": 0.00239,
+     "1-butene": 0.00514
+    }
+   },
+   "recovery_vs_T_30bar": [
+    {
+     "T_degC": -60,
+     "ethylene_recovery": 0.8663664279040999,
+     "VF_mol": 0.32406798032384265,
+     "y_ethylene_vapor": 0.10740240468792961
+    },
+    {
+     "T_degC": -70,
+     "ethylene_recovery": 0.912514014512585,
+     "VF_mol": 0.2967661076325674,
+     "y_ethylene_vapor": 0.07678187934458779
+    },
+    {
+     "T_degC": -80,
+     "ethylene_recovery": 0.9435972931239924,
+     "VF_mol": 0.27944098039191895,
+     "y_ethylene_vapor": 0.052570777601740136
+    },
+    {
+     "T_degC": -90,
+     "ethylene_recovery": 0.9646116666768173,
+     "VF_mol": 0.26851340344002755,
+     "y_ethylene_vapor": 0.03432643407292532
+    },
+    {
+     "T_degC": -100,
+     "ethylene_recovery": 0.9786576153685198,
+     "VF_mol": 0.2618259076750164,
+     "y_ethylene_vapor": 0.021230727436783593
+    },
+    {
+     "T_degC": -110,
+     "ethylene_recovery": 0.9877956008449971,
+     "VF_mol": 0.25799417620656256,
+     "y_ethylene_vapor": 0.012320860792154359
+    },
+    {
+     "T_degC": -120,
+     "ethylene_recovery": 0.9934860113501507,
+     "VF_mol": 0.25608568176588786,
+     "y_ethylene_vapor": 0.006625158163419821
+    },
+    {
+     "T_degC": -130,
+     "ethylene_recovery": 0.9968152247243681,
+     "VF_mol": 0.2554530175767623,
+     "y_ethylene_vapor": 0.0032471496628091257
+    },
+    {
+     "T_degC": -140,
+     "ethylene_recovery": 0.9986063008026232,
+     "VF_mol": 0.2556430720130988,
+     "y_ethylene_vapor": 0.0014199386228756108
+    },
+    {
+     "T_degC": -150,
+     "ethylene_recovery": 0.9994698682671865,
+     "VF_mol": 0.2563423926433069,
+     "y_ethylene_vapor": 0.0005386391519342754
+    }
+   ]
+  },
+  "Wang 2026, published Table 5 composition": {
+   "feed_mass_kg_per_kg_ethylene": {
+    "hydrogen": 0.0772276602023153,
+    "methane": 0.08504506182763998,
+    "ethylene": 1.0,
+    "ethane": 0.6004039069885447,
+    "propylene": 0.11906308655869596,
+    "1-butene": 0.040271338100735396
+   },
+   "feed_mol_frac": {
+    "hydrogen": 0.37273,
+    "methane": 0.05159,
+    "ethylene": 0.34688,
+    "ethane": 0.19428,
+    "propylene": 0.02753,
+    "1-butene": 0.00698
+   },
+   "feed_mol_per_kg_ethylene": 102.77409762369703,
+   "phi_methane_plus_hydrogen": 0.4243231840670051,
+   "model_tCold_degC": -115.93272557458793,
+   "correlation_tc_degC_recomputed": -115.93290927728005,
+   "vle": {
+    "PR ChemSep kij, 30 bar": {
+     "P_bar": 30.0,
+     "T_cold_end_degC": -131.26369104166483,
+     "VF_mol": 0.37622713892722226,
+     "vapor_mol_frac": {
+      "hydrogen": 0.96721,
+      "methane": 0.02719,
+      "ethylene": 0.00461,
+      "ethane": 0.00099,
+      "propylene": 1e-05,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01418,
+      "methane": 0.06631,
+      "ethylene": 0.55332,
+      "ethane": 0.31086,
+      "propylene": 0.04413,
+      "1-butene": 0.0112
+     }
+    },
+    "PR ChemSep kij, 32 bar": {
+     "P_bar": 32.0,
+     "T_cold_end_degC": -130.7822825047025,
+     "VF_mol": 0.3753425833956291,
+     "vapor_mol_frac": {
+      "hydrogen": 0.96775,
+      "methane": 0.02661,
+      "ethylene": 0.00462,
+      "ethane": 0.00101,
+      "propylene": 1e-05,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.0152,
+      "methane": 0.0666,
+      "ethylene": 0.55254,
+      "ethane": 0.31041,
+      "propylene": 0.04407,
+      "1-butene": 0.01118
+     }
+    },
+    "PR ChemSep kij, 25 bar": {
+     "P_bar": 25.0,
+     "T_cold_end_degC": -132.68145593585544,
+     "VF_mol": 0.3785359517444706,
+     "vapor_mol_frac": {
+      "hydrogen": 0.96558,
+      "methane": 0.02888,
+      "ethylene": 0.00458,
+      "ethane": 0.00095,
+      "propylene": 1e-05,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01163,
+      "methane": 0.06542,
+      "ethylene": 0.55538,
+      "ethane": 0.31204,
+      "propylene": 0.0443,
+      "1-butene": 0.01124
+     }
+    },
+    "PR kij = 0, 30 bar": {
+     "P_bar": 30.0,
+     "T_cold_end_degC": -131.25981697399808,
+     "VF_mol": 0.37536361858736805,
+     "vapor_mol_frac": {
+      "hydrogen": 0.96976,
+      "methane": 0.02471,
+      "ethylene": 0.00462,
+      "ethane": 0.0009,
+      "propylene": 1e-05,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01396,
+      "methane": 0.06774,
+      "ethylene": 0.55256,
+      "ethane": 0.31048,
+      "propylene": 0.04407,
+      "1-butene": 0.01118
+     }
+    }
+   },
+   "recovery_at_model_tCold": {
+    "T_degC": -115.93272557458793,
+    "ethylene_recovery": 0.9847983360691102,
+    "VF_mol": 0.38475094215682676,
+    "vapor_mol_frac": {
+     "hydrogen": 0.94165,
+     "methane": 0.04128,
+     "ethylene": 0.01371,
+     "ethane": 0.00333,
+     "propylene": 3e-05,
+     "1-butene": 0.0
+    },
+    "liquid_mol_frac": {
+     "hydrogen": 0.01696,
+     "methane": 0.05804,
+     "ethylene": 0.55524,
+     "ethane": 0.31369,
+     "propylene": 0.04473,
+     "1-butene": 0.01135
+    }
+   },
+   "recovery_vs_T_30bar": [
+    {
+     "T_degC": -60,
+     "ethylene_recovery": 0.7371719445848606,
+     "VF_mol": 0.5246497423278091,
+     "y_ethylene_vapor": 0.17377436895184692
+    },
+    {
+     "T_degC": -70,
+     "ethylene_recovery": 0.8294795121400027,
+     "VF_mol": 0.47366220790961977,
+     "y_ethylene_vapor": 0.12487954093691958
+    },
+    {
+     "T_degC": -80,
+     "ethylene_recovery": 0.8916491404623378,
+     "VF_mol": 0.4395065542241744,
+     "y_ethylene_vapor": 0.08551660814291491
+    },
+    {
+     "T_degC": -90,
+     "ethylene_recovery": 0.9331938498814879,
+     "VF_mol": 0.4163531692188492,
+     "y_ethylene_vapor": 0.055659337463546454
+    },
+    {
+     "T_degC": -100,
+     "ethylene_recovery": 0.9604804908339685,
+     "VF_mol": 0.400507166383934,
+     "y_ethylene_vapor": 0.034228251363917564
+    },
+    {
+     "T_degC": -110,
+     "ethylene_recovery": 0.9778638528286235,
+     "VF_mol": 0.38957712918569243,
+     "y_ethylene_vapor": 0.019710245912322878
+    },
+    {
+     "T_degC": -120,
+     "ethylene_recovery": 0.9884382558548745,
+     "VF_mol": 0.3819972003286177,
+     "y_ethylene_vapor": 0.010498968594435821
+    },
+    {
+     "T_degC": -130,
+     "ethylene_recovery": 0.9944709968373201,
+     "VF_mol": 0.3767575459366018,
+     "y_ethylene_vapor": 0.005090592591118436
+    },
+    {
+     "T_degC": -140,
+     "ethylene_recovery": 0.9976327209860442,
+     "VF_mol": 0.3732316708705899,
+     "y_ethylene_vapor": 0.0022001607925111184
+    },
+    {
+     "T_degC": -150,
+     "ethylene_recovery": 0.9991180177910185,
+     "VF_mol": 0.37103629313057923,
+     "y_ethylene_vapor": 0.0008245687933561747
+    }
+   ]
+  },
+  "Wang 2026, GP-predicted composition": {
+   "feed_mass_kg_per_kg_ethylene": {
+    "hydrogen": 0.07304740247809013,
+    "methane": 0.0369577314506422,
+    "ethylene": 1.0,
+    "ethane": 2.0230932140651094,
+    "propylene": 0.015039628071187035,
+    "1-butene": 0.03357439734258251
+   },
+   "feed_mol_frac": {
+    "hydrogen": 0.25441,
+    "methane": 0.01618,
+    "ethylene": 0.25031,
+    "ethane": 0.47239,
+    "propylene": 0.00251,
+    "1-butene": 0.0042
+   },
+   "feed_mol_per_kg_ethylene": 142.4237805797336,
+   "phi_methane_plus_hydrogen": 0.27058633332271514,
+   "model_tCold_degC": -91.33485735102278,
+   "correlation_tc_degC_recomputed": -91.33501315819365,
+   "vle": {
+    "PR ChemSep kij, 30 bar": {
+     "P_bar": 30.0,
+     "T_cold_end_degC": -123.18331063974745,
+     "VF_mol": 0.24606640667026075,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98183,
+      "methane": 0.00942,
+      "ethylene": 0.00509,
+      "ethane": 0.00366,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01699,
+      "methane": 0.01838,
+      "ethylene": 0.33035,
+      "ethane": 0.62537,
+      "propylene": 0.00333,
+      "1-butene": 0.00557
+     }
+    },
+    "PR ChemSep kij, 32 bar": {
+     "P_bar": 32.0,
+     "T_cold_end_degC": -122.56099682009082,
+     "VF_mol": 0.24507155109035167,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98196,
+      "methane": 0.00921,
+      "ethylene": 0.00511,
+      "ethane": 0.00372,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01823,
+      "methane": 0.01844,
+      "ethylene": 0.32991,
+      "ethane": 0.62453,
+      "propylene": 0.00332,
+      "1-butene": 0.00557
+     }
+    },
+    "PR ChemSep kij, 25 bar": {
+     "P_bar": 25.0,
+     "T_cold_end_degC": -124.96926825541814,
+     "VF_mol": 0.24855556409331617,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98144,
+      "methane": 0.01002,
+      "ethylene": 0.00504,
+      "ethane": 0.0035,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01393,
+      "methane": 0.01821,
+      "ethylene": 0.33144,
+      "ethane": 0.62748,
+      "propylene": 0.00334,
+      "1-butene": 0.00559
+     }
+    },
+    "PR kij = 0, 30 bar": {
+     "P_bar": 30.0,
+     "T_cold_end_degC": -122.81076162142668,
+     "VF_mol": 0.24745987160306174,
+     "vapor_mol_frac": {
+      "hydrogen": 0.98198,
+      "methane": 0.00938,
+      "ethylene": 0.00506,
+      "ethane": 0.00358,
+      "propylene": 0.0,
+      "1-butene": 0.0
+     },
+     "liquid_mol_frac": {
+      "hydrogen": 0.01516,
+      "methane": 0.01841,
+      "ethylene": 0.33096,
+      "ethane": 0.62655,
+      "propylene": 0.00333,
+      "1-butene": 0.00558
+     }
+    }
+   },
+   "recovery_at_model_tCold": {
+    "T_degC": -91.33485735102278,
+    "ethylene_recovery": 0.9683715407134682,
+    "VF_mol": 0.2573437530967467,
+    "vapor_mol_frac": {
+     "hydrogen": 0.92192,
+     "methane": 0.01938,
+     "ethylene": 0.03076,
+     "ethane": 0.02792,
+     "propylene": 2e-05,
+     "1-butene": 0.0
+    },
+    "liquid_mol_frac": {
+     "hydrogen": 0.0231,
+     "methane": 0.01507,
+     "ethylene": 0.32639,
+     "ethane": 0.62641,
+     "propylene": 0.00337,
+     "1-butene": 0.00566
+    }
+   },
+   "recovery_vs_T_30bar": [
+    {
+     "T_degC": -60,
+     "ethylene_recovery": 0.872691604134846,
+     "VF_mol": 0.31165892180144167,
+     "y_ethylene_vapor": 0.10224971511911637
+    },
+    {
+     "T_degC": -70,
+     "ethylene_recovery": 0.9166132161764713,
+     "VF_mol": 0.28552558802635725,
+     "y_ethylene_vapor": 0.073103271650839
+    },
+    {
+     "T_degC": -80,
+     "ethylene_recovery": 0.9462211715348832,
+     "VF_mol": 0.2689091614537959,
+     "y_ethylene_vapor": 0.050059944456390344
+    },
+    {
+     "T_degC": -90,
+     "ethylene_recovery": 0.9662504053796203,
+     "VF_mol": 0.2584045508208999,
+     "y_ethylene_vapor": 0.03269286849290045
+    },
+    {
+     "T_degC": -100,
+     "ethylene_recovery": 0.9796435152387495,
+     "VF_mol": 0.25195567835847127,
+     "y_ethylene_vapor": 0.02022382313467638
+    },
+    {
+     "T_degC": -110,
+     "ethylene_recovery": 0.9883588822505365,
+     "VF_mol": 0.2482427277190422,
+     "y_ethylene_vapor": 0.011738234249823678
+    },
+    {
+     "T_degC": -120,
+     "ethylene_recovery": 0.9937866208519689,
+     "VF_mol": 0.2463777374543873,
+     "y_ethylene_vapor": 0.0063126399227900675
+    },
+    {
+     "T_degC": -130,
+     "ethylene_recovery": 0.9969621387820972,
+     "VF_mol": 0.24574594215040854,
+     "y_ethylene_vapor": 0.0030943269436690553
+    },
+    {
+     "T_degC": -140,
+     "ethylene_recovery": 0.9986704743226148,
+     "VF_mol": 0.2459183602427959,
+     "y_ethylene_vapor": 0.0013532885261849344
+    },
+    {
+     "T_degC": -150,
+     "ethylene_recovery": 0.9994941693714386,
+     "VF_mol": 0.24659831054565404,
+     "y_ethylene_vapor": 0.0005134517643393582
+    }
+   ]
+  }
+ }
+}
