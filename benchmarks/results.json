@@ -1,6 +1,5 @@
 {
   "schema": "ethane-literature-results-v1",
-  "model_version": "ethane-web-model-v1",
   "cases": [
     {
       "id": "chen-2024",
@@ -128,8 +127,8 @@
           "name": "MSP / web cost",
           "published": 832,
           "model_range": [
-            408.22028489456704,
-            417.35611952328566
+            384.32201825697456,
+            395.03343772231847
           ],
           "unit": "USD/t",
           "role": "context",
@@ -139,8 +138,8 @@
           "name": "TCM / web annual OPEX",
           "published": 496,
           "model_range": [
-            159.9888909472475,
-            168.71363848713338
+            148.48272618920373,
+            157.57450428325026
           ],
           "unit": "MUSD/y",
           "role": "context",
@@ -154,7 +153,8 @@
         "MSP and annual manufacturing cost are shown as economic context because the paper uses a 20-year discounted cash-flow MSP calculation."
       ],
       "model_flags": [
-        "GP chemistry consistency: derived and direct ethylene selectivity differ by 2.24 percentage points"
+        "WARNING tube metal temperature: coil area increased 2.62 times to keep 1150 degC",
+        "WARNING tube metal temperature: coil area increased 8.94 times to keep 1150 degC"
       ]
     },
     {
@@ -222,8 +222,8 @@
           "name": "combustion heat",
           "published": 17.2,
           "model_range": [
-            17.172130328309365,
-            18.670853734584544
+            14.778833462687848,
+            15.265323650291856
           ],
           "unit": "GJ/t",
           "role": "test",
@@ -233,8 +233,8 @@
           "name": "on-site GHG",
           "published": 442,
           "model_range": [
-            410.81649447321166,
-            532.6188321526512
+            332.1564718729842,
+            413.64742630712794
           ],
           "unit": "kgCO2e/t",
           "role": "test",
@@ -244,8 +244,8 @@
           "name": "LCOE / web cost",
           "published": 746,
           "model_range": [
-            363.7475796337509,
-            398.71242784648297
+            358.96225332361985,
+            426.5102121136716
           ],
           "unit": "USD/t",
           "role": "context",
@@ -255,8 +255,8 @@
           "name": "WTG GHG / web carbon",
           "published": 869,
           "model_range": [
-            1037.0975313596407,
-            1239.6604582016175
+            619.0243324336767,
+            776.5133779238446
           ],
           "unit": "kgCO2e/t",
           "role": "context",
@@ -273,9 +273,7 @@
         "Residence time is fitted to fresh-ethane demand across 800\u2013900 \u00b0C and 1\u20135 bar. C3+ production, total combustion heat, and on-site GHG remain test quantities.",
         "The 17.2 GJ/t combustion-energy value is the paper's model-validation quantity and includes heat from imported natural gas plus hydrogen/methane purge gas."
       ],
-      "model_flags": [
-        "selectivity 75.7% is outside the industrial band of 78 to 88%"
-      ]
+      "model_flags": []
     },
     {
       "id": "wang-2026",
@@ -408,20 +406,20 @@
         {
           "name": "CAPEX / web TOC",
           "published": 357.38,
-          "model": 528.2771566147276,
+          "model": 452.5526329401163,
           "unit": "MUSD",
           "role": "context",
           "note": "paper CAPEX and web TOC use different estimating structures",
-          "rel_error_pct": 47.819451736170905
+          "rel_error_pct": 26.630654468665377
         },
         {
           "name": "OPEX / web annual OPEX",
           "published": 195.65,
-          "model": 180.05614317322406,
+          "model": 141.8483665695864,
           "unit": "MUSD/y",
           "role": "context",
           "note": "utility and overhead definitions differ",
-          "rel_error_pct": -7.9702820479304615
+          "rel_error_pct": -27.498918185746795
         }
       ],
       "notes": [
@@ -430,7 +428,7 @@
         "The web surrogate uses a 650 \u00b0C reactor inlet and pure ethane plus steam at the kinetic-model inlet. This paper reports 502.77 \u00b0C and 0.64 wt% ethylene in the reactor feed; those two differences remain explicit in the benchmark."
       ],
       "model_flags": [
-        "conversion 36.6% is outside the fitted range of 45 to 85%"
+        "WARNING tube metal temperature: coil area increased 1.05 times to keep 1150 degC"
       ]
     }
   ]
