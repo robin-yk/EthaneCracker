@@ -1601,7 +1601,8 @@ function calculatePlant(inputs) {
   const tmt = p.coilOutletTemperature_C + FURNACE.peakFluxFactor * meanFlux * 1000 / FURNACE.filmConductance_W_per_m2K;
   const coilCount = coilVolume / FURNACE.coilVolumePerCoil_m3;
   let coilAreaUsed = coilArea, tmtStatus = 'OK';
-  if (fired && tmt > FURNACE.tubeMetalLimit_C) {
+  // The limit applies to every coil: the gas-side film needs the same wall-to-gas temperature difference for fired and electric heat.
+  if (tmt > FURNACE.tubeMetalLimit_C) {
     const margin = FURNACE.tubeMetalLimit_C - p.coilOutletTemperature_C;
     if (margin <= 20) { tmtStatus = 'FAILED'; coilAreaUsed = coilArea * 50; warnings.push('FAILED tube metal temperature: COT within 20 K of the alloy limit'); }
     else { tmtStatus = 'WARNING'; coilAreaUsed = FURNACE.peakFluxFactor * radiant_kW * 1000 / (FURNACE.filmConductance_W_per_m2K * margin);
