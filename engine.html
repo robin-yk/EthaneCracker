@@ -501,7 +501,72 @@ const HE={
    therefore sets only relative cost: HE_KCAP converts columnCost() to the anchor basis and HE_DEC2_REF is the
    deethanizer's columnCost() at the reference case (studies/heavy-ends-2026-10-20/ref_constants.cjs). */
 const HE_KCAP=0.2607, HE_DEC2_REF=24.535;
+/* Reference coil inside area, m2. The furnace capital share scales with the coil area used
+   (p.furnaceCapitalBasis = 'coilArea', default) or with the coil ethane flow ('coilFlow', earlier versions,
+   anchor 1.809 kg coil ethane per kg ethylene). The reference case (850 degC, 0.35 s, 1.5 bar, steam/ethane
+   0.35, 610 kt/y) has 7926.2 m2 and 3.0443 kg/kg coil ethane. The area anchor 7926.2 * 1.809 / 3.0443 = 4710
+   m2 gives the same furnace capital as the coil-flow basis at the reference case; away from it the area basis
+   adds the residence-time and flux effects. */
+const REF_COIL_AREA_M2=4710;
 
+/* Fired furnace (2026-10-20). The fired heat-delivery efficiency is calculated, not fixed.
+   Combustion: fuel gas (CH4, H2, lost C2H4) is burned first, then natural gas (CH4), with excess air
+   FURNACE.excessAirFraction and air at FURNACE.airTemperatureC. Flue-gas sensible enthalpy uses NASA
+   7-coefficient polynomials (GRI-Mech 3.0 thermo data, read with Cantera 3.2).
+   Radiant section: well-stirred firebox. The flue gas leaves the radiant section at the bridgewall
+   temperature, so the radiant efficiency is eta_rad = 1 - H_flue(T_bridgewall) / LHV_fuel.
+   Convection section: the flue gas cools to the stack temperature. Overall efficiency
+   eta_total = 1 - H_flue(T_stack) / LHV_fuel - casing loss fraction. The convection duty F*(eta_total - eta_rad) preheats the
+   feed from 150 degC to the 650 degC coil inlet; the remainder raises HP steam, credited at the export
+   steam price. Fuel F = max(Q_radiant/eta_rad, (Q_radiant + Q_preheat)/eta_total).
+   The fixed efficiency of the earlier versions (p.eff on (Q_preheat + Q_radiant)) remains as
+   p.firedModel = 'fixed'.
+   Tube metal temperature (TMT): coil volume = mean volumetric flow * residence time, inside area =
+   4 * volume / inside diameter, mean flux = Q_radiant / area. TMT_max = COT + peak factor * flux / film
+   conductance. The film conductance and the peak factor are fitted to the typical Millisecond Furnace of
+   US 2025/0277154 A1, Tables 1-2 (1.5 in ID coils, 105 kW per coil, coil outside 981 degC average and
+   1117 degC maximum, 705 -> 882 degC gas). If TMT_max exceeds the alloy limit (US 8,747,765 B2: 1100-1150
+   degC), the coil area increases until TMT_max equals the limit, and the furnace capital scales with
+   the coil area. */
+const FURNACE={
+  excessAirFraction:0.10,        // -, range 0.05-0.20, typical gas-fired process heater (assumption)
+  airTemperatureC:25,            // degC, no air preheat (assumption)
+  bridgewallTemperatureC:1100,   // degC, range 1000-1250, flue-gas exit of the radiant section (assumption)
+  stackTemperatureC:130,         // degC, range 110-180, after the convection section (assumption)
+  casingLossFraction:0.02,       // -, range 0.01-0.03 of fuel LHV, heat lost through the furnace walls (assumption)
+  coilInsideDiameter_m:0.0381,   // m, 1.5 in, US 2025/0277154 A1 Table 1
+  filmConductance_W_per_m2K:210.8, // W/m2 K, fitted on this model's own coil area at the MSF condition (882 degC, 0.25 s,
+                                 // steam/ethane 0.5, 1.7 bar): 39.52 kW/m2 / (981 - 793.5) K, US 2025/0277154 A1 Tables 1-2.
+                                 // The model area is 1.73 times the patent area (152 coils x 1.53 m2) because the model
+                                 // takes 1.7 bar mean coil pressure; the patent coil volume implies about 2.9 bar.
+  peakFluxFactor:1.2535,         // -, fitted: (1117 - 882) K * 210.8 W/m2K / 39.52 kW/m2, same source
+  tubeMetalLimitC:1150,          // degC, range 1100-1150, austenitic alloy limit, US 8,747,765 B2; upper end, because the
+                                 // commercial MSF of US 2025/0277154 A1 runs at 1117 degC
+  coilVolumePerCoil_m3:0.0146    // m3, US 2025/0277154 A1 Table 1, used to count coils
+};
+const NASA7={   // [Tmid, high a1..a7, low a1..a7], GRI-Mech 3.0
+  CO2:[1000,3.85746029,4.41437026e-3,-2.21481404e-6,5.23490188e-10,-4.72084164e-14,-48759.166,2.27163806,2.35677352,8.98459677e-3,-7.12356269e-6,2.45919022e-9,-1.43699548e-13,-48371.9697,9.90105222],
+  H2O:[1000,3.03399249,2.17691804e-3,-1.64072518e-7,-9.7041987e-11,1.68200992e-14,-30004.2971,4.9667701,4.19864056,-2.0364341e-3,6.52040211e-6,-5.48797062e-9,1.77197817e-12,-30293.7267,-0.849032208],
+  N2:[1000,2.92664,1.4879768e-3,-5.68476e-7,1.0097038e-10,-6.753351e-15,-922.7977,5.980528,3.298677,1.4082404e-3,-3.963222e-6,5.641515e-9,-2.444854e-12,-1020.8999,3.950372],
+  O2:[1000,3.28253784,1.48308754e-3,-7.57966669e-7,2.09470555e-10,-2.16717794e-14,-1088.45772,5.45323129,3.78245636,-2.99673416e-3,9.84730201e-6,-9.68129509e-9,3.24372837e-12,-1063.94356,3.65767573]};
+function sensibleEnthalpy_J_per_mol(species,T){    // h(T) - h(298.15 K)
+  const c=NASA7[species], h=t=>{const a=t>c[0]?c.slice(1,8):c.slice(8,15);
+    return RG*t*(a[0]+a[1]*t/2+a[2]*t*t/3+a[3]*t*t*t/4+a[4]*t*t*t*t/5+a[5]/t);};
+  return h(T)-h(298.15);
+}
+/* Flue-gas sensible enthalpy per kJ of fuel LHV, for a fuel given as LHV fractions of CH4, H2 and C2H4. */
+function flueEnthalpyPerFuelLHV(fraction,T_K){
+  const LHVmol={ch4:802.3,h2:241.8,c2h4:1323.0};              // kJ/mol
+  const O2={ch4:2,h2:0.5,c2h4:3}, CO2={ch4:1,h2:0,c2h4:2}, H2O={ch4:2,h2:1,c2h4:2};
+  let nO2=0,nCO2=0,nH2O=0;
+  for(const k of ['ch4','h2','c2h4']){const n=(fraction[k]||0)/LHVmol[k]; nO2+=n*O2[k]; nCO2+=n*CO2[k]; nH2O+=n*H2O[k];}
+  const ex=FURNACE.excessAirFraction, nN2=nO2*(1+ex)*79/21;
+  const flue=(nCO2*sensibleEnthalpy_J_per_mol('CO2',T_K)+nH2O*sensibleEnthalpy_J_per_mol('H2O',T_K)
+             +nN2*sensibleEnthalpy_J_per_mol('N2',T_K)+nO2*ex*sensibleEnthalpy_J_per_mol('O2',T_K))/1000;
+  const air=(nO2*(1+ex)*sensibleEnthalpy_J_per_mol('O2',FURNACE.airTemperatureC+273.15)
+            +nN2*sensibleEnthalpy_J_per_mol('N2',FURNACE.airTemperatureC+273.15))/1000;
+  return flue-air;                                             // kJ per kJ fuel LHV
+}
 function c5Share(yC4p){                       // yC4p in kg per kg coil ethane
   return 1-Math.exp(-Math.pow(Math.max(yC4p,0)/HE.c5.y0,HE.c5.b));
 }
@@ -613,7 +678,7 @@ const CI_REF=1200;  // kg CO2e per tonne ethylene, typical published ethane crac
 const PUB={coo:680,ethane:1.19,netEnergy:14.7};
 
 /* ---------- state ---------- */
-const S={tab:'main',grid:0.36,ethaneUp:0.50,tailFate:'sell',tailGas:0.5,alloc:'expansion',mode:'CH',cap:610,eff:60,selMode:'calc',sel:84,tle:true,
+const S={effFired:60,effElectric:95,firedModel:'radiant',furnaceCapitalBasis:'coilArea',tab:'main',grid:0.36,ethaneUp:0.50,tailFate:'sell',tailGas:0.5,alloc:'expansion',mode:'CH',cap:610,eff:60,selMode:'calc',sel:84,tle:true,
          kinetics:'empirical',pressure:1.5,ramp:1.0,
          cot:850,tau:0.35,dilution:0.35,
          ethane:200,elec:0.07,gas:4,steam:4.4,lpg:550,ccf:0.10,labor:5};   // steam: natural-gas price / 0.90 boiler efficiency (Towler and Sinnott 2013, Eq. 3.1)
@@ -967,11 +1032,53 @@ function model(p){
     qDemand=qPre+qMechanism;
     qRxn=qDemand-qSens;
   }
-  const qDeliver=qDemand/(p.eff/100);
   const tleSteam=p.tle?(p.heatRecovery===undefined?TLE_REC:p.heatRecovery)*qSens:0;
+  const feedPreheatDuty=(coil*CP_C2H6+dilSteam*CP_STEAM)*(650-T_PREHEAT);   // kJ/kg C2H4, 150 -> 650 degC
+  const radiantDuty=qDemand-feedPreheatDuty;                                // kJ/kg C2H4, 650 degC -> COT and cracking
 
   /* 3. Tail gas. The furnace burns this before buying anything. */
   const fuelGas=(y.ch4*LHV.CH4+y.h2*LHV.H2+ethyleneLoss*LHV_MJ.C2H4)*1000;   // kJ/kg C2H4
+  /* 3a. Heat source. Fired: radiant and convection balance (FURNACE). Electric: delivery efficiency p.eff
+     on the full duty, preheat included, with no convection section and no convection steam. */
+  let qDeliver, furnace=null, convectionSteam=0;
+  if(p.mode==='CH'&&(p.firedModel||'radiant')==='radiant'){
+    let F=qDemand/0.6, eRad=0.45, eTot=0.92;
+    for(let it=0;it<3;it++){
+      const burnedGas=Math.min(fuelGas,F), ng=F-burnedGas;
+      const fr={ch4:(burnedGas>0?y.ch4*LHV.CH4*1000/fuelGas*burnedGas:0)+ng,
+                h2:burnedGas>0?y.h2*LHV.H2*1000/fuelGas*burnedGas:0,
+                c2h4:burnedGas>0?ethyleneLoss*LHV_MJ.C2H4*1000/fuelGas*burnedGas:0};
+      const tot=fr.ch4+fr.h2+fr.c2h4; for(const k in fr) fr[k]/=tot;
+      eRad=1-flueEnthalpyPerFuelLHV(fr,FURNACE.bridgewallTemperatureC+273.15);
+      eTot=1-flueEnthalpyPerFuelLHV(fr,FURNACE.stackTemperatureC+273.15)-FURNACE.casingLossFraction;
+      F=Math.max(radiantDuty/eRad,(radiantDuty+feedPreheatDuty)/eTot);
+    }
+    convectionSteam=Math.max(0,F*(eTot-eRad)-feedPreheatDuty);
+    qDeliver=F;
+    furnace={radiantEfficiency:eRad,overallEfficiency:eTot,equivalentFixedEfficiency:qDemand/F,
+             fuelLHV_kJ_per_kg:F,convectionDuty_kJ_per_kg:F*(eTot-eRad),convectionSteam_kJ_per_kg:convectionSteam};
+  }else{
+    qDeliver=qDemand/(p.eff/100);
+  }
+  /* 3b. Coil area, flux and tube metal temperature (both heat sources; the TMT limit applies to fired). */
+  const designRate_kg_s=p.cap*1e6/(HE.hours*3600);
+  const coilMol_per_kg=coil*1000/MW.C2H6*(1+X/2)+dilSteam*1000/18.015;     // mean molar flow, half of the cracking expansion
+  const coilVolume_m3=coilMol_per_kg*designRate_kg_s*RG*((650+p.cot)/2+273.15)/(p.pressure*1e5)*p.tau;
+  const coilArea_m2=4*coilVolume_m3/FURNACE.coilInsideDiameter_m;
+  const radiantDuty_kW=radiantDuty*designRate_kg_s;
+  const meanFlux_kW_m2=radiantDuty_kW/coilArea_m2;
+  const tubeMetalTemperatureMaxC=p.cot+FURNACE.peakFluxFactor*meanFlux_kW_m2*1000/FURNACE.filmConductance_W_per_m2K;
+  const coilCount=coilVolume_m3/FURNACE.coilVolumePerCoil_m3;
+  let coilAreaUsed_m2=coilArea_m2, tmtStatus='OK';
+  if(p.mode==='CH'&&tubeMetalTemperatureMaxC>FURNACE.tubeMetalLimitC){
+    const allowed=FURNACE.tubeMetalLimitC-p.cot;
+    if(allowed<=20){tmtStatus='FAILED';coilAreaUsed_m2=coilArea_m2*50;
+      flags.push('TMT FAILED: COT is within 20 K of the tube metal limit; the coil area is set to 50 times the volume area');}
+    else{tmtStatus='WARNING';coilAreaUsed_m2=FURNACE.peakFluxFactor*radiantDuty_kW*1000/(FURNACE.filmConductance_W_per_m2K*allowed);
+      flags.push('TMT WARNING: coil area increased by '+sig(coilAreaUsed_m2/coilArea_m2,3)+' to keep the tube metal at '+FURNACE.tubeMetalLimitC+' degC');}
+  }
+  const coilHeat={coilVolume_m3,coilArea_m2,coilAreaUsed_m2,meanFlux_kW_m2,tubeMetalTemperatureMaxC,tmtStatus,coilCount,
+                  dutyPerCoil_kW:radiantDuty_kW/coilCount,radiantDuty_kJ_per_kg:radiantDuty,feedPreheatDuty_kJ_per_kg:feedPreheatDuty};
   const gasBurned=p.mode==='CH'?Math.min(fuelGas,qDeliver):0;
   const gasSurplus=fuelGas-gasBurned;
   const gasSell=p.tailFate==='sell'?gasSurplus:0;
@@ -1048,7 +1155,7 @@ function model(p){
   /* 8. Capital. Anchored on TBMC $126.8 M at 610 kt/y, scaled by section. */
   const sc=(x,r,e)=>Math.pow(x/r,e);
   const tbmc=(p.capitalFactor===undefined?1:p.capitalFactor)*REF.tbmc*sc(p.cap,REF.cap,0.65)*(
-      SPLIT.furnace*(p.mode==='JH'&&p.jouleFurnaceFactor!==undefined?p.jouleFurnaceFactor:1)*sc(coil,1.809,0.65)+SPLIT.compression*sc(wComp,1134,0.70)
+      SPLIT.furnace*(p.mode==='JH'&&p.jouleFurnaceFactor!==undefined?p.jouleFurnaceFactor:1)*((p.furnaceCapitalBasis||'coilArea')==='coilArea'?sc(coilAreaUsed_m2,REF_COIL_AREA_M2,0.65):sc(coil,1.809,0.65))+SPLIT.compression*sc(wComp,1134,0.70)
     + SPLIT.coldbox*sc(wRef,REF_WREF,0.70)+SPLIT.fractionation*sc(rRatio*nAct,195,0.60))
     + (p.capitalFactor===undefined?1:p.capitalFactor)*HE_KCAP*(cDeC2.installed-HE_DEC2_REF+cDeC3.installed+cDeC4.installed);
   const kHE=(p.capitalFactor===undefined?1:p.capitalFactor)*HE_KCAP;
@@ -1064,7 +1171,7 @@ function model(p){
   L.heat     = p.mode==='CH' ? gasBuy*kJ2GJ*p.gas : elecHeat*kJ2GJ*eGJ;
   L.elecProc = (wComp+wRef+wSplit+wDeC2)*kJ2GJ*eGJ;
   L.heavyEnds= qReb*kJ2GJ*p.steam+qCW*kJ2GJ*CW_REJECT;     // reboiler steam and cooling water of the heavy-ends train
-  L.steamCr  = -tleSteam*kJ2GJ*p.steam;
+  L.steamCr  = -(tleSteam+convectionSteam)*kJ2GJ*p.steam;   // TLE steam and fired convection-section steam
   L.gasCr    = -gasSell*kJ2GJ*p.gas*p.tailGas;   // exported tail gas is hydrogen-rich, off-specification fuel: sold at a fraction of the natural-gas price
   L.lpgCr    = -(y.c3+(y.c4plus||0))*p.lpg;
   L.dilSteam = qDSG*kJ2GJ*(p.steam*(p.grade===undefined?STEAM_GRADE:p.grade)+CW_REJECT);
@@ -1073,7 +1180,7 @@ function model(p){
   const coo=Object.values(L).reduce((a,b)=>a+b,0);
 
   /* 10. Balance residuals */
-  const eIn=qDeliver, eOut=qDemand+qDeliver*(1-p.eff/100);
+  const eIn=qDeliver, eOut=qDemand+convectionSteam+qDeliver*(1-(furnace?(qDemand+convectionSteam)/qDeliver:p.eff/100));
   let bal,balanceBasis;
   if(useMechanismSpecies){
     /* Every raw Cantera row is release-gated for elemental/mass closure in CI.
@@ -1090,7 +1197,7 @@ function model(p){
     balanceBasis='closed lumped empirical chemistry';
   }
 
-  const netEnergy=(qDeliver-tleSteam+wComp+wRef+wSplit+wDeC2+qReb)*kJ2GJ;
+  const netEnergy=(qDeliver-tleSteam-convectionSteam+wComp+wRef+wSplit+wDeC2+qReb)*kJ2GJ;
   const elec_kWh=(wComp+wRef+wSplit+wDeC2+elecHeat)*kJ2GJ/GJ_per_kWh/1000;
 
   if(X<VALID.X[0]||X>VALID.X[1])
@@ -1106,7 +1213,7 @@ function model(p){
       +sig(VALID.sel[0],2)+' to '+sig(VALID.sel[1],2)+'%');
 
   return {flags,selClipped,y,acetylene,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,gasSurplus,gasBurned,ethyleneBeforeRecovery,ethyleneLoss,
-    elecHeat,wComp,wRef,wSplit,wDeC2,heavy,tCold,qCold,qLevels,lightFrac,nGas,alpha,nMin,nAct,rRatio,
+    elecHeat,wComp,wRef,wSplit,wDeC2,heavy,furnace,coilHeat,convectionSteam,tCold,qCold,qLevels,lightFrac,nGas,alpha,nMin,nAct,rRatio,
     qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc,
     reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp,useMechanismSpecies,balanceBasis};
 }
@@ -1125,7 +1232,7 @@ function breakeven(){
   let lo=1e-4,hi=0.5;
   for(let i=0;i<50;i++){
     const m=(lo+hi)/2;
-    if(model({...S,...CP,mode:'JH',eff:95,elec:m}).coo>model({...S,...CP,mode:'CH',eff:60,elec:m}).coo) hi=m; else lo=m;
+    if(model({...S,...CP,mode:'JH',eff:S.effElectric,elec:m}).coo>model({...S,...CP,mode:'CH',eff:S.effFired,elec:m}).coo) hi=m; else lo=m;
   }
   return (lo+hi)/2;
 }
@@ -1153,7 +1260,7 @@ function lca(r,p){
     else if(p.tailFate==='vent') s1_fate = ch4Surplus*GWP_CH4*perT;
     else                         cr_tail = -r.gasSell*kJ2GJ*EF.ng;
   }
-  const cr_steam = -r.tleSteam*kJ2GJ*EF.boiler;
+  const cr_steam = -(r.tleSteam+(r.convectionSteam||0))*kJ2GJ*EF.boiler;
   const s1_heavy = (r.heavy?r.heavy.qReb:0)*kJ2GJ*EF.boiler;   // reboiler steam from a gas-fired boiler
 
   const scope1=s1_gas+s1_tail+s1_coke+s1_fate+s1_heavy;
@@ -1681,7 +1788,7 @@ function drawFig2(rCH,rJH,cot,tau,be){
   const eLo=0.01, eHi=Math.max(0.16,S.elec*1.6,be*1.6), n=64;
   const cp={...S,cot,tau}, pts=[];
   for(let i=0;i<=n;i++){const e=eLo+(eHi-eLo)*i/n;
-    pts.push([e,model({...cp,mode:'CH',eff:60,elec:e}).coo,model({...cp,mode:'JH',eff:95,elec:e}).coo]);}
+    pts.push([e,model({...cp,mode:'CH',eff:S.effFired,elec:e}).coo,model({...cp,mode:'JH',eff:S.effElectric,elec:e}).coo]);}
   const yLo=Math.min(...pts.map(p=>Math.min(p[1],p[2]))), yHi=Math.max(...pts.map(p=>Math.max(p[1],p[2])));
   const pad=(yHi-yLo)*0.08;
   const C=axes({x:52,y:238,w:398,h:158,xlim:[eLo,eHi],ylim:[yLo-pad,yHi+pad],nx:6,ny:5,
@@ -1692,7 +1799,7 @@ function drawFig2(rCH,rJH,cot,tau,be){
   s+='<path d="'+path(1)+'" fill="none" stroke="'+F.grey+'" stroke-width="'+F.data+'" stroke-linejoin="round"/>';
   s+='<path d="'+path(2)+'" fill="none" stroke="'+F.orange+'" stroke-width="'+F.data+'" stroke-linejoin="round"/>';
   if(be>eLo&&be<eHi){
-    const bx=C.X(be), byv=model({...cp,mode:'CH',eff:60,elec:be}).coo;
+    const bx=C.X(be), byv=model({...cp,mode:'CH',eff:S.effFired,elec:be}).coo;
     s+='<path d="M'+bx+' 238V396" stroke="'+F.ink+'" stroke-width="'+F.ax+'" stroke-dasharray="3 2" fill="none"/>';
     s+='<circle cx="'+bx+'" cy="'+C.Y(byv)+'" r="2.6" fill="#fff" stroke="'+F.ink+'" stroke-width="1.1"/>';
     s+=ftext('break-even '+be.toFixed(4).replace(/0+$/,'')+' USD kWh',bx+3.5,246,{});
@@ -1734,8 +1841,8 @@ function breakevenGrid(){
   let lo=0,hi=2;
   for(let i=0;i<50;i++){
     const m=(lo+hi)/2, st={...S,...commonPoint(),grid:m};
-    const f=model({...st,mode:'CH',eff:60}), j=model({...st,mode:'JH',eff:95});
-    if(lca(j,{...st,mode:'JH',eff:95}).ci>lca(f,{...st,mode:'CH',eff:60}).ci) hi=m; else lo=m;
+    const f=model({...st,mode:'CH',eff:S.effFired}), j=model({...st,mode:'JH',eff:S.effElectric});
+    if(lca(j,{...st,mode:'JH',eff:S.effElectric}).ci>lca(f,{...st,mode:'CH',eff:S.effFired}).ci) hi=m; else lo=m;
   }
   return (lo+hi)/2;
 }
@@ -1748,7 +1855,7 @@ function drawFig3(r,l,beg){
   let s='<g>';
 
   /* a. Where the carbon sits, by scope, for both heating routes at a common point. */
-  const routes=[['Fired',{...S,...CP,mode:'CH',eff:60}],['Joule',{...S,...CP,mode:'JH',eff:95}]]
+  const routes=[['Fired',{...S,...CP,mode:'CH',eff:S.effFired}],['Joule',{...S,...CP,mode:'JH',eff:S.effElectric}]]
     .map(([n,st])=>{const m=model(st); return {n,l:lca(m,st)};});
   const segs=[['Scope 1',F.grey],['Scope 2',F.orange],['Scope 3',F.teal]];
   const hiA=Math.max(...routes.map(d=>d.l.scope1+d.l.scope2+d.l.scope3))*1.14;
@@ -1795,8 +1902,8 @@ function drawFig3(r,l,beg){
   const gLo=0, gHi=0.95, n=48, pts=[];
   for(let i=0;i<=n;i++){const g=gLo+(gHi-gLo)*i/n;
     const sc={...S,...CP,grid:g};
-    pts.push([g,lca(model({...sc,mode:'CH',eff:60}),{...sc,mode:'CH'}).ci,
-                lca(model({...sc,mode:'JH',eff:95}),{...sc,mode:'JH'}).ci]);}
+    pts.push([g,lca(model({...sc,mode:'CH',eff:S.effFired}),{...sc,mode:'CH'}).ci,
+                lca(model({...sc,mode:'JH',eff:S.effElectric}),{...sc,mode:'JH'}).ci]);}
   const yLo=Math.min(...pts.map(p=>Math.min(p[1],p[2]))), yHi=Math.max(...pts.map(p=>Math.max(p[1],p[2])));
   const pad=(yHi-yLo)*0.08;
   const C=axes({x:52,y:334,w:398,h:150,xlim:[gLo,gHi],ylim:[yLo-pad,yHi+pad],nx:6,ny:5,ypad:32,
@@ -1808,7 +1915,7 @@ function drawFig3(r,l,beg){
    +'<path d="'+pth(2)+'" fill="none" stroke="'+F.orange+'" stroke-width="'+F.data+'" stroke-linejoin="round"/>';
   if(beg>gLo&&beg<gHi){
     const bx=C.X(beg), sc={...S,...CP,grid:beg};
-    const byv=lca(model({...sc,mode:'CH',eff:60}),{...sc,mode:'CH'}).ci;
+    const byv=lca(model({...sc,mode:'CH',eff:S.effFired}),{...sc,mode:'CH'}).ci;
     s+='<path d="M'+bx+' 334V484" stroke="'+F.ink+'" stroke-width="'+F.ax+'" stroke-dasharray="3 2" fill="none"/>'
       +'<circle cx="'+bx+'" cy="'+C.Y(byv)+'" r="2.6" fill="#fff" stroke="'+F.ink+'" stroke-width="1.1"/>'
       +ftext('crossover '+sig(beg,3),bx+3.5,342,{});
@@ -1980,7 +2087,7 @@ function renderCarbon(r){
   const cases=[
     ['Selectivity 5 points lower',{selMode:'direct',sel:r.Smass*100-5}],
     ['Coil outlet temperature +20 C',{cot:S.cot+20}],
-    ['Switch to Joule heating',{mode:'JH',eff:95}],
+    ['Switch to Joule heating',{mode:'JH',eff:S.effElectric}],
     ['TLE heat recovery off',{tle:false}]
   ];
   $('divergeBody').innerHTML=cases.map(([lbl,ov])=>{
@@ -2006,7 +2113,7 @@ function renderExplained(r,l){
   const gap=(r.coo-PUB.coo)/PUB.coo*100;
   const be=breakeven();
   const CP=commonPoint();
-  const fired=model({...S,...CP,mode:'CH',eff:60}), joule=model({...S,...CP,mode:'JH',eff:95});
+  const fired=model({...S,...CP,mode:'CH',eff:S.effFired}), joule=model({...S,...CP,mode:'JH',eff:S.effElectric});
   let h='';
 
   h+='<h3>What this number is</h3>';
@@ -2275,7 +2382,7 @@ function render(){
      infeasible fired case. */
   const {cot:commonCot,tau:commonTau}=commonPoint();
   const common={...S,cot:commonCot,tau:commonTau};
-  const rCH=model({...common,mode:'CH',eff:60}), rJH=model({...common,mode:'JH',eff:95});
+  const rCH=model({...common,mode:'CH',eff:S.effFired}), rJH=model({...common,mode:'JH',eff:S.effElectric});
   const eCost=r.L.heat+r.L.elecProc+r.L.steamCr+r.L.gasCr;
   const be=breakeven();
 
@@ -2474,7 +2581,7 @@ let _bpKey='', _bpVal={};
    because a single number here would be the more precise and the less true answer. */
 let _robKey='', _robVal={}, _robTimer=null;
 function robustScan(mode){
-  const eff=mode==='CH'?60:95, W=MODE_LIMITS[mode];
+  const eff=mode==='CH'?S.effFired:S.effElectric, W=MODE_LIMITS[mode];
   const ts=[], saves=[];
   for(const A of SEL_VARIANTS){
     let best={coo:Infinity,cot:W.cot[0]};
@@ -2527,7 +2634,7 @@ function bestPoint(mode){
   const key=[S.kinetics,S.pressure,S.ramp,S.cap,S.dilution,S.tle,S.ethane,S.elec,S.gas,S.steam,S.lpg,S.ccf,S.labor,S.selMode,S.sel].join('|');
   if(key!==_bpKey){_bpKey=key;_bpVal={};}
   if(_bpVal[mode]) return _bpVal[mode];
-  const W=MODE_LIMITS[mode], eff=(mode==='CH'?60:95);
+  const W=MODE_LIMITS[mode], eff=(mode==='CH'?S.effFired:S.effElectric);
   const evalAt=(c,t)=>{
     const m=model({...S,mode,eff,cot:c,tau:t});
     return {coo:m.coo,cot:c,tau:t,X:m.X,Sm:m.Smass,run:m.runDays};
