@@ -57,7 +57,7 @@ s = sub(s, '  $("uSplit").textContent=fmt(result.splitter_kwh_per_t,0)+" kWh/t";
         '  const fu=result.furnace;\n'
         '  $("uFeed").textContent=fu?("radiant "+pct(fu.radiantEfficiency)+" · overall "+pct(fu.overallEfficiency)):(fmt(result.fresh_ethane_kg_per_kg,3)+" kg fresh + "+fmt(result.recycle_ethane_kg_per_kg,3)+" kg recycle");')
 s = sub(s, '$("scope").textContent="The reactor outlet sets the recycle and cracked-gas load. AC-201 selectively hydrogenates acetylene before the cold box and C₂ splitter; the remaining compression, refrigeration, and fractionation duties are estimated from the resulting flows. The separation models are screening correlations.";',
-        '$("scope").textContent="The reactor outlet sets the recycle and cracked-gas load. The fired furnace is a radiant and convection heat balance; the tube metal temperature is checked against 1150 °C. AC-201 hydrogenates acetylene before the cold box (Peng–Robinson flash, CoolProp refrigeration cascade). T-302 sends the C₂ cut to the C₂ splitter and the C₃+ to T-401/T-402 (shortcut columns).";')
+        '$("scope").textContent="The reactor outlet sets the recycle and cracked-gas load. The fired furnace is a radiant and convection heat balance; the tube metal temperature is checked against 1150 °C. AC-201 selectively hydrogenates acetylene before the cold box (Peng–Robinson flash, CoolProp refrigeration cascade). T-302 sends the C₂ cut to the C₂ splitter and the C₃+ to T-401/T-402 (shortcut columns).";')
 s = sub(s, '["Steam",L.dilSteam||0]', '["Steam",(L.dilSteam||0)+(L.heavyEnds||0)]')
 
 # block properties

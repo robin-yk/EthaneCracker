@@ -36,7 +36,7 @@ jobs:
               scripts=re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>",text,re.S|re.I)
               if not scripts:
                   raise SystemExit(f"no inline script in {src}")
-              Path(out).write_text("\\n".join(scripts),encoding="utf-8")
+              Path(out).write_text(chr(10).join(scripts),encoding="utf-8")
           PY
           node --check /tmp/root.js
           node --check /tmp/bench.js

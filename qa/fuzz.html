@@ -61,7 +61,7 @@ async function waitApi(){
 (async()=>{
  try{
   const api=await waitApi();
-  const base={kinetics:"gp",mode:"CH",eff:60,cot:868,tau:.35,dilution:.35,pressure:1.5,ramp:1,cap:610,ethane:200,elec:.07,gas:4,grid:.36,ethaneUp:.50,lpg:550,steam:9.8};
+  const base={kinetics:"gp",mode:"CH",eff:60,cot:868,tau:.35,dilution:.35,pressure:1.5,ramp:1,cap:610,ethane:200,elec:.07,gas:4,grid:.36,ethaneUp:.50,lpg:550,tailGas:.5};
   const normal=[
     ["user-url",{}],
     ["low-severity",{cot:750,tau:.02,dilution:0,pressure:1,ramp:.45}],
@@ -81,23 +81,23 @@ async function waitApi(){
   }
 
   // Product recovery and tail-gas fate must share the material and energy inventory.
-  for(const kinetics of ['gp','empirical']){
+  // The model has one kinetics route (AramcoMech 3.0 GP) and two fuel-gas uses (burn in the heater first, sell the surplus).
+  for(const kinetics of ['gp']){
     for(const mode of ['CH','JH']){
       const byFate={};
-      for(const tailFate of ['burn','sell','vent']){
+      for(const tailFate of ['burn','sell']){
         const name=kinetics+'-'+mode+'-'+tailFate;
         const r=api.evaluate({...base,kinetics,mode,tailFate});byFate[tailFate]=r;
         const t=r.tail_gas_gj_per_t,loss=r.ethylene_loss_to_tail_kg_per_kg;
         check(name,approx(r.ethylene_before_recovery_kg_per_kg*r.ethylene_recovery,1),'recovered product basis does not close');
         check(name,approx(loss+1,r.ethylene_before_recovery_kg_per_kg),'ethylene loss missing from material balance');
         check(name,approx(t.generated,t.heater+t.surplus),'tail-gas split does not close');
-        check(name,approx(r.cost_breakdown_usd_per_t.gasCr,-t.sold*base.gas),'sale credit disagrees with sold gas');
+        check(name,approx(r.cost_breakdown_usd_per_t.gasCr,-t.sold*base.gas*base.tailGas),'sale credit disagrees with sold gas');
         check(name,tailFate==='sell'?approx(t.sold,t.surplus):t.sold===0,'burned/vented gas sold');
         const expectedCO2=(r.ch4_kg_per_kg*44.01/16.04+loss*88.02/28.05)*1000;
         const c=r.carbon_tail_kgco2e_per_t;
         if(tailFate==='burn')check(name,approx(c.heater+c.fate,expectedCO2),'tail combustion carbon does not close');
         if(mode==='JH')check(name,t.heater===0&&c.heater===0,'Joule heater burns tail gas');
-        if(mode==='JH'&&tailFate==='vent')check(name,approx(c.fate,r.ch4_kg_per_kg*29.8*1000),'vented methane omitted or burned');
         if(kinetics==='gp'){
           const a=r.acetylene_converter,g=r.gp_mean;
           check(name,approx(a.rawEthyleneKg+a.ethyleneRecoveredKg,r.ethylene_before_recovery_kg_per_kg),'converter ethylene does not close');
@@ -110,7 +110,6 @@ async function waitApi(){
         }
       }
       check(kinetics+mode,approx(byFate.burn.cost_usd_per_t-byFate.sell.cost_usd_per_t,-byFate.sell.cost_breakdown_usd_per_t.gasCr),'fate cost difference is not sale revenue');
-      check(kinetics+mode,approx(byFate.burn.cost_usd_per_t,byFate.vent.cost_usd_per_t),'venting earns sale revenue');
     }
   }
 
@@ -174,8 +173,8 @@ async function waitApi(){
     "slider at 1.5 s incorrectly displays a GP extrapolation warning");
 
   // Both the shell passthrough and direct engine API must reject invalid efficiencies.
-  const engineApi=d.getElementById("engineFrame").contentWindow.ethaneModel;
-  for(const [apiName,target] of [["shell",api],["engine",engineApi]]){
+  // The process model is inside the page; the page API is the model API.
+  for(const [apiName,target] of [["model",api]]){
     for(const mode of ["CH","JH"]){
       for(const eff of [0,-1,100.01,NaN,Infinity,-Infinity,undefined,null,"invalid"]){
         let error=null;
