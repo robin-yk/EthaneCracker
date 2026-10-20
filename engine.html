@@ -461,6 +461,91 @@ const STEAM_GRADE=0.45;    // low pressure heat against the high pressure export
 const CW_REJECT=0.40;      // $/GJ, cooling water duty for the quench condensation
 const REF={cap:610,tbmc:126.8};
 const SPLIT={furnace:.30,compression:.25,coldbox:.25,fractionation:.20};
+/* Heavy ends (2026-10-20). Until this version C3 and C4+ went through compression and the cold box and
+   were credited as LPG with no unit that separates them. The sequence below is the front-end demethanizer
+   train (Towler and Sinnott 2022, Section 17.6): C5+ condenses in the quench tower and the compressor
+   interstage drums, the cold-box liquid goes to a deethanizer whose overhead feeds the C2 splitter, the
+   deethanizer bottoms go to a depropanizer (C3 overhead) and its bottoms with the quench C5+ to a
+   debutanizer (C4 overhead, raw pyrolysis gasoline bottoms). Each column is a Fenske-Underwood-Gilliland
+   shortcut solved at the point's own flows: keys recovered 99.5 %, reflux 1.2 times the Underwood minimum
+   (Towler and Sinnott 2022, Section 17.7; Seider et al. 2017, Section 9.4), stages from the Eduljee form of
+   Gilliland. Product flows are taken as sharp splits; the shortcut sets only duties and size.
+   Relative volatilities to the heavy key, latent heats and top densities are Peng-Robinson values at the
+   reference composition and column pressure (studies/heavy-ends-2026-10-20/column_design.py, thermo 0.6.1,
+   ChemSep kij). The deethanizer condenser (-8 degC) is served by a two-stage propylene cycle (COP 3.49 at
+   5 K approach, same cycle model as the cascade); the depropanizer (39 degC) and debutanizer (45 degC)
+   condensers by cooling water. Reboilers take low-pressure steam at the export-steam price. Capital:
+   Towler and Sinnott 2022, Table 7.2 (Jan 2010 USGC, CEPCI 532.9) escalated to the 2019 basis of the
+   anchor plant (CEPCI 607.5) and installed with the Hand factors of Table 7.4 (columns 4, exchangers 3.5).
+   The anchor plant of Mittal et al. 2025 already has one C2/C3 column (SI Table S5, T4 at 25 bar), so the
+   deethanizer adds capital only for its size difference from the reference case; the depropanizer and
+   debutanizer are new capital. Reboiler duty is the condenser duty plus the sensible heat of the bottoms
+   from the top to the bottom temperature (overall energy balance, saturated-liquid feed and products). */
+const HE={
+  rec:0.995, rFactor:1.2, trayEff:0.70, spacing:0.6, hours:8000, cpLiq:2.4,   // kJ/kg K, light hydrocarbon liquids
+  c5:{y0:0.11223,b:1.0257,yMin:0.0092},          // C5+ share of the C4+ lump, direct Cantera fit (c5plus_fit.py)
+  quenchLatent:400,                               // kJ/kg C5+ condensed in the quench and interstage coolers
+  steamT:148, cwIn:30, cwOut:35, uCond:700, uReb:1000, cepci:607.5/532.9,
+  sMPa:88.9, jointE:0.85, corrosion:0.002,
+  col:{
+    deC2:{P:25, lk:'c2h6',hk:'c3', alpha:{c2h4:2.660,c2h6:2.044,c3:1,c4:0.424}, mw:{c2h4:28.05,c2h6:30.07,c3:42.08,c4:54.09},
+          lamTop:8690, rhoV:49.1, rhoL:407, tTop:-7.7, tBot:96.2, cop:3.494},
+    deC3:{P:16, lk:'c3',hk:'c4', alpha:{c3:2.337,c4:1}, mw:{c3:42.08,c4:54.09},
+          lamTop:12950, rhoV:34.6, rhoL:487, tTop:38.6, tBot:95.5, cop:null},
+    deC4:{P:5, lk:'c4',hk:'c5', alpha:{c4:3.095,c5:1}, mw:{c4:54.09,c5:72.1},
+          lamTop:19750, rhoV:11.5, rhoL:603, tTop:45.1, tBot:114.9, cop:null}}
+};
+/* Column capital on the anchor plant's cost basis. At the reference case (850 degC, 0.35 s, 610 kt/y)
+   columnCost() gives the C2 splitter and the deethanizer together 3.84 times the 25.36 USD M fractionation
+   share of the anchor (Towler factored estimates against Aspen Economic Analyzer). The Towler sizing
+   therefore sets only relative cost: HE_KCAP converts columnCost() to the anchor basis and HE_DEC2_REF is the
+   deethanizer's columnCost() at the reference case (studies/heavy-ends-2026-10-20/ref_constants.cjs). */
+const HE_KCAP=0.2607, HE_DEC2_REF=24.535;
+
+function c5Share(yC4p){                       // yC4p in kg per kg coil ethane
+  return 1-Math.exp(-Math.pow(Math.max(yC4p,0)/HE.c5.y0,HE.c5.b));
+}
+function fug(c,feed){                          // feed: mol per kg ethylene, keys of c.alpha
+  const ks=Object.keys(c.alpha), a=c.alpha, eps=1e-12;
+  const f={}; ks.forEach(k=>f[k]=Math.max(feed[k]||0,eps));
+  const F=ks.reduce((s,k)=>s+f[k],0), aLK=a[c.lk];
+  const top={}; ks.forEach(k=>top[k]=a[k]>aLK?f[k]:0);   // non-keys: lighter all up, heavier all down
+  top[c.lk]=HE.rec*f[c.lk]; top[c.hk]=(1-HE.rec)*f[c.hk];
+  const D=ks.reduce((s,k)=>s+top[k],0), B=F-D;
+  const nMin=Math.log((HE.rec/(1-HE.rec))*(HE.rec/(1-HE.rec)))/Math.log(aLK);
+  const g=th=>ks.reduce((s,k)=>s+a[k]*f[k]/F/(a[k]-th),0);   // saturated-liquid feed, q = 1
+  let lo=1+1e-9, hi=aLK-1e-9;
+  for(let i=0;i<100;i++){const m=(lo+hi)/2; if(g(m)>0) hi=m; else lo=m;}
+  const th=(lo+hi)/2;
+  const rMin=Math.max(0.05,ks.reduce((s,k)=>s+a[k]*top[k]/D/(a[k]-th),0)-1);
+  const R=HE.rFactor*rMin, X=(R-rMin)/(R+1), Y=0.75*(1-Math.pow(X,0.5668));
+  const nTh=(nMin+Y)/(1-Y);
+  const V=(R+1)*D;                             // mol per kg ethylene, top and (q = 1) bottom
+  const mwTop=ks.reduce((s,k)=>s+top[k]*c.mw[k],0)/D;
+  const bKg=ks.reduce((s,k)=>s+(f[k]-top[k])*c.mw[k],0)/1000;                   // kg bottoms per kg ethylene
+  const qCond=V*c.lamTop/1000;
+  return {F,D,B,nMin,rMin,R,nTh,V,mwTop,bKg,qCond,qReb:qCond+bKg*HE.cpLiq*(c.tBot-c.tTop)};   // kJ per kg ethylene
+}
+function columnCost(c,s,capKt){                // installed cost, USD M; s from fug()
+  const G=capKt*1e6/(HE.hours*3600);           // kg ethylene per s, design rate
+  const vMass=s.V*s.mwTop/1000*G;              // kg/s vapour at the top
+  const lt=HE.spacing, uv=(-0.171*lt*lt+0.27*lt-0.047)*Math.sqrt((c.rhoL-c.rhoV)/c.rhoV);   // Towler Eq. 17.47
+  const Dc=Math.max(0.5,Math.sqrt(4*vMass/(Math.PI*c.rhoV*uv)));                              // Eq. 17.48
+  const trays=Math.ceil(s.nTh/HE.trayEff), H=trays*lt+4;
+  const Pd=1.1*c.P*0.1;                         // MPa design
+  const t=Pd*Dc/(2*HE.sMPa*HE.jointE-1.2*Pd)+HE.corrosion;                                  // Eq. 14.13
+  const mShell=Math.PI*Dc*(H+0.8*Dc)*t*7850;
+  const shell=(m=>11600+34*Math.pow(m,0.85))(Math.min(Math.max(mShell,160),250000))*Math.max(1,Math.ceil(mShell/250000));
+  const tray=trays*(130+440*Math.pow(Math.min(Math.max(Dc,0.5),5),1.8));
+  const qC=s.qCond*G, qR=s.qReb*G;              // kW
+  const lmtd=(t1,t2)=>Math.abs(t1-t2)<1e-6?t1:(t1-t2)/Math.log(t1/t2);
+  const dTc=c.cop?5:lmtd(c.tTop-HE.cwIn,c.tTop-HE.cwOut);
+  const aC=qC*1000/(HE.uCond*dTc), aR=qR*1000/(HE.uReb*(HE.steamT-c.tBot));
+  const hx=(A,lo,hi,a,b,n)=>{const k=Math.max(1,Math.ceil(A/hi)); return k*(a+b*Math.pow(Math.max(A/k,lo),n));};
+  const cond=hx(aC,10,1000,28000,54,1.2), reb=hx(aR,10,500,29000,400,0.9);
+  return {Dc,H,trays,shell,tray,cond,reb,areaCond:aC,areaReb:aR,
+          installed:HE.cepci*(4*(shell+tray)+3.5*(cond+reb))/1e6};
+}
 const kJ2GJ=1e-3;                    // kJ/kg → GJ/t
 const GJ_per_kWh=0.0036;
 /* Industrial operating window. Outside this the model extrapolates.
@@ -810,6 +895,13 @@ function model(p){
       c4plus:(gp.mean.y_c4plus_kg_per_kg_ethane||0)*coil,
       coke:0
     };
+    /* C5+ inside the C4+ lump: from the mechanism row when it carries the split (direct Cantera),
+       otherwise from the direct-Cantera share fit. */
+    const y4pCoil=gp.mean.y_c4plus_kg_per_kg_ethane||0;
+    y.c5plus=Number.isFinite(gp.mean.y_c5plus_kg_per_kg_ethane)
+      ?Math.min(gp.mean.y_c5plus_kg_per_kg_ethane,y4pCoil)*coil:c5Share(y4pCoil)*y.c4plus;
+    if(!Number.isFinite(gp.mean.y_c5plus_kg_per_kg_ethane)&&y4pCoil>0&&y4pCoil<HE.c5.yMin)
+      flags.push('C5+ share of C4+ below the direct-Cantera range (C4+ '+sig(y4pCoil,3)+' kg/kg ethane); fit taken toward zero');
     acetylene={
       enabled:true,targetPpm:ACET.targetPpm,selectivity:ACET.selectivity,
       rawKg:ya*coil,
@@ -855,7 +947,7 @@ function model(p){
     n=1000/(RECOVERY*Smol*MW.C2H4);
     const kg=m=>n*m/1000;
     y={ethane:kg(MW.C2H6),ch4:kg(nCH4*MW.CH4),h2:kg(nH2*MW.H2),
-       c2h2:0,c3:kg(nC3*MW.C3),c4plus:0,coke:kg(nCoke*MW.C)};
+       c2h2:0,c3:kg(nC3*MW.C3),c4plus:0,c5plus:0,coke:kg(nCoke*MW.C)};
     coil=y.ethane/X; recycle=coil-y.ethane; dilSteam=coil*p.dilution;
   }
 
@@ -904,9 +996,12 @@ function model(p){
      recovery and the enthalpy balance gives the duty at the -40 degC, -100 degC and
      cold-end levels; the cascade converts duty to work. Residual acetylene (5 ppm) is
      counted with ethylene. */
+  /* C5+ has left in the quench tower and the compressor interstage drums, so the cold box sees the C4 part
+     of the lump only. The compressor above still carries all of it, which is the upper bound of its flow. */
+  const yC5=y.c5plus||0, yC4=Math.max(0,(y.c4plus||0)-yC5);
   const mol={c2h4:ethyleneBeforeRecovery*1000/MW.C2H4,c2h6:recycle*1000/MW.C2H6,ch4:y.ch4*1000/MW.CH4,
              h2:y.h2*1000/MW.H2,c2h2:(y.c2h2||0)*1000/MW.C2H2,
-             c3:y.c3*1000/MW.C3,c4plus:(y.c4plus||0)*1000/MW.C4};
+             c3:y.c3*1000/MW.C3,c4plus:yC4*1000/MW.C4};
   const nPostAC=mol.c2h4+mol.c2h6+mol.ch4+mol.h2+mol.c2h2+mol.c3+mol.c4plus;
   const lightFrac=(mol.ch4+mol.h2)/nPostAC;
   const cb=coldBox([mol.h2,mol.ch4,mol.c2h4+mol.c2h2,mol.c2h6,mol.c3,mol.c4plus].map(v=>v/nPostAC),nPostAC);
@@ -929,6 +1024,20 @@ function model(p){
   const rRatio=Math.max(rMin*1.15,(rMin+(1-Math.sqrt(gx))*0.9)*1.05);
   const wSplit=(rRatio+1)*280/COP.splitter;
 
+  /* 6b. Heavy ends. Cold-box liquid (C2 + C3 + C4) to the deethanizer; its bottoms (C3 + C4) to the
+     depropanizer; depropanizer bottoms (C4) with the quench C5+ to the debutanizer. Feeds in mol per kg
+     ethylene; duties in kJ per kg ethylene. */
+  const C=HE.col;
+  const sDeC2=fug(C.deC2,{c2h4:recoveredEthyleneMol,c2h6:mol.c2h6,c3:mol.c3,c4:yC4*1000/C.deC2.mw.c4});
+  const sDeC3=fug(C.deC3,{c3:mol.c3,c4:yC4*1000/C.deC3.mw.c4});
+  const sDeC4=fug(C.deC4,{c4:yC4*1000/C.deC4.mw.c4,c5:yC5*1000/C.deC4.mw.c5});
+  const wDeC2=sDeC2.qCond/C.deC2.cop;                         // propylene-cycle work
+  const qCW=sDeC3.qCond+sDeC4.qCond+yC5*HE.quenchLatent;      // to cooling water
+  const qReb=sDeC2.qReb+sDeC3.qReb+sDeC4.qReb;                // low-pressure steam
+  const cDeC2=columnCost(C.deC2,sDeC2,p.cap), cDeC3=columnCost(C.deC3,sDeC3,p.cap), cDeC4=columnCost(C.deC4,sDeC4,p.cap);
+  const heavy={deethanizer:{...sDeC2,...cDeC2},depropanizer:{...sDeC3,...cDeC3},debutanizer:{...sDeC4,...cDeC4},
+               wDeC2,qCW,qReb,c3:y.c3,c4:yC4,c5plus:yC5};
+
   /* 7. Coking sets run length, run length sets on-stream factor. */
   const runDays=60*Math.exp(-0.025*(p.cot-850))*Math.pow(p.dilution/0.35,0.6)
                   *Math.pow(0.35/p.tau,0.3);
@@ -940,7 +1049,10 @@ function model(p){
   const sc=(x,r,e)=>Math.pow(x/r,e);
   const tbmc=(p.capitalFactor===undefined?1:p.capitalFactor)*REF.tbmc*sc(p.cap,REF.cap,0.65)*(
       SPLIT.furnace*(p.mode==='JH'&&p.jouleFurnaceFactor!==undefined?p.jouleFurnaceFactor:1)*sc(coil,1.809,0.65)+SPLIT.compression*sc(wComp,1134,0.70)
-    + SPLIT.coldbox*sc(wRef,REF_WREF,0.70)+SPLIT.fractionation*sc(rRatio*nAct,195,0.60));
+    + SPLIT.coldbox*sc(wRef,REF_WREF,0.70)+SPLIT.fractionation*sc(rRatio*nAct,195,0.60))
+    + (p.capitalFactor===undefined?1:p.capitalFactor)*HE_KCAP*(cDeC2.installed-HE_DEC2_REF+cDeC3.installed+cDeC4.installed);
+  const kHE=(p.capitalFactor===undefined?1:p.capitalFactor)*HE_KCAP;
+  heavy.capital={deethanizer:kHE*(cDeC2.installed-HE_DEC2_REF),depropanizer:kHE*cDeC3.installed,debutanizer:kHE*cDeC4.installed};
   const toc=tbmc*2.5, prod=p.cap*1000*osf;
 
   /* 9. Cost ladder, all in USD per tonne C2H4 */
@@ -950,7 +1062,8 @@ function model(p){
   L.floor    = FLOOR_RATIO*p.ethane;
   L.selLoss  = (y.ethane-FLOOR_RATIO)*p.ethane;
   L.heat     = p.mode==='CH' ? gasBuy*kJ2GJ*p.gas : elecHeat*kJ2GJ*eGJ;
-  L.elecProc = (wComp+wRef+wSplit)*kJ2GJ*eGJ;
+  L.elecProc = (wComp+wRef+wSplit+wDeC2)*kJ2GJ*eGJ;
+  L.heavyEnds= qReb*kJ2GJ*p.steam+qCW*kJ2GJ*CW_REJECT;     // reboiler steam and cooling water of the heavy-ends train
   L.steamCr  = -tleSteam*kJ2GJ*p.steam;
   L.gasCr    = -gasSell*kJ2GJ*p.gas*p.tailGas;   // exported tail gas is hydrogen-rich, off-specification fuel: sold at a fraction of the natural-gas price
   L.lpgCr    = -(y.c3+(y.c4plus||0))*p.lpg;
@@ -977,8 +1090,8 @@ function model(p){
     balanceBasis='closed lumped empirical chemistry';
   }
 
-  const netEnergy=(qDeliver-tleSteam+wComp+wRef+wSplit)*kJ2GJ;
-  const elec_kWh=(wComp+wRef+wSplit+elecHeat)*kJ2GJ/GJ_per_kWh/1000;
+  const netEnergy=(qDeliver-tleSteam+wComp+wRef+wSplit+wDeC2+qReb)*kJ2GJ;
+  const elec_kWh=(wComp+wRef+wSplit+wDeC2+elecHeat)*kJ2GJ/GJ_per_kWh/1000;
 
   if(X<VALID.X[0]||X>VALID.X[1])
     flags.push('conversion '+sig(X*100,3)+'% is outside the fitted range of '
@@ -993,7 +1106,7 @@ function model(p){
       +sig(VALID.sel[0],2)+' to '+sig(VALID.sel[1],2)+'%');
 
   return {flags,selClipped,y,acetylene,coil,recycle,dilSteam,qRxn,qSens,qDemand,qDeliver,tleSteam,fuelGas,gasBuy,gasSell,gasSurplus,gasBurned,ethyleneBeforeRecovery,ethyleneLoss,
-    elecHeat,wComp,wRef,wSplit,tCold,qCold,qLevels,lightFrac,nGas,alpha,nMin,nAct,rRatio,
+    elecHeat,wComp,wRef,wSplit,wDeC2,heavy,tCold,qCold,qLevels,lightFrac,nGas,alpha,nMin,nAct,rRatio,
     qDSG,runDays,osf,tbmc,toc,prod,L,coo,bal,netEnergy,elec_kWh,Smol,Smass,X,SmolCalc,
     reactorModel:gp?'AramcoMech 3.0 → Cantera → GP':'empirical screening',gp,useMechanismSpecies,balanceBasis};
 }
@@ -1041,8 +1154,9 @@ function lca(r,p){
     else                         cr_tail = -r.gasSell*kJ2GJ*EF.ng;
   }
   const cr_steam = -r.tleSteam*kJ2GJ*EF.boiler;
+  const s1_heavy = (r.heavy?r.heavy.qReb:0)*kJ2GJ*EF.boiler;   // reboiler steam from a gas-fired boiler
 
-  const scope1=s1_gas+s1_tail+s1_coke+s1_fate;
+  const scope1=s1_gas+s1_tail+s1_coke+s1_fate+s1_heavy;
   const scope2=s2_power;
   const scope3=s3_feed;
   const netBeforeCoproduct=scope1+scope2+scope3+cr_steam;
@@ -1066,7 +1180,7 @@ function lca(r,p){
     ciFinal=netBeforeCoproduct*share;
     shareNote=sig(share*100,3)+'% of the burden assigned to ethylene';
   }
-  return {s3_feed,s1_gas,s1_tail,s1_coke,s1_fate,s2_power,cr_steam,cr_lpg,cr_tail,
+  return {s3_feed,s1_gas,s1_tail,s1_coke,s1_fate,s1_heavy,s2_power,cr_steam,cr_lpg,cr_tail,
           scope1,scope2,scope3,ci:ciFinal,share,shareNote,ch4Surplus};
 }
 
@@ -1417,7 +1531,7 @@ const LADDER=[
   ['Heating energy','heat','up'],['Dilution steam','dilSteam','up'],
   ['Compression and refrigeration','elecProc','up'],
   ['HP steam recovered','steamCr','dn'],['Tail gas sold','gasCr','dn'],
-  ['LPG credit','lpgCr','dn'],['Capital charge','capital','up'],['O&M and labour','om','up']
+  ['LPG credit','lpgCr','dn'],['Heavy-ends steam','heavyEnds','up'],['Capital charge','capital','up'],['O&M and labour','om','up']
 ];
 /* Fig. 1b. Waterfall from the stoichiometric feed to the cost of ethylene. Costs run right,
    credits run left, and the two reference lines are drawn rather than described. */
@@ -2545,6 +2659,10 @@ window.ethaneModel={
       c2h2_kg_per_kg:r.y.c2h2||0,
       c3_kg_per_kg:r.y.c3||0,
       c4plus_kg_per_kg:r.y.c4plus||0,
+      c5plus_kg_per_kg:r.y.c5plus||0,
+      heavy_ends:{deethanizer_condenser_kj_per_kg:r.heavy.deethanizer.qCond,deethanizer_refrigeration_kwh_per_t:r.wDeC2/3.6,
+        reboiler_steam_gj_per_t:r.heavy.qReb*kJ2GJ,cooling_water_gj_per_t:r.heavy.qCW*kJ2GJ,
+        capital_musd:r.heavy.capital},
       acetylene_converter:{...r.acetylene},
       ethylene_recovery:RECOVERY,
       ethylene_before_recovery_kg_per_kg:r.ethyleneBeforeRecovery,
