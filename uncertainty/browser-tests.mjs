@@ -23,9 +23,12 @@ export function testEngine(api){
   check(noRecovery.cost_breakdown_usd_per_t.steamCr===0,'zero recovery still earns steam credit');
   const ordinary=pair(api,p,63,95,1),shared=pair(api,{...p,compressionFactor:1.9,heatRecovery:0.9,capitalFactor:1.5},63,95,1);
   const fired=api.evaluate({...p,mode:'CH',eff:63}),joule=api.evaluate({...p,mode:'JH',eff:95});
-  check(near(ordinary.threshold,0.0036*p.gas*fired.purchased_natural_gas_gj_per_t/joule.heater_input_gj_per_t),'burn-surplus threshold disagrees with purchased-fuel balance');
-  const sold=pair(api,{...p,tailFate:'sell'},63,95,1);
-  check(near(sold.threshold,0.0036*p.gas*95/63),'sold-surplus threshold disagrees with energy-price ratio');
+  // reference basis: surplus sold at the tail-gas price factor; the fired furnace burns it at full value
+  check(near(ordinary.threshold,0.0036*p.gas*(fired.purchased_natural_gas_gj_per_t+(1-p.tailGas)*joule.tail_gas_gj_per_t.sold)/joule.heater_input_gj_per_t),'sold-surplus threshold disagrees with the purchased-fuel balance and tail-gas price');
+  const burned=pair(api,{...p,tailFate:'burn'},63,95,1);
+  check(near(burned.threshold,0.0036*p.gas*fired.purchased_natural_gas_gj_per_t/joule.heater_input_gj_per_t),'burn-surplus threshold disagrees with purchased-fuel balance');
+  const sold=pair(api,{...p,tailFate:'sell',tailGas:1},63,95,1);
+  check(near(sold.threshold,0.0036*p.gas*95/63),'full-price sold-surplus threshold disagrees with energy-price ratio');
   check(near(ordinary.delta,shared.delta),'shared process costs did not cancel');
   check(near(ordinary.threshold,shared.threshold),'shared uncertainty changed paired break-even');
   check(!near(ordinary.fired,shared.fired),'shared uncertainty did not change absolute cost');

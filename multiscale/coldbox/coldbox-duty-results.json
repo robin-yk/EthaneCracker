@@ -1,0 +1,417 @@
+{
+ "P_cold_bar": 30.0,
+ "T_in_degC": 30.0,
+ "dT_min_K": 5.0,
+ "liquid_return_degC": -30.0,
+ "eta2": 0.35,
+ "T_amb_K": 303.0,
+ "feeds": {
+  "reference fired case (850 degC, 0.35 s)": {
+   "cold_end_degC": -123.85791678400747,
+   "feed_kg_per_kg_ethylene": 3.020390571809816,
+   "tail_gas_mol_frac": {
+    "hydrogen": 0.98374,
+    "methane": 0.00777,
+    "ethylene": 0.00509,
+    "ethane": 0.0034,
+    "propylene": 0.0,
+    "1-butene": 0.0
+   },
+   "tail_gas_kg_per_kg_ethylene": 0.08235857260555446,
+   "Q_total_kJ_per_kg": 2168.3157335006536,
+   "Q_rec_tail_gas_kJ_per_kg": 146.99785826222518,
+   "Q_rec_condensate_to_-30C_kJ_per_kg": 685.6594923567823,
+   "Q_ref_kJ_per_kg": 2021.3178752384283,
+   "Q_ref_with_condensate_credit_kJ_per_kg": 1335.658382881646,
+   "duty_by_level_kJ_per_kg": {
+    "-40": 1036.7476732660516,
+    "-100": 768.0664315011534,
+    "cold_end": 216.5037704712235
+   },
+   "duty_fractions": {
+    "-40": 0.5129067950995883,
+    "-100": 0.3799830006502835,
+    "cold_end": 0.10711020425012835
+   },
+   "w_ref_vle_engine_efficiency_kJ_per_kg": 3170.011043190921,
+   "with_condensate_credit": {
+    "duty_by_level_kJ_per_kg": {
+     "-40": 949.2948102718781,
+     "-100": 325.5043357852064,
+     "cold_end": 60.859236824561506
+    },
+    "duty_fractions": {
+     "-40": 0.7107317428157047,
+     "-100": 0.2437032851790589,
+     "cold_end": 0.04556497200523639
+    },
+    "w_ref_kJ_per_kg": 1689.04501284341
+   },
+   "engine": {
+    "t_c_degC": -92.44903875048502,
+    "q_c_kJ_per_kg": 1834.9087499464197,
+    "duty_fractions": [
+     0.55,
+     0.3,
+     0.15
+    ],
+    "w_ref_kJ_per_kg": 2575.555298341932
+   },
+   "cooling_curve": [
+    {
+     "T_degC": 30.0,
+     "H_feed_kJ_per_kg": -106.58151789192371,
+     "H_tail_kJ_per_kg": 4.629898636907863
+    },
+    {
+     "T_degC": 20.0,
+     "H_feed_kJ_per_kg": -175.3434451045741,
+     "H_tail_kJ_per_kg": -5.6130104499239994
+    },
+    {
+     "T_degC": 10.0,
+     "H_feed_kJ_per_kg": -244.19063786417314,
+     "H_tail_kJ_per_kg": -15.830361176735808
+    },
+    {
+     "T_degC": 0.0,
+     "H_feed_kJ_per_kg": -313.4749487729216,
+     "H_tail_kJ_per_kg": -26.018565196331444
+    },
+    {
+     "T_degC": -10.0,
+     "H_feed_kJ_per_kg": -383.71068875596956,
+     "H_tail_kJ_per_kg": -36.17355501919428
+    },
+    {
+     "T_degC": -20.0,
+     "H_feed_kJ_per_kg": -690.1766439887252,
+     "H_tail_kJ_per_kg": -46.290706801877626
+    },
+    {
+     "T_degC": -30.0,
+     "H_feed_kJ_per_kg": -1071.4198792720852,
+     "H_tail_kJ_per_kg": -56.36477037856234
+    },
+    {
+     "T_degC": -40.0,
+     "H_feed_kJ_per_kg": -1324.3784653011849,
+     "H_tail_kJ_per_kg": -66.38982150037553
+    },
+    {
+     "T_degC": -50.0,
+     "H_feed_kJ_per_kg": -1509.9113403639935,
+     "H_tail_kJ_per_kg": -76.35924867443781
+    },
+    {
+     "T_degC": -60.0,
+     "H_feed_kJ_per_kg": -1657.7782097719794,
+     "H_tail_kJ_per_kg": -86.26578060055665
+    },
+    {
+     "T_degC": -70.0,
+     "H_feed_kJ_per_kg": -1782.4327049606961,
+     "H_tail_kJ_per_kg": -96.10155192606095
+    },
+    {
+     "T_degC": -80.0,
+     "H_feed_kJ_per_kg": -1891.6336906293209,
+     "H_tail_kJ_per_kg": -105.85819884205772
+    },
+    {
+     "T_degC": -90.0,
+     "H_feed_kJ_per_kg": -1989.9575930656522,
+     "H_tail_kJ_per_kg": -115.526977669505
+    },
+    {
+     "T_degC": -100.0,
+     "H_feed_kJ_per_kg": -2080.3440505470976,
+     "H_tail_kJ_per_kg": -125.09891561707796
+    },
+    {
+     "T_degC": -110.0,
+     "H_feed_kJ_per_kg": -2164.830755289453,
+     "H_tail_kJ_per_kg": -134.5650390997562
+    },
+    {
+     "T_degC": -120.0,
+     "H_feed_kJ_per_kg": -2244.9204398866973,
+     "H_tail_kJ_per_kg": -143.91678417133178
+    }
+   ]
+  },
+  "Wang 2026, published Table 5 composition": {
+   "cold_end_degC": -131.26369104166483,
+   "feed_kg_per_kg_ethylene": 1.9220110536779313,
+   "tail_gas_mol_frac": {
+    "hydrogen": 0.96721,
+    "methane": 0.02719,
+    "ethylene": 0.00461,
+    "ethane": 0.00099,
+    "propylene": 1e-05,
+    "1-butene": 0.0
+   },
+   "tail_gas_kg_per_kg_ethylene": 0.09842006275106882,
+   "Q_total_kJ_per_kg": 1444.5145734026212,
+   "Q_rec_tail_gas_kJ_per_kg": 170.62150892150842,
+   "Q_rec_condensate_to_-30C_kJ_per_kg": 459.05835173213814,
+   "Q_ref_kJ_per_kg": 1273.8930644811128,
+   "Q_ref_with_condensate_credit_kJ_per_kg": 814.8347127489748,
+   "duty_by_level_kJ_per_kg": {
+    "-40": 437.5612091504935,
+    "-100": 648.7678856227764,
+    "cold_end": 187.56396970784292
+   },
+   "duty_fractions": {
+    "-40": 0.34348346917857087,
+    "-100": 0.5092797062106897,
+    "cold_end": 0.1472368246107394
+   },
+   "w_ref_vle_engine_efficiency_kJ_per_kg": 2373.144004165286,
+   "with_condensate_credit": {
+    "duty_by_level_kJ_per_kg": {
+     "-40": 380.1046554259739,
+     "-100": 372.6066961630911,
+     "cold_end": 62.12336115990976
+    },
+    "duty_fractions": {
+     "-40": 0.46648068556582506,
+     "-100": 0.45727886936240486,
+     "cold_end": 0.07624044507177008
+    },
+    "w_ref_kJ_per_kg": 1325.2757147132902
+   },
+   "engine": {
+    "t_c_degC": -115.93272557458793,
+    "q_c_kJ_per_kg": 1232.9739017017453,
+    "duty_fractions": [
+     0.55,
+     0.3,
+     0.15
+    ],
+    "w_ref_kJ_per_kg": 1863.0045692449487
+   },
+   "cooling_curve": [
+    {
+     "T_degC": 30.0,
+     "H_feed_kJ_per_kg": -50.3380244408378,
+     "H_tail_kJ_per_kg": 5.003739480136045
+    },
+    {
+     "T_degC": 20.0,
+     "H_feed_kJ_per_kg": -95.78195398498129,
+     "H_tail_kJ_per_kg": -6.344751488536178
+    },
+    {
+     "T_degC": 10.0,
+     "H_feed_kJ_per_kg": -141.01862195188662,
+     "H_tail_kJ_per_kg": -17.66458881772163
+    },
+    {
+     "T_degC": 0.0,
+     "H_feed_kJ_per_kg": -186.15540611910194,
+     "H_tail_kJ_per_kg": -28.952132349587927
+    },
+    {
+     "T_degC": -10.0,
+     "H_feed_kJ_per_kg": -231.33321165067008,
+     "H_tail_kJ_per_kg": -40.20323688488851
+    },
+    {
+     "T_degC": -20.0,
+     "H_feed_kJ_per_kg": -291.63381657288255,
+     "H_tail_kJ_per_kg": -51.41316800957354
+    },
+    {
+     "T_degC": -30.0,
+     "H_feed_kJ_per_kg": -459.9798068020123,
+     "H_tail_kJ_per_kg": -62.57652595216833
+    },
+    {
+     "T_degC": -40.0,
+     "H_feed_kJ_per_kg": -658.3828885264217,
+     "H_tail_kJ_per_kg": -73.68719400054681
+    },
+    {
+     "T_degC": -50.0,
+     "H_feed_kJ_per_kg": -826.5340842154715,
+     "H_tail_kJ_per_kg": -84.73832535557787
+    },
+    {
+     "T_degC": -60.0,
+     "H_feed_kJ_per_kg": -960.2181758432368,
+     "H_tail_kJ_per_kg": -95.72237555247109
+    },
+    {
+     "T_degC": -70.0,
+     "H_feed_kJ_per_kg": -1068.7703200311162,
+     "H_tail_kJ_per_kg": -106.63117886586723
+    },
+    {
+     "T_degC": -80.0,
+     "H_feed_kJ_per_kg": -1159.9035254663922,
+     "H_tail_kJ_per_kg": -117.45606077379132
+    },
+    {
+     "T_degC": -90.0,
+     "H_feed_kJ_per_kg": -1238.8085525514127,
+     "H_tail_kJ_per_kg": -128.18798089129137
+    },
+    {
+     "T_degC": -100.0,
+     "H_feed_kJ_per_kg": -1308.9684324923635,
+     "H_tail_kJ_per_kg": -138.81771907568847
+    },
+    {
+     "T_degC": -110.0,
+     "H_feed_kJ_per_kg": -1372.804015151665,
+     "H_tail_kJ_per_kg": -149.3361581615402
+    },
+    {
+     "T_degC": -120.0,
+     "H_feed_kJ_per_kg": -1432.052584082811,
+     "H_tail_kJ_per_kg": -159.73478353781007
+    },
+    {
+     "T_degC": -130.0,
+     "H_feed_kJ_per_kg": -1487.973882588274,
+     "H_tail_kJ_per_kg": -170.00661133035047
+    }
+   ]
+  },
+  "Wang 2026, GP-predicted composition": {
+   "cold_end_degC": -123.18331063974745,
+   "feed_kg_per_kg_ethylene": 3.181712373407611,
+   "tail_gas_mol_frac": {
+    "hydrogen": 0.98183,
+    "methane": 0.00942,
+    "ethylene": 0.00509,
+    "ethane": 0.00366,
+    "propylene": 0.0,
+    "1-butene": 0.0
+   },
+   "tail_gas_kg_per_kg_ethylene": 0.0835225061153913,
+   "Q_total_kJ_per_kg": 2273.7878640940985,
+   "Q_rec_tail_gas_kJ_per_kg": 146.66229624881697,
+   "Q_rec_condensate_to_-30C_kJ_per_kg": 718.9596555302371,
+   "Q_ref_kJ_per_kg": 2127.1255678452817,
+   "Q_ref_with_condensate_credit_kJ_per_kg": 1408.1659123150446,
+   "duty_by_level_kJ_per_kg": {
+    "-40": 1114.3328053457592,
+    "-100": 790.4239858397486,
+    "cold_end": 222.36877665977372
+   },
+   "duty_fractions": {
+    "-40": 0.5238679005088294,
+    "-100": 0.3715925367962296,
+    "cold_end": 0.10453956269494095
+   },
+   "w_ref_vle_engine_efficiency_kJ_per_kg": 3295.7789850562667,
+   "with_condensate_credit": {
+    "duty_by_level_kJ_per_kg": {
+     "-40": 1022.118371117873,
+     "-100": 323.40603563931745,
+     "cold_end": 62.641505557854174
+    },
+    "duty_fractions": {
+     "-40": 0.7258508121656603,
+     "-100": 0.22966472402931085,
+     "cold_end": 0.044484463805028955
+    },
+    "w_ref_kJ_per_kg": 1750.4933063945136
+   },
+   "engine": {
+    "t_c_degC": -91.33485735102278,
+    "q_c_kJ_per_kg": 1924.4132911282802,
+    "duty_fractions": [
+     0.55,
+     0.3,
+     0.15
+    ],
+    "w_ref_kJ_per_kg": 2692.7128442914327
+   },
+   "cooling_curve": [
+    {
+     "T_degC": 30.0,
+     "H_feed_kJ_per_kg": -114.63164612280464,
+     "H_tail_kJ_per_kg": 4.620239852947491
+    },
+    {
+     "T_degC": 20.0,
+     "H_feed_kJ_per_kg": -186.95585220709418,
+     "H_tail_kJ_per_kg": -5.642412283729856
+    },
+    {
+     "T_degC": 10.0,
+     "H_feed_kJ_per_kg": -259.4243733798147,
+     "H_tail_kJ_per_kg": -15.87928161611994
+    },
+    {
+     "T_degC": 0.0,
+     "H_feed_kJ_per_kg": -332.43399390389044,
+     "H_tail_kJ_per_kg": -26.086810980026673
+    },
+    {
+     "T_degC": -10.0,
+     "H_feed_kJ_per_kg": -406.5718577911466,
+     "H_tail_kJ_per_kg": -36.26096686679587
+    },
+    {
+     "T_degC": -20.0,
+     "H_feed_kJ_per_kg": -772.0783860097418,
+     "H_tail_kJ_per_kg": -46.39716236120536
+    },
+    {
+     "T_degC": -30.0,
+     "H_feed_kJ_per_kg": -1155.884330089097,
+     "H_tail_kJ_per_kg": -56.49018735195772
+    },
+    {
+     "T_degC": -40.0,
+     "H_feed_kJ_per_kg": -1411.7084823165503,
+     "H_tail_kJ_per_kg": -66.53416100071534
+    },
+    {
+     "T_degC": -50.0,
+     "H_feed_kJ_per_kg": -1600.8238756669919,
+     "H_tail_kJ_per_kg": -76.52251890089984
+    },
+    {
+     "T_degC": -60.0,
+     "H_feed_kJ_per_kg": -1752.5162770005047,
+     "H_tail_kJ_per_kg": -86.44804099075449
+    },
+    {
+     "T_degC": -70.0,
+     "H_feed_kJ_per_kg": -1881.0549909702613,
+     "H_tail_kJ_per_kg": -96.30291804641963
+    },
+    {
+     "T_degC": -80.0,
+     "H_feed_kJ_per_kg": -1994.1291096785842,
+     "H_tail_kJ_per_kg": -106.07884843638841
+    },
+    {
+     "T_degC": -90.0,
+     "H_feed_kJ_per_kg": -2096.289393711727,
+     "H_tail_kJ_per_kg": -115.7671585167578
+    },
+    {
+     "T_degC": -100.0,
+     "H_feed_kJ_per_kg": -2190.467201289496,
+     "H_tail_kJ_per_kg": -125.35895618727818
+    },
+    {
+     "T_degC": -110.0,
+     "H_feed_kJ_per_kg": -2278.6983764095357,
+     "H_tail_kJ_per_kg": -134.84536350797
+    },
+    {
+     "T_degC": -120.0,
+     "H_feed_kJ_per_kg": -2362.4853859733153,
+     "H_tail_kJ_per_kg": -144.2179337484632
+    }
+   ]
+  }
+ }
+}
