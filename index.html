@@ -1136,7 +1136,7 @@ const DEFAULT_INPUTS = {
   gridEmissionFactor_kg_per_kWh: 0.36,  // kg CO2e/kWh, US 2023 delivered average
   ethaneUpstreamEmission_kg_per_kg: 0.50,   // kg CO2e/kg ethane, scenario
   firedEfficiencyFixed_percent: 60,     // %, used only with firedHeatModel 'fixed'; Towler and Sinnott 2022: about 0.6 for radiant-only heating
-  electricEfficiency_percent: 95,       // %, Mittal et al. 2025 SI
+  electricEfficiency_percent: 97,       // %, power supply to the heating elements: transformer, rectifier and leads (assumption, range 95-99)
   capitalChargeFactor_per_y: 0.10,      // 1/y, Mittal et al. 2025 SI
   labor_MUSD_per_y: 5                   // Mittal et al. 2025 SI
 };
@@ -1238,6 +1238,17 @@ const FURNACE = {
   filmConductance_W_per_m2K: 210.8, peakFluxFactor: 1.2535,
   tubeMetalLimit_C: 1150,           // degC, range 1100-1150 austenitic alloy (US 8,747,765 B2); the commercial MSF runs at 1117 degC
   referenceCoilArea_m2: 4710        // m2, coil area that carries the reference furnace capital share at 610 kt/y
+};
+/* ---------- 3b. ELECTRIC FURNACE: closed insulated box ----------
+   No gas flows through the box, so no flue gas takes heat out. Heat leaves the box only by conduction through
+   the insulated wall: Q_wall = (k/L) A_wall (T_inside - T_air), with T_inside = tube metal temperature.
+   Heat input to the box = reactor duty + Q_wall. Electric power = heat input / power-supply efficiency.
+   Radiant efficiency = reactor duty / electric power. */
+const ELECTRIC_FURNACE = {
+  insulationConductivity_W_per_mK: 0.25,  // W/(m K), ceramic fiber at 600-1000 degC mean, range 0.15-0.35 (assumption)
+  insulationThickness_m: 0.30,            // m, range 0.2-0.4 (assumption)
+  wallAreaPerCoilArea: 1.0,               // m2 box wall per m2 coil inside area, range 0.5-2 (assumption)
+  airTemperature_C: 25                    // degC
 };
 const NASA7 = {   // [T_mid, high-range a1..a7, low-range a1..a7], GRI-Mech 3.0
   CO2: [1000, 3.85746029, 4.41437026e-3, -2.21481404e-6, 5.23490188e-10, -4.72084164e-14, -48759.166, 2.27163806, 2.35677352, 8.98459677e-3, -7.12356269e-6, 2.45919022e-9, -1.43699548e-13, -48371.9697, 9.90105222],
@@ -1579,7 +1590,7 @@ function calculatePlant(inputs) {
   const fuelGasBurned = fired ? Math.min(fuelGas, purchasedHeat) : 0;
   const fuelGasSurplus = fuelGas - fuelGasBurned, fuelGasSold = p.fuelGasUse === 'sell' ? fuelGasSurplus : 0;
   const naturalGasBought = fired ? Math.max(0, purchasedHeat - fuelGas) : 0;
-  const electricHeat = fired ? 0 : purchasedHeat;
+  let electricHeat = fired ? 0 : purchasedHeat;
 
   /* 4. Coil heat flux and tube metal temperature.
      Coil volume = mean volumetric flow x residence time; inside area = 4 V/d; mean flux q = radiant duty/area. */
@@ -1595,6 +1606,15 @@ function calculatePlant(inputs) {
     if (margin <= 20) { tmtStatus = 'FAILED'; coilAreaUsed = coilArea * 50; warnings.push('FAILED tube metal temperature: COT within 20 K of the alloy limit'); }
     else { tmtStatus = 'WARNING'; coilAreaUsed = FURNACE.peakFluxFactor * radiant_kW * 1000 / (FURNACE.filmConductance_W_per_m2K * margin);
       warnings.push('WARNING tube metal temperature: coil area increased ' + (coilAreaUsed / coilArea).toFixed(2) + ' times to keep ' + FURNACE.tubeMetalLimit_C + ' degC'); }
+  }
+  let electricFurnace = null;
+  if (!fired) {
+    const E = ELECTRIC_FURNACE, wallArea = E.wallAreaPerCoilArea * coilArea;
+    const wallLoss = E.insulationConductivity_W_per_mK / E.insulationThickness_m * wallArea * (tmt - E.airTemperature_C) / 1000 / rate_kg_s;  // kJ/kg ethylene
+    purchasedHeat = (reactorDuty + wallLoss) / (p.electricEfficiency_percent / 100);
+    electricHeat = purchasedHeat;
+    electricFurnace = { wallArea_m2: wallArea, wallLoss_kJ_per_kg: wallLoss, supplyLoss_kJ_per_kg: purchasedHeat - reactorDuty - wallLoss,
+      radiantEfficiency: reactorDuty / purchasedHeat };
   }
   const coilHeat = { coilVolume_m3: coilVolume, coilArea_m2: coilArea, coilAreaUsed_m2: coilAreaUsed, meanFlux_kW_m2: meanFlux,
     tubeMetalTemperatureMaxC: tmt, tmtStatus, coilCount, dutyPerCoil_kW: radiant_kW / coilCount,
@@ -1694,7 +1714,7 @@ function calculatePlant(inputs) {
   const tailCarbon = { heater: (product.methane * burnedFraction * 44.01 / 16.04 + ethyleneToFuelGas * burnedFraction * 2 * 44.01 / MOLAR_MASS.ethylene) * 1000,
     fate: fuelGasBurnCarbon, sale_credit: fuelGasCreditCarbon };
   return { inputs: p, warnings, reaction, gpSD, ethyleneToFuelGas, fuelGasSurplus, tailCarbon, outsideTrainingRange, conversion, coilEthane, freshEthane, recycleEthane, dilutionSteam, product, acetyleneConverter,
-    reactorDuty, purchasedHeat, naturalGasBought, fuelGas, fuelGasBurned, fuelGasSold, electricHeat, furnace, coilHeat, convectionSteam,
+    reactorDuty, purchasedHeat, naturalGasBought, fuelGas, fuelGasBurned, fuelGasSold, electricHeat, furnace, electricFurnace, coilHeat, convectionSteam,
     compressorWork, refrigerationWork, splitterWork, deethanizerWork, reboilerSteam, coolingWater, columns: { deethanizer, depropanizer, debutanizer, cost },
     coldEnd_K: cb.coldEnd_K, runDays, onStreamFactor, tbmc, tci, annualProduct_t, costItems, productionCost,
     carbon: { scope1: scope1 + fuelGasBurnCarbon, scope2, scope3, steamCredit: steamCreditCarbon, c3PlusCredit: c3PlusCreditCarbon, fuelGasCredit: fuelGasCreditCarbon, total: carbonIntensity },
@@ -1862,7 +1882,8 @@ const INPUT_TABLE = [
   ['C3+ product price', DEFAULT_INPUTS.c3PlusPrice_USD_per_t, 'USD/t', '161-740', 'Mittal et al. 2025 SI'],
   ['Fuel-gas price factor', DEFAULT_INPUTS.fuelGasPriceFactor, '- of gas price', '0-1', 'assumption'],
   ['Grid emission factor', DEFAULT_INPUTS.gridEmissionFactor_kg_per_kWh, 'kg CO2e/kWh', '0-0.8', 'US 2023 average'],
-  ['Electric heating efficiency', DEFAULT_INPUTS.electricEfficiency_percent, '%', '80-98', 'Mittal et al. 2025 SI'],
+  ['Electric power-supply efficiency', DEFAULT_INPUTS.electricEfficiency_percent, '%', '95-99', 'assumption'],
+  ['Electric furnace wall: conductivity / thickness / area per coil area', ELECTRIC_FURNACE.insulationConductivity_W_per_mK + ' / ' + ELECTRIC_FURNACE.insulationThickness_m + ' / ' + ELECTRIC_FURNACE.wallAreaPerCoilArea, 'W/(m K) / m / -', '0.15-0.35 / 0.2-0.4 / 0.5-2', 'assumption'],
   ['Excess air', FURNACE.excessAirFraction, '-', '0.05-0.20', 'assumption'],
   ['Bridgewall temperature', FURNACE.bridgewallTemperature_C, 'degC', '1000-1250', 'US 11,913,362 (about 1100 degC)'],
   ['Stack temperature', FURNACE.stackTemperature_C, 'degC', '110-180', 'assumption'],
@@ -1929,7 +1950,7 @@ function qState(){
   const map={T:"cot",tau:"tau",steam:"dilution",P:"pressure",n:"ramp",cap:"cap",ethane:"ethane",elec:"elec",gas:"gas",grid:"grid"};
   for(const [k,v] of Object.entries(map))if(q.has(k))state[v]=bounded(v,q.get(k));
   state.kinetics="gp";
-  if(q.has("heat")){state.mode=q.get("heat")==="joule"?"JH":"CH";state.eff=state.mode==="JH"?95:60}
+  if(q.has("heat")){state.mode=q.get("heat")==="joule"?"JH":"CH";state.eff=state.mode==="JH"?97:60}
   if(q.has("case"))state.name=q.get("case");
 }
 function writeURL(){
@@ -1954,7 +1975,7 @@ function bind(){
   $("inTau").oninput=e=>{state.tau=tauFromSlider(+e.target.value);state.name="Custom";render()};
   [["inEthane","ethane"],["inElec","elec"],["inGas","gas"],["inGrid","grid"]].forEach(([id,k])=>$(id).oninput=e=>{state[k]=bounded(k,e.target.value);e.target.value=state[k];state.name="Custom";render()});
   $("heatFired").onclick=()=>{state.mode="CH";state.eff=60;state.name="Custom";render()};
-  $("heatJoule").onclick=()=>{state.mode="JH";state.eff=95;state.name="Custom";render()};
+  $("heatJoule").onclick=()=>{state.mode="JH";state.eff=97;state.name="Custom";render()};
   document.querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>loadPreset(b.dataset.load));
   $("pin").onclick=()=>{pinned={...result};$("pin").textContent="Re-pin baseline";$("statusRun").textContent="BASELINE PINNED";render()};
   $("copy").onclick=()=>navigator.clipboard.writeText(JSON.stringify(result,null,2));
@@ -2105,7 +2126,7 @@ function fillCompare(){
 function resolveComp(id){
   if(id==="current")return {name:"Current",r:api.evaluate(state)};
   if(id==="fired")return {name:"Fired",r:api.evaluate({...state,mode:"CH",eff:60})};
-  if(id==="joule")return {name:"Joule",r:api.evaluate({...state,mode:"JH",eff:95})};
+  if(id==="joule")return {name:"Joule",r:api.evaluate({...state,mode:"JH",eff:97})};
   return {name:presets[id].name,r:presetResult(id)};
 }
 function renderCompare(){
@@ -2374,7 +2395,7 @@ function runAction(a){
   if(a==="run"){render();$("statusRun").textContent="READY · RECALCULATED";return}
   if(a==="pin"){pinned={...result};$("pin").textContent="Baseline pinned";render();return}
   if(a==="fired"){state.mode="CH";state.eff=60;render();return}
-  if(a==="joule"){state.mode="JH";state.eff=95;render();return}
+  if(a==="joule"){state.mode="JH";state.eff=97;render();return}
   if(a==="openreactor")return openBlock("reactor");
   if(a==="opencompressor")return openBlock("compressor");
   if(a==="openconverter")return openBlock("converter");

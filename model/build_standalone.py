@@ -49,6 +49,10 @@ page = sub(page, '      fetch("benchmarks/literature.json",{cache:"no-store"}).t
            '      Promise.resolve(JSON.parse(document.getElementById("literature-cases").textContent)),\n      Promise.resolve(JSON.parse(document.getElementById("literature-results").textContent))')
 page = sub(page, '<p><a href="uncertainty/">Literature calibration &amp; uncertainty →</a></p>',
            '<p class="small">The literature calibration and the uncertainty analysis are not part of this file.</p>')
+# Electric heating: the screen value is the power-supply efficiency (default 97 %); wall loss is computed in the model.
+page = sub(page, 'state.eff=state.mode==="JH"?95:60', 'state.eff=state.mode==="JH"?97:60')
+assert page.count('state.eff=95') == 2 and page.count('mode:"JH",eff:95') == 1
+page = page.replace('state.eff=95', 'state.eff=97').replace('mode:"JH",eff:95', 'mode:"JH",eff:97')
 page = page.replace('<title>Ethane Cracker Model</title>', '<title>Ethane Cracker Simulator</title>')
 for bad in ('src="engine.html"', 'fetch(', 'engineFrame', 'contentWindow'):
     assert bad not in page, bad
